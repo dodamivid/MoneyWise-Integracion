@@ -35,16 +35,38 @@ Revisa `docs/roadmap.md` para ver el orden y criterios de aceptación.
 2. Usuario: `cesaenzd`.
 3. Rol: `Triage` o `Write` según lo que pida.
 
-## 5) Etiquetas sugeridas
+## 5) Automatizar que los issues se agreguen al Project (opcional recomendado)
+Para que cada nuevo issue con label `integration` entre solo al tablero:
+
+A) Crear un token personal (PAT)
+- En GitHub (tu cuenta) > Settings > Developer settings > Personal access tokens > Fine-grained tokens.
+- Repository access: sólo este repo.
+- Permissions: Repository: Issues (Read), Contents (Read). Organization permissions: Projects (Read & Write) — si tu Project es de usuario, otorga Projects (Read & Write) a tu usuario; si es de una organización, a la org.
+- Copia el token.
+
+B) Guardar el token como secret del repo
+- Repo > Settings > Secrets and variables > Actions > New repository secret
+- Name: `PROJECT_PAT`
+- Value: pega el token.
+
+C) Ejecutar el workflow
+- Actions > "Add issues to Project (Integration)".
+- Si lo corres manual (Run workflow), pasa estos inputs:
+  - owner: tu usuario de GitHub (por ejemplo `dodamivid`).
+  - project_number: el número que aparece en la URL del Project (ej. users/<login>/projects/2 → 2).
+  - label: `integration` (por defecto ya es esa).
+- El workflow también se dispara cuando se crea o etiqueta un issue con `integration`.
+
+## 6) Etiquetas sugeridas
 - `integration`, `backend`, `ts`, `express`, `backlog`, `bug`, `feature`, `task`.
 
-## 6) Issue templates
+## 7) Issue templates
 En `.github/ISSUE_TEMPLATE/` hay plantillas para bug, feature y task.
 
-## 7) Próximos pasos técnicos (opcional)
+## 8) Próximos pasos técnicos (opcional)
 - Inicializar monorepo o paquete `web` con Express en TypeScript.
 - Añadir CI para typecheck/test.
 
-## 8) Notas adicionales
+## 9) Notas adicionales
 - Asegúrate de tener los permisos necesarios en GitHub para realizar todas las acciones.
 - Comunica cualquier duda o inconveniente al equipo.
