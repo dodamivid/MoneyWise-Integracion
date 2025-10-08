@@ -1,0 +1,74 @@
+name: Seed Backlog Issues (Integration)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create backlog issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = ['integration','backend','ts','express','backlog'];
+            const assignee = null; // optionally set a username
+
+            const tickets = [
+              {
+                title: 'Set up Express TS server skeleton',
+                body: `As Integration team, create a basic Express + TypeScript server with health endpoint /health.\nAcceptance: npm run dev works, /health returns 200 {status: 'ok'}.`,
+              },
+              {
+                title: 'Define API contract: Users service',
+                body: 'Create OpenAPI/contract for POST /api/users, GET /api/users/:id including request/response schemas.',
+              },
+              {
+                title: 'Implement POST /api/users (in-memory)',
+                body: 'Implement endpoint with input validation (zod/yup) and return created user.',
+              },
+              {
+                title: 'Implement GET /api/users/:id',
+                body: 'Fetch from in-memory store and handle 404 errors consistently.',
+              },
+              {
+                title: 'Auth middleware (API key placeholder)',
+                body: 'Add simple middleware that reads x-api-key and rejects when missing; wire to all /api routes.',
+              },
+              {
+                title: 'Logging and request correlation',
+                body: 'Add pino logger and correlation-id middleware for observability.',
+              },
+              {
+                title: 'Error handling and response format',
+                body: 'Create centralized error handler returning {error, message, traceId}. Document usage.',
+              },
+              {
+                title: 'Unit tests for users endpoints',
+                body: 'Add jest/supertest for POST and GET endpoints. CI should run tests.',
+              },
+              {
+                title: 'Dockerfile and container run',
+                body: 'Add minimal Dockerfile and instructions to run the API.',
+              },
+              {
+                title: 'CI workflow: typecheck, lint, test',
+                body: 'Add GitHub Actions workflow to install, build, lint and test on push/PR.',
+              },
+            ];
+
+            for (const t of tickets) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: t.title,
+                body: t.body,
+                labels,
+                assignees: assignee ? [assignee] : undefined,
+              });
+            }
+            core.notice(`Created ${tickets.length} issues in ${context.repo.owner}/${context.repo.repo}`);
