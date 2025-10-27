@@ -1,265 +1,365 @@
-// Implementación de GET /api/users/:id
-// api petición para obtener un usuario por ID
-// ============================================
-// INTERFACES - Contratos de Datos
-// ============================================
-
-
 /**
- * export - Compartir código entre archivos
- * export hace que algo esté disponible para ser usado en otros archivos. (es publico)
+ * @fileoverview User model definition with Zod schema validation.
  * 
- * interface - Define la forma de un objeto
- * interface es como un contrato o molde que describe qué propiedades debe tener un objeto.
- * Interface User: Define la estructura COMPLETA de un usuario en el sistema
- * Esta es la representación interna que incluye información sensible
- * agregar un ? después del nombre de una propiedad la hace opcional
- */
-export interface User {
-  id: string;              // Identificador único del usuario (UUID)
-  email: string;           // Correo electrónico (único por usuario)
-  password: string;        // Contraseña HASHEADA (nunca en texto plano)
-  firstName: string;       // Nombre(s) del usuario
-  lastName: string;        // Apellido(s) del usuario
-  createdAt: Date;        // Fecha de creación del registro
-  updatedAt: Date;        // Fecha de última actualización
-}
-
-/**
- * Interface UserResponse: Define lo que SE ENVÍA al cliente
- * IMPORTANTE: NO incluye el password por seguridad
- * Esta es la versión "pública" del usuario
- */
-export interface UserResponse {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  createdAt: Date;
-  updatedAt: Date;
-  // ❌ NO tiene password - nunca lo enviamos al frontend
-}
-
-/**
- * UserStore: Clase estática que simula una base de datos en memoria
+ * This module defines the User entity structure for the Money Wise application.
+ * It includes comprehensive validation rules using Zod schemas and TypeScript
+ * type definitions for compile-time type safety.
  * 
- * ¿Por qué estática? 
- * - No necesitamos crear instancias (new UserStore())
- * - Todos los métodos se llaman directamente: UserStore.findById()
- * - Mantiene UN SOLO almacén compartido en toda la aplicación
+ * The User model represents a registered user in the Money Wise platform and
+ * contains all necessary fields for authentication, profile information, and
+ * account management.
+ * 
+ * @module models/user.model
+ * @category Models
+ * 
+ * @example
+ * ```typescript
+ * import { UserSchema, User, CreateUserInput } from './models/user.model';
+ * 
+ * // Validate user data
+ * const userData: CreateUserInput = {
+ *   email: 'user@example.com',
+ *   password: 'SecurePass123!',
+ *   firstName: 'John',
+ *   lastName: 'Doe'
+ * };
+ * 
+ * const validatedData = UserSchema.parse(userData);
+ * ```
+ * 
+ * @author Money Wise Integration Team
+ * @version 1.0.0
  */
-export class UserStore {
-  
-  // ============================================
-  // ALMACENAMIENTO PRIVADO
-  // ============================================
-  
-  /**
-   * users: Map privado que almacena todos los usuarios
-   * 
-   * ¿Qué es un Map?
-   * - Estructura clave-valor (como un objeto, pero mejor)
-   * - Clave: ID del usuario (string)
-   * - Valor: Objeto User completo
-   * 
-   * ¿Por qué Map y no Array?
-   * - Búsqueda O(1) - instantánea por ID
-   * - Array sería O(n) - tendría que recorrer todo
-   * 
-   * ¿Por qué private static?
-   * - private: Solo accesible dentro de esta clase
-   * - static: Compartido por toda la aplicación, no por instancia
-   * 
-   * Ejemplo en memoria:
-   * users = Map {
-   *   "uuid-123" => { id: "uuid-123", email: "juan@mail.com", ... },
-   *   "uuid-456" => { id: "uuid-456", email: "maria@mail.com", ... }
-   * }
-   */
-  private static users: Map<string, User> = new Map();
 
-  // ============================================
-  // MÉTODOS DE BÚSQUEDA (READ)
-  // ============================================
+import { z } from "zod";
 
+/**
+ * Zod schema for validating user data.
+ * 
+ * This schema defines the validation rules for all user fields:
+ * - **id**: Unique identifier (UUID v4 format)
+ * - **email**: Must be a valid email address
+ * - **password**: Minimum 8 characters, at least one uppercase, one lowercase, and one number
+ * - **firstName**: 2-50 characters, only letters and spaces
+ * - **lastName**: 2-50 characters, only letters and spaces
+ * - **isActive**: Boolean flag for account status
+ * - **createdAt**: ISO 8601 date string
+ * - **updatedAt**: ISO 8601 date string
+ * 
+ * @constant
+ * @type {z.ZodObject}
+ * 
+ * @example
+ * ```typescript
+ * // Valid user object
+ * const user = UserSchema.parse({
+ *   id: '550e8400-e29b-41d4-a716-446655440000',
+ *   email: 'john.doe@example.com',
+ *   password: 'SecurePass123',
+ *   firstName: 'John',
+ *   lastName: 'Doe',
+ *   isActive: true,
+ *   createdAt: '2024-01-01T00:00:00.000Z',
+ *   updatedAt: '2024-01-01T00:00:00.000Z'
+ * });
+ * 
+ * // Will throw ZodError if validation fails
+ * try {
+ *   UserSchema.parse({ email: 'invalid-email' });
+ * } catch (error) {
+ *   console.error(error.errors);
+ * }
+ * ```
+ */
+export const UserSchema = z.object({
   /**
-   * findById: Busca un usuario por su ID
+   * Unique identifier for the user.
+   * Must be a valid UUID v4 string.
    * 
-   * @param id - El ID único del usuario
-   * @returns User si lo encuentra, undefined si no existe
-   * 
-   * Complejidad: O(1) - búsqueda instantánea
-   * 
-   * Ejemplo de uso:
-   * const user = UserStore.findById("uuid-123");
-   * if (user) {
-   *   console.log(user.email); // "juan@mail.com"
-   * }
+   * @example '550e8400-e29b-41d4-a716-446655440000'
    */
-  static findById(id: string): User | undefined {
-    return this.users.get(id);
-    // .get() es el método de Map para obtener un valor por clave
-    // Si no existe, Map devuelve undefined automáticamente
-  }
+  id: z.string().uuid({
+    message: "User ID must be a valid UUID",
+  }),
 
   /**
-   * findByEmail: Busca un usuario por su email
+   * User's email address.
+   * Must be a valid email format and will be stored in lowercase.
    * 
-   * ¿Por qué es diferente a findById?
-   * - El Map usa ID como clave, NO email
-   * - Tenemos que buscar manualmente en todos los valores
-   * 
-   * Complejidad: O(n) - tiene que revisar todos los usuarios
-   * 
-   * Proceso paso a paso:
-   * 1. Array.from(this.users.values()) - Convierte los valores del Map a Array
-   * 2. .find() - Busca el primer elemento que cumpla la condición
-   * 3. user => user.email === email - Compara cada email
-   * 
-   * @param email - Email a buscar
-   * @returns User si existe, undefined si no
+   * @example 'user@example.com'
    */
-  static findByEmail(email: string): User | undefined {
-    return Array.from(this.users.values()).find(
-      user => user.email === email
-    );
-  }
-
-  // ============================================
-  // MÉTODOS DE CREACIÓN (CREATE)
-  // ============================================
+  email: z
+    .string({
+      message: "Email is required",
+    })
+    .email({
+      message: "Invalid email format",
+    })
+    .toLowerCase()
+    .trim(),
 
   /**
-   * create: Agrega un nuevo usuario al almacén
+   * User's password.
+   * Must be at least 8 characters long and contain:
+   * - At least one uppercase letter
+   * - At least one lowercase letter
+   * - At least one number
    * 
-   * @param user - Objeto User completo (debe incluir ID generado)
-   * @returns El mismo usuario que se guardó
-   * 
-   * ⚠️ IMPORTANTE: 
-   * - El ID debe venir ya generado (con uuid library)
-   * - Este método NO valida duplicados (eso lo hace el controller)
-   * - .set() sobrescribe si el ID ya existe
-   * 
-   * Ejemplo:
-   * const newUser = {
-   *   id: uuidv4(),
-   *   email: "nuevo@mail.com",
-   *   password: await bcrypt.hash("password123", 10),
-   *   firstName: "Carlos",
-   *   lastName: "López",
-   *   createdAt: new Date(),
-   *   updatedAt: new Date()
-   * };
-   * UserStore.create(newUser);
+   * @example 'SecurePass123'
    */
-  static create(user: User): User {
-    this.users.set(user.id, user);
-    return user;
-  }
-
-  // ============================================
-  // MÉTODOS DE ACTUALIZACIÓN (UPDATE)
-  // ============================================
+  password: z
+    .string({
+      message: "Password is required",
+    })
+    .min(8, {
+      message: "Password must be at least 8 characters long",
+    })
+    .regex(/[A-Z]/, {
+      message: "Password must contain at least one uppercase letter",
+    })
+    .regex(/[a-z]/, {
+      message: "Password must contain at least one lowercase letter",
+    })
+    .regex(/[0-9]/, {
+      message: "Password must contain at least one number",
+    }),
 
   /**
-   * update: Actualiza un usuario existente
+   * User's first name.
+   * Must be between 2 and 50 characters and contain only letters and spaces.
+   * Leading and trailing whitespace will be removed.
    * 
-   * @param id - ID del usuario a actualizar
-   * @param userData - Objeto con los campos a actualizar (parcial)
-   * @returns Usuario actualizado, o undefined si no existe
-   * 
-   * ¿Cómo funciona Partial<User>?
-   * - Hace que TODAS las propiedades de User sean opcionales
-   * - Puedes enviar solo { firstName: "Nuevo Nombre" }
-   * - No necesitas enviar TODOS los campos
-   * 
-   * Proceso:
-   * 1. Busca el usuario actual
-   * 2. Si no existe, retorna undefined
-   * 3. Combina datos antiguos con nuevos usando spread operator (...)
-   * 4. Actualiza automáticamente updatedAt
-   * 5. Guarda y retorna el usuario actualizado
+   * @example 'John'
    */
-  static update(id: string, userData: Partial<User>): User | undefined {
-    const user = this.users.get(id);
-    
-    if (!user) return undefined;
-
-    // Spread operator: combina objetos
-    // Orden importa: userData sobrescribe user
-    const updatedUser = {
-      ...user,           // Todos los campos existentes
-      ...userData,       // Campos nuevos/modificados
-      updatedAt: new Date()  // Forzamos nueva fecha
-    };
-    
-    this.users.set(id, updatedUser);
-    return updatedUser;
-  }
-
-  // ============================================
-  // MÉTODOS DE ELIMINACIÓN (DELETE)
-  // ============================================
+  firstName: z
+    .string({
+      message: "First name is required",
+    })
+    .min(2, {
+      message: "First name must be at least 2 characters long",
+    })
+    .max(50, {
+      message: "First name must not exceed 50 characters",
+    })
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
+      message: "First name must contain only letters and spaces",
+    })
+    .trim(),
 
   /**
-   * delete: Elimina un usuario del almacén
+   * User's last name.
+   * Must be between 2 and 50 characters and contain only letters and spaces.
+   * Leading and trailing whitespace will be removed.
    * 
-   * @param id - ID del usuario a eliminar
-   * @returns true si se eliminó, false si no existía
-   * 
-   * Map.delete() retorna:
-   * - true: Si la clave existía y se eliminó
-   * - false: Si la clave no existía
+   * @example 'Doe'
    */
-  static delete(id: string): boolean {
-    return this.users.delete(id);
-  }
-
-  // ============================================
-  // MÉTODOS DE LISTADO
-  // ============================================
+  lastName: z
+    .string({
+      message: "Last name is required",
+    })
+    .min(2, {
+      message: "Last name must be at least 2 characters long",
+    })
+    .max(50, {
+      message: "Last name must not exceed 50 characters",
+    })
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
+      message: "Last name must contain only letters and spaces",
+    })
+    .trim(),
 
   /**
-   * getAll: Obtiene TODOS los usuarios
+   * Flag indicating whether the user account is active.
+   * Inactive accounts cannot log in or perform operations.
    * 
-   * @returns Array con todos los usuarios
-   * 
-   * ⚠️ CUIDADO en producción:
-   * - Con muchos usuarios, esto puede ser pesado
-   * - Considera paginación (offset/limit)
-   * 
-   * Array.from(this.users.values()):
-   * - .values() obtiene un iterador de todos los valores
-   * - Array.from() convierte el iterador en array
+   * @default true
    */
-  static getAll(): User[] {
-    return Array.from(this.users.values());
-  }
-
-  // ============================================
-  // MÉTODOS UTILITARIOS
-  // ============================================
+  isActive: z.boolean().default(true),
 
   /**
-   * toUserResponse: Convierte User a UserResponse
+   * Timestamp when the user account was created.
+   * Stored as ISO 8601 date string.
    * 
-   * ¿Para qué sirve?
-   * - SEGURIDAD: Elimina el password antes de enviar al cliente
-   * - Siempre usar esto antes de enviar respuesta HTTP
-   * 
-   * ¿Cómo funciona?
-   * 1. Destructuring: separa password del resto
-   * 2. Rest operator (...): agrupa el resto en userResponse
-   * 3. Retorna objeto SIN password
-   * 
-   * Ejemplo:
-   * const user = { id: "1", email: "test@mail.com", password: "hash123", firstName: "Juan" }
-   * const safe = UserStore.toUserResponse(user);
-   * // safe = { id: "1", email: "test@mail.com", firstName: "Juan" }
-   * // ✅ NO tiene password
+   * @example '2024-01-01T00:00:00.000Z'
    */
-  static toUserResponse(user: User): UserResponse {
-    const { password, ...userResponse } = user;
-    return userResponse;
-  }
-}
+  createdAt: z.string().datetime({
+    message: "Invalid datetime format for createdAt",
+  }),
+
+  /**
+   * Timestamp when the user account was last updated.
+   * Stored as ISO 8601 date string.
+   * 
+   * @example '2024-01-01T12:30:00.000Z'
+   */
+  updatedAt: z.string().datetime({
+    message: "Invalid datetime format for updatedAt",
+  }),
+});
+
+/**
+ * TypeScript type inferred from UserSchema.
+ * 
+ * This type represents a complete user object with all fields.
+ * Use this type when working with full user data.
+ * 
+ * @typedef {Object} User
+ * @property {string} id - Unique identifier (UUID)
+ * @property {string} email - User's email address
+ * @property {string} password - User's hashed password
+ * @property {string} firstName - User's first name
+ * @property {string} lastName - User's last name
+ * @property {boolean} isActive - Account active status
+ * @property {string} createdAt - Account creation timestamp
+ * @property {string} updatedAt - Last update timestamp
+ * 
+ * @example
+ * ```typescript
+ * const user: User = {
+ *   id: '550e8400-e29b-41d4-a716-446655440000',
+ *   email: 'john.doe@example.com',
+ *   password: 'hashedPassword123',
+ *   firstName: 'John',
+ *   lastName: 'Doe',
+ *   isActive: true,
+ *   createdAt: '2024-01-01T00:00:00.000Z',
+ *   updatedAt: '2024-01-01T00:00:00.000Z'
+ * };
+ * ```
+ */
+export type User = z.infer<typeof UserSchema>;
+
+/**
+ * Schema for creating a new user.
+ * 
+ * This schema omits system-generated fields (id, createdAt, updatedAt)
+ * that will be automatically assigned when creating a new user.
+ * 
+ * @constant
+ * @type {z.ZodObject}
+ * 
+ * @example
+ * ```typescript
+ * const newUser: CreateUserInput = {
+ *   email: 'new.user@example.com',
+ *   password: 'SecurePass123',
+ *   firstName: 'Jane',
+ *   lastName: 'Smith'
+ * };
+ * 
+ * const validated = CreateUserSchema.parse(newUser);
+ * ```
+ */
+export const CreateUserSchema = UserSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+/**
+ * TypeScript type for user creation input.
+ * 
+ * This type represents the data needed to create a new user,
+ * excluding system-generated fields.
+ * 
+ * @typedef {Object} CreateUserInput
+ * @property {string} email - User's email address
+ * @property {string} password - User's password (plain text, will be hashed)
+ * @property {string} firstName - User's first name
+ * @property {string} lastName - User's last name
+ * @property {boolean} [isActive] - Account active status (optional, defaults to true)
+ * 
+ * @example
+ * ```typescript
+ * const createUserData: CreateUserInput = {
+ *   email: 'user@example.com',
+ *   password: 'SecurePass123',
+ *   firstName: 'John',
+ *   lastName: 'Doe',
+ *   isActive: true
+ * };
+ * ```
+ */
+export type CreateUserInput = z.infer<typeof CreateUserSchema>;
+
+/**
+ * Schema for updating an existing user.
+ * 
+ * All fields are optional to allow partial updates.
+ * System fields (id, createdAt) cannot be updated.
+ * 
+ * @constant
+ * @type {z.ZodObject}
+ * 
+ * @example
+ * ```typescript
+ * // Update only email
+ * const updateData: UpdateUserInput = {
+ *   email: 'newemail@example.com'
+ * };
+ * 
+ * // Update multiple fields
+ * const updateData: UpdateUserInput = {
+ *   firstName: 'Jane',
+ *   lastName: 'Smith',
+ *   isActive: false
+ * };
+ * ```
+ */
+export const UpdateUserSchema = UserSchema.omit({
+  id: true,
+  createdAt: true,
+}).partial();
+
+/**
+ * TypeScript type for user update input.
+ * 
+ * All fields are optional, allowing for partial updates
+ * of user information.
+ * 
+ * @typedef {Object} UpdateUserInput
+ * @property {string} [email] - New email address
+ * @property {string} [password] - New password
+ * @property {string} [firstName] - New first name
+ * @property {string} [lastName] - New last name
+ * @property {boolean} [isActive] - New active status
+ * @property {string} [updatedAt] - Update timestamp (set automatically)
+ * 
+ * @example
+ * ```typescript
+ * const updateData: UpdateUserInput = {
+ *   firstName: 'John',
+ *   email: 'john.new@example.com'
+ * };
+ * ```
+ */
+export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+
+/**
+ * Schema for user ID validation.
+ * 
+ * Used for validating user IDs in route parameters.
+ * 
+ * @constant
+ * @type {z.ZodString}
+ * 
+ * @example
+ * ```typescript
+ * const userId = UserIdSchema.parse(req.params.id);
+ * ```
+ */
+export const UserIdSchema = z.string().uuid({
+  message: "Invalid user ID format. Must be a valid UUID.",
+});
+
+/**
+ * Type for validated user IDs.
+ * 
+ * @typedef {string} UserId
+ * 
+ * @example
+ * ```typescript
+ * const userId: UserId = '550e8400-e29b-41d4-a716-446655440000';
+ * ```
+ */
+export type UserId = z.infer<typeof UserIdSchema>;
