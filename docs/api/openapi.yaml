@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info:
+  title: MoneyWise Users API
+  version: 1.0.0
+  description: API contract for user creation and retrieval.
+  contact:
+    name: MoneyWise Dev Team
+    email: support@moneywise.com
+
+servers:
+  - url: https://api.moneywise.com/v1
+    description: Production server
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /api/users:
+    post:
+      summary: Create a new user
+      description: Registers a new user in the MoneyWise system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+  /api/users/{id}:
+    get:
+      summary: Get user by ID
+      description: Returns a specific user by their unique ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The user's unique ID
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    UserRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          example: juan.perez@email.com
+        password:
+          type: string
+          format: password
+          example: Abc123$
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          example: juan.perez@email.com
+        createdAt:
+          type: string
+          format: date-time
+          example: 2025-10-23T09:00:00Z

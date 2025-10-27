@@ -1,0 +1,32 @@
+{
+  "name": "moneywise",
+  "version": "1.0.0",
+  "description": "Tecnologico de Chihuahua II - Equipo de Integracion",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dodamivid/MoneyWise.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dodamivid/MoneyWise/issues"
+  },
+  "homepage": "https://github.com/dodamivid/MoneyWise#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}
