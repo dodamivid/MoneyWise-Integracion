@@ -1,15 +1,15 @@
 /**
- * @fileoverview Data Transfer Objects (DTOs) for API responses.
+ * @fileoverview Objetos de Transferencia de Datos (DTOs) para respuestas de la API.
  * 
- * This module defines the structure of API responses for user-related operations.
- * DTOs ensure consistent response formats across all endpoints and separate
- * the internal data model from the API contract.
+ * Este módulo define la estructura de las respuestas de la API para operaciones relacionadas con usuarios.
+ * Los DTOs aseguran formatos de respuesta consistentes en todos los endpoints y separan
+ * el modelo de datos interno del contrato de la API.
  * 
- * Key features:
- * - Consistent response structure across all endpoints
- * - Sensitive data exclusion (passwords are never included)
- * - Type-safe response creation
- * - Standardized error responses
+ * Características clave:
+ * - Estructura de respuesta consistente en todos los endpoints
+ * - Exclusión de datos sensibles (las contraseñas nunca se incluyen)
+ * - Creación de respuestas con seguridad de tipos
+ * - Respuestas de error estandarizadas
  * 
  * @module dtos/user.dto
  * @category DTOs
@@ -23,27 +23,27 @@
  * res.json(response);
  * ```
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
 import { User } from "../models/user.model";
 
 /**
- * User data structure for API responses.
+ * Estructura de datos de usuario para respuestas de la API.
  * 
- * This interface defines the user data that is safe to send to clients.
- * Note: The password field is intentionally excluded for security.
+ * Esta interfaz define los datos de usuario que es seguro enviar a los clientes.
+ * Nota: El campo de contraseña se excluye intencionalmente por seguridad.
  * 
  * @interface UserData
  * 
- * @property {string} id - Unique user identifier
- * @property {string} email - User's email address
- * @property {string} firstName - User's first name
- * @property {string} lastName - User's last name
- * @property {boolean} isActive - Whether the user account is active
- * @property {string} createdAt - When the account was created (ISO 8601)
- * @property {string} updatedAt - When the account was last updated (ISO 8601)
+ * @property {string} id - Identificador único del usuario
+ * @property {string} email - Dirección de correo electrónico del usuario
+ * @property {string} firstName - Nombre del usuario
+ * @property {string} lastName - Apellido del usuario
+ * @property {boolean} isActive - Si la cuenta del usuario está activa
+ * @property {string} createdAt - Cuándo se creó la cuenta (ISO 8601)
+ * @property {string} updatedAt - Cuándo se actualizó la cuenta por última vez (ISO 8601)
  * 
  * @example
  * ```typescript
@@ -69,16 +69,16 @@ export interface UserData {
 }
 
 /**
- * Standard structure for successful API responses containing user data.
+ * Estructura estándar para respuestas exitosas de la API que contienen datos de usuario.
  * 
- * This interface ensures all successful user-related responses follow
- * the same format, making it easier for clients to parse responses.
+ * Esta interfaz asegura que todas las respuestas exitosas relacionadas con usuarios sigan
+ * el mismo formato, facilitando el análisis de respuestas para los clientes.
  * 
  * @interface UserResponseDTO
  * 
- * @property {"success"} status - Always "success" for successful operations
- * @property {UserData} data - The user data payload
- * @property {string} [message] - Optional message providing additional context
+ * @property {"success"} status - Siempre "success" para operaciones exitosas
+ * @property {UserData} data - Los datos de usuario
+ * @property {string} [message] - Mensaje opcional que proporciona contexto adicional
  * 
  * @example
  * ```typescript
@@ -93,7 +93,7 @@ export interface UserData {
  *     createdAt: '2024-01-01T00:00:00.000Z',
  *     updatedAt: '2024-01-01T00:00:00.000Z'
  *   },
- *   message: 'User retrieved successfully'
+ *   message: 'Usuario recuperado exitosamente'
  * };
  * ```
  */
@@ -104,19 +104,19 @@ export interface UserResponseDTO {
 }
 
 /**
- * Standard structure for successful API responses containing multiple users.
+ * Estructura estándar para respuestas exitosas de la API que contienen múltiples usuarios.
  * 
- * Used when returning lists of users (e.g., search results, paginated lists).
+ * Se usa cuando se retornan listas de usuarios (ej. resultados de búsqueda, listas paginadas).
  * 
  * @interface UsersResponseDTO
  * 
- * @property {"success"} status - Always "success" for successful operations
- * @property {UserData[]} data - Array of user data objects
- * @property {Object} [meta] - Optional metadata about the response
- * @property {number} [meta.total] - Total number of users available
- * @property {number} [meta.page] - Current page number
- * @property {number} [meta.limit] - Number of items per page
- * @property {string} [message] - Optional message providing additional context
+ * @property {"success"} status - Siempre "success" para operaciones exitosas
+ * @property {UserData[]} data - Arreglo de objetos de datos de usuario
+ * @property {Object} [meta] - Metadatos opcionales sobre la respuesta
+ * @property {number} [meta.total] - Número total de usuarios disponibles
+ * @property {number} [meta.page] - Número de página actual
+ * @property {number} [meta.limit] - Número de elementos por página
+ * @property {string} [message] - Mensaje opcional que proporciona contexto adicional
  * 
  * @example
  * ```typescript
@@ -138,7 +138,7 @@ export interface UserResponseDTO {
  *     page: 1,
  *     limit: 10
  *   },
- *   message: 'Users retrieved successfully'
+ *   message: 'Usuarios recuperados exitosamente'
  * };
  * ```
  */
@@ -154,37 +154,37 @@ export interface UsersResponseDTO {
 }
 
 /**
- * Standard structure for error responses.
+ * Estructura estándar para respuestas de error.
  * 
- * This interface ensures all error responses follow the same format,
- * making error handling consistent and predictable for API clients.
+ * Esta interfaz asegura que todas las respuestas de error sigan el mismo formato,
+ * haciendo el manejo de errores consistente y predecible para los clientes de la API.
  * 
  * @interface ErrorResponseDTO
  * 
- * @property {"error"} status - Always "error" for error responses
- * @property {string} message - Human-readable error message
- * @property {number} [statusCode] - HTTP status code (e.g., 404, 400, 500)
- * @property {Object} [details] - Optional additional error details
- * @property {string} [details.field] - Field that caused the error
- * @property {string} [details.reason] - Detailed reason for the error
+ * @property {"error"} status - Siempre "error" para respuestas de error
+ * @property {string} message - Mensaje de error legible para humanos
+ * @property {number} [statusCode] - Código de estado HTTP (ej. 404, 400, 500)
+ * @property {Object} [details] - Detalles adicionales opcionales del error
+ * @property {string} [details.field] - Campo que causó el error
+ * @property {string} [details.reason] - Razón detallada del error
  * 
  * @example
  * ```typescript
- * // Simple error response
+ * // Respuesta de error simple
  * const errorResponse: ErrorResponseDTO = {
  *   status: "error",
- *   message: "User not found",
+ *   message: "Usuario no encontrado",
  *   statusCode: 404
  * };
  * 
- * // Error response with details
+ * // Respuesta de error con detalles
  * const validationError: ErrorResponseDTO = {
  *   status: "error",
- *   message: "Validation failed",
+ *   message: "Validación fallida",
  *   statusCode: 400,
  *   details: {
  *     field: "email",
- *     reason: "Invalid email format"
+ *     reason: "Formato de correo inválido"
  *   }
  * };
  * ```
@@ -197,22 +197,22 @@ export interface ErrorResponseDTO {
 }
 
 /**
- * Converts a User model to UserData DTO.
+ * Convierte un modelo User a DTO UserData.
  * 
- * This function removes sensitive information (password) from the user object
- * before sending it to the client. It creates a clean separation between
- * the internal data model and the API response.
+ * Esta función elimina información sensible (contraseña) del objeto de usuario
+ * antes de enviarlo al cliente. Crea una separación limpia entre
+ * el modelo de datos interno y la respuesta de la API.
  * 
  * @function toUserData
- * @param {User} user - The user model object
- * @returns {UserData} User data safe for API responses
+ * @param {User} user - El objeto del modelo de usuario
+ * @returns {UserData} Datos de usuario seguros para respuestas de la API
  * 
  * @example
  * ```typescript
  * const user: User = {
  *   id: '550e8400-e29b-41d4-a716-446655440000',
  *   email: 'john.doe@example.com',
- *   password: 'hashedPassword123',  // Will be removed
+ *   password: 'hashedPassword123',  // Será eliminado
  *   firstName: 'John',
  *   lastName: 'Doe',
  *   isActive: true,
@@ -221,36 +221,36 @@ export interface ErrorResponseDTO {
  * };
  * 
  * const userData = toUserData(user);
- * // userData will NOT contain the password field
+ * // userData NO contendrá el campo password
  * ```
  */
 export function toUserData(user: User): UserData {
-  // Destructure to exclude password from the response
+  // Desestructurar para excluir password de la respuesta
   const { password, ...userData } = user;
   return userData;
 }
 
 /**
- * Creates a standardized success response for a single user.
+ * Crea una respuesta de éxito estandarizada para un único usuario.
  * 
- * This function wraps user data in the standard API response format,
- * ensuring consistency across all endpoints that return user data.
+ * Esta función envuelve los datos de usuario en el formato de respuesta estándar de la API,
+ * asegurando consistencia en todos los endpoints que retornan datos de usuario.
  * 
  * @function createUserResponse
- * @param {User} user - The user model object
- * @param {string} [message] - Optional success message
- * @returns {UserResponseDTO} Formatted API response
+ * @param {User} user - El objeto del modelo de usuario
+ * @param {string} [message] - Mensaje de éxito opcional
+ * @returns {UserResponseDTO} Respuesta de API formateada
  * 
  * @example
  * ```typescript
  * const user = await userService.findById(userId);
- * const response = createUserResponse(user, 'User retrieved successfully');
+ * const response = createUserResponse(user, 'Usuario recuperado exitosamente');
  * res.status(200).json(response);
- * // Response:
+ * // Respuesta:
  * // {
  * //   status: "success",
  * //   data: { id, email, firstName, lastName, isActive, createdAt, updatedAt },
- * //   message: "User retrieved successfully"
+ * //   message: "Usuario recuperado exitosamente"
  * // }
  * ```
  */
@@ -266,19 +266,19 @@ export function createUserResponse(
 }
 
 /**
- * Creates a standardized success response for multiple users.
+ * Crea una respuesta de éxito estandarizada para múltiples usuarios.
  * 
- * This function wraps an array of user data in the standard API response format,
- * with optional metadata for pagination.
+ * Esta función envuelve un arreglo de datos de usuario en el formato de respuesta estándar de la API,
+ * con metadatos opcionales para paginación.
  * 
  * @function createUsersResponse
- * @param {User[]} users - Array of user model objects
- * @param {Object} [meta] - Optional metadata for pagination
- * @param {number} [meta.total] - Total number of users
- * @param {number} [meta.page] - Current page number
- * @param {number} [meta.limit] - Items per page
- * @param {string} [message] - Optional success message
- * @returns {UsersResponseDTO} Formatted API response with user list
+ * @param {User[]} users - Arreglo de objetos del modelo de usuario
+ * @param {Object} [meta] - Metadatos opcionales para paginación
+ * @param {number} [meta.total] - Número total de usuarios
+ * @param {number} [meta.page] - Número de página actual
+ * @param {number} [meta.limit] - Elementos por página
+ * @param {string} [message] - Mensaje de éxito opcional
+ * @returns {UsersResponseDTO} Respuesta de API formateada con lista de usuarios
  * 
  * @example
  * ```typescript
@@ -287,7 +287,7 @@ export function createUserResponse(
  *   total: 100,
  *   page: 1,
  *   limit: 10
- * }, 'Users retrieved successfully');
+ * }, 'Usuarios recuperados exitosamente');
  * 
  * res.status(200).json(response);
  * ```
@@ -306,28 +306,28 @@ export function createUsersResponse(
 }
 
 /**
- * Creates a standardized error response.
+ * Crea una respuesta de error estandarizada.
  * 
- * This function creates consistent error responses that can be sent to clients.
- * It ensures all errors follow the same format.
+ * Esta función crea respuestas de error consistentes que pueden enviarse a los clientes.
+ * Asegura que todos los errores sigan el mismo formato.
  * 
  * @function createErrorResponse
- * @param {string} message - Error message
- * @param {number} [statusCode] - HTTP status code
- * @param {Object} [details] - Additional error details
- * @returns {ErrorResponseDTO} Formatted error response
+ * @param {string} message - Mensaje de error
+ * @param {number} [statusCode] - Código de estado HTTP
+ * @param {Object} [details] - Detalles adicionales del error
+ * @returns {ErrorResponseDTO} Respuesta de error formateada
  * 
  * @example
  * ```typescript
- * // Simple error
- * const error = createErrorResponse('User not found', 404);
+ * // Error simple
+ * const error = createErrorResponse('Usuario no encontrado', 404);
  * res.status(404).json(error);
  * 
- * // Error with details
+ * // Error con detalles
  * const validationError = createErrorResponse(
- *   'Validation failed',
+ *   'Validación fallida',
  *   400,
- *   { field: 'email', reason: 'Invalid format' }
+ *   { field: 'email', reason: 'Formato inválido' }
  * );
  * res.status(400).json(validationError);
  * ```

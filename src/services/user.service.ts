@@ -1,17 +1,17 @@
 /**
- * @fileoverview User service layer containing business logic.
+ * @fileoverview Capa de servicio de usuario que contiene la lógica de negocio.
  * 
- * This module implements the Service pattern, providing a layer of business
- * logic between the controllers and the data access layer (repository).
- * It handles validation, error handling, and coordinates operations across
- * multiple repositories if needed.
+ * Este módulo implementa el patrón Service, proporcionando una capa de lógica
+ * de negocio entre los controladores y la capa de acceso a datos (repositorio).
+ * Maneja la validación, manejo de errores y coordina operaciones a través de
+ * múltiples repositorios si es necesario.
  * 
- * Key responsibilities:
- * - Business logic enforcement
- * - Input validation using Zod schemas
- * - Error handling and custom error throwing
- * - Coordination between multiple data sources
- * - Transaction-like operations
+ * Responsabilidades clave:
+ * - Aplicación de lógica de negocio
+ * - Validación de entrada usando esquemas Zod
+ * - Manejo de errores y lanzamiento de errores personalizados
+ * - Coordinación entre múltiples fuentes de datos
+ * - Operaciones tipo transacción
  * 
  * @module services/user.service
  * @category Services
@@ -20,10 +20,10 @@
  * ```typescript
  * import { userService } from './services/user.service';
  * 
- * // Find a user by ID
+ * // Buscar un usuario por ID
  * const user = await userService.findById('550e8400-e29b-41d4-a716-446655440000');
  * 
- * // Create a new user
+ * // Crear un nuevo usuario
  * const newUser = await userService.create({
  *   email: 'john@example.com',
  *   password: 'SecurePass123',
@@ -32,11 +32,11 @@
  * });
  * ```
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
-import { userRepository } from "../repositories/User.repository";
+import { userRepository } from "../repositories/user.repository";
 import {
   User,
   CreateUserInput,
@@ -52,11 +52,11 @@ import {
 } from "../utils/errors";
 
 /**
- * Service class for user-related business operations.
+ * Clase de servicio para operaciones de negocio relacionadas con usuarios.
  * 
- * This class encapsulates all business logic related to users,
- * including validation, error handling, and data manipulation.
- * It acts as an intermediary between controllers and the repository.
+ * Esta clase encapsula toda la lógica de negocio relacionada con usuarios,
+ * incluyendo validación, manejo de errores y manipulación de datos.
+ * Actúa como intermediario entre controladores y el repositorio.
  * 
  * @class UserService
  * 
@@ -69,111 +69,111 @@ import {
  *   console.log(user);
  * } catch (error) {
  *   if (error instanceof NotFoundError) {
- *     console.log('User not found');
+ *     console.log('Usuario no encontrado');
  *   }
  * }
  * ```
  */
 export class UserService {
   /**
-   * Finds a user by their unique ID.
+   * Encuentra un usuario por su ID único.
    * 
-   * This method:
-   * 1. Validates the ID format using Zod schema
-   * 2. Attempts to find the user in the repository
-   * 3. Throws NotFoundError if user doesn't exist
+   * Este método:
+   * 1. Valida el formato del ID usando esquema Zod
+   * 2. Intenta encontrar el usuario en el repositorio
+   * 3. Lanza NotFoundError si el usuario no existe
    * 
    * @async
-   * @param {string} id - The UUID of the user to find
-   * @returns {Promise<User>} The found user
-   * @throws {ValidationError} If the ID format is invalid
-   * @throws {NotFoundError} If no user with the given ID exists
+   * @param {string} id - El UUID del usuario a buscar
+   * @returns {Promise<User>} El usuario encontrado
+   * @throws {ValidationError} Si el formato del ID es inválido
+   * @throws {NotFoundError} Si no existe ningún usuario con el ID dado
    * 
    * @example
    * ```typescript
    * try {
    *   const user = await userService.findById('550e8400-e29b-41d4-a716-446655440000');
-   *   console.log(`Found user: ${user.email}`);
+   *   console.log(`Usuario encontrado: ${user.email}`);
    * } catch (error) {
    *   if (error instanceof ValidationError) {
-   *     console.error('Invalid ID format');
+   *     console.error('Formato de ID inválido');
    *   } else if (error instanceof NotFoundError) {
-   *     console.error('User does not exist');
+   *     console.error('El usuario no existe');
    *   }
    * }
    * ```
    */
   async findById(id: string): Promise<User> {
-    // Validate ID format
+    // Validar formato del ID
     try {
       UserIdSchema.parse(id);
     } catch (error) {
-      throw new ValidationError(`Invalid user ID format: ${id}`);
+      throw new ValidationError(`Formato de ID de usuario inválido: ${id}`);
     }
 
-    // Attempt to find user
+    // Intentar encontrar el usuario
     const user = await userRepository.findById(id);
 
-    // Throw error if not found
+    // Lanzar error si no se encuentra
     if (!user) {
-      throw new NotFoundError("User", id);
+      throw new NotFoundError("Usuario", id);
     }
 
     return user;
   }
 
   /**
-   * Finds a user by their email address.
+   * Encuentra un usuario por su dirección de correo electrónico.
    * 
-   * This method searches for a user with the specified email address.
-   * Email comparison is case-insensitive.
+   * Este método busca un usuario con la dirección de correo especificada.
+   * La comparación de correo es insensible a mayúsculas/minúsculas.
    * 
    * @async
-   * @param {string} email - The email address to search for
-   * @returns {Promise<User>} The found user
-   * @throws {ValidationError} If the email format is invalid
-   * @throws {NotFoundError} If no user with the given email exists
+   * @param {string} email - La dirección de correo a buscar
+   * @returns {Promise<User>} El usuario encontrado
+   * @throws {ValidationError} Si el formato del correo es inválido
+   * @throws {NotFoundError} Si no existe ningún usuario con el correo dado
    * 
    * @example
    * ```typescript
    * try {
    *   const user = await userService.findByEmail('john.doe@example.com');
-   *   console.log(`Found user: ${user.firstName} ${user.lastName}`);
+   *   console.log(`Usuario encontrado: ${user.firstName} ${user.lastName}`);
    * } catch (error) {
    *   if (error instanceof NotFoundError) {
-   *     console.error('No user found with this email');
+   *     console.error('No se encontró usuario con este correo');
    *   }
    * }
    * ```
    */
   async findByEmail(email: string): Promise<User> {
-    // Basic email validation
+    // Validación básica de correo
     if (!email || !email.includes("@")) {
-      throw new ValidationError("Invalid email format");
+      throw new ValidationError("Formato de correo inválido");
     }
 
     const user = await userRepository.findByEmail(email);
 
     if (!user) {
-      throw new NotFoundError("User with email " + email);
+      throw new NotFoundError("Usuario con correo " + email);
     }
 
     return user;
   }
 
   /**
-   * Retrieves all users from the system.
+   * Recupera todos los usuarios del sistema.
    * 
-   * This method returns all registered users. In a production system,
-   * this would typically include pagination, filtering, and sorting options.
+   * Este método retorna todos los usuarios registrados. En un sistema de producción,
+   * esto típicamente incluiría opciones de paginación, filtrado y ordenamiento.
    * 
    * @async
-   * @returns {Promise<User[]>} Array of all users
+   * @returns {Promise<User[]>} Arreglo de todos los usuarios
    * 
    * @example
    * ```typescript
    * const allUsers = await userService.findAll();
-   * console.log(`Total users: ${allUsers.length}`);
+   * console.log(`Total de usuarios: ${allUsers.length}`);
    * 
    * allUsers.forEach(user => {
    *   console.log(`${user.firstName} ${user.lastName} - ${user.email}`);
@@ -185,21 +185,21 @@ export class UserService {
   }
 
   /**
-   * Creates a new user in the system.
+   * Crea un nuevo usuario en el sistema.
    * 
-   * This method:
-   * 1. Validates input data using Zod schema
-   * 2. Checks if email is already in use
-   * 3. Creates the user in the repository
-   * 4. Returns the created user
+   * Este método:
+   * 1. Valida los datos de entrada usando esquema Zod
+   * 2. Verifica si el correo ya está en uso
+   * 3. Crea el usuario en el repositorio
+   * 4. Retorna el usuario creado
    * 
-   * **Note**: In a production system, you would hash the password before storing.
+   * **Nota**: En un sistema de producción, deberías hashear la contraseña antes de almacenarla.
    * 
    * @async
-   * @param {CreateUserInput} userData - The user data for creation
-   * @returns {Promise<User>} The created user
-   * @throws {ValidationError} If input data is invalid
-   * @throws {BadRequestError} If email is already in use
+   * @param {CreateUserInput} userData - Los datos del usuario para creación
+   * @returns {Promise<User>} El usuario creado
+   * @throws {ValidationError} Si los datos de entrada son inválidos
+   * @throws {BadRequestError} Si el correo ya está en uso
    * 
    * @example
    * ```typescript
@@ -211,37 +211,37 @@ export class UserService {
    *     lastName: 'Doe',
    *     isActive: true
    *   });
-   *   console.log(`User created with ID: ${newUser.id}`);
+   *   console.log(`Usuario creado con ID: ${newUser.id}`);
    * } catch (error) {
    *   if (error instanceof ValidationError) {
-   *     console.error('Invalid user data:', error.message);
+   *     console.error('Datos de usuario inválidos:', error.message);
    *   } else if (error instanceof BadRequestError) {
-   *     console.error('Email already in use');
+   *     console.error('Correo ya en uso');
    *   }
    * }
    * ```
    */
   async create(userData: CreateUserInput): Promise<User> {
-    // Validate input data
+    // Validar datos de entrada
     try {
       CreateUserSchema.parse(userData);
     } catch (error: any) {
       throw new ValidationError(
         error.errors?.map((e: any) => e.message).join(", ") ||
-          "Invalid user data"
+          "Datos de usuario inválidos"
       );
     }
 
-    // Check if email already exists
+    // Verificar si el correo ya existe
     const existingUser = await userRepository.findByEmail(userData.email);
     if (existingUser) {
       throw new BadRequestError(
-        `User with email ${userData.email} already exists`
+        `Usuario con correo ${userData.email} ya existe`
       );
     }
 
-    // Create user
-    // Note: In production, hash the password before storing
+    // Crear usuario
+    // Nota: En producción, hashear la contraseña antes de almacenarla
     // const hashedPassword = await hashPassword(userData.password);
     // userData.password = hashedPassword;
 
@@ -249,22 +249,22 @@ export class UserService {
   }
 
   /**
-   * Updates an existing user's information.
+   * Actualiza la información de un usuario existente.
    * 
-   * This method:
-   * 1. Validates the user ID
-   * 2. Validates the update data
-   * 3. Checks if user exists
-   * 4. If email is being changed, verifies it's not in use
-   * 5. Updates the user
+   * Este método:
+   * 1. Valida el ID del usuario
+   * 2. Valida los datos de actualización
+   * 3. Verifica si el usuario existe
+   * 4. Si el correo está siendo cambiado, verifica que no esté en uso
+   * 5. Actualiza el usuario
    * 
    * @async
-   * @param {string} id - The UUID of the user to update
-   * @param {UpdateUserInput} updateData - The fields to update
-   * @returns {Promise<User>} The updated user
-   * @throws {ValidationError} If ID or update data is invalid
-   * @throws {NotFoundError} If user doesn't exist
-   * @throws {BadRequestError} If email is already in use
+   * @param {string} id - El UUID del usuario a actualizar
+   * @param {UpdateUserInput} updateData - Los campos a actualizar
+   * @returns {Promise<User>} El usuario actualizado
+   * @throws {ValidationError} Si el ID o los datos de actualización son inválidos
+   * @throws {NotFoundError} Si el usuario no existe
+   * @throws {BadRequestError} Si el correo ya está en uso
    * 
    * @example
    * ```typescript
@@ -273,147 +273,147 @@ export class UserService {
    *     firstName: 'Jane',
    *     lastName: 'Smith'
    *   });
-   *   console.log('User updated successfully');
+   *   console.log('Usuario actualizado exitosamente');
    * } catch (error) {
    *   if (error instanceof NotFoundError) {
-   *     console.error('User not found');
+   *     console.error('Usuario no encontrado');
    *   } else if (error instanceof ValidationError) {
-   *     console.error('Invalid update data');
+   *     console.error('Datos de actualización inválidos');
    *   }
    * }
    * ```
    */
   async update(id: string, updateData: UpdateUserInput): Promise<User> {
-    // Validate ID format
+    // Validar formato del ID
     try {
       UserIdSchema.parse(id);
     } catch (error) {
-      throw new ValidationError(`Invalid user ID format: ${id}`);
+      throw new ValidationError(`Formato de ID de usuario inválido: ${id}`);
     }
 
-    // Validate update data
+    // Validar datos de actualización
     try {
       UpdateUserSchema.parse(updateData);
     } catch (error: any) {
       throw new ValidationError(
         error.errors?.map((e: any) => e.message).join(", ") ||
-          "Invalid update data"
+          "Datos de actualización inválidos"
       );
     }
 
-    // Check if user exists
+    // Verificar si el usuario existe
     const existingUser = await userRepository.findById(id);
     if (!existingUser) {
-      throw new NotFoundError("User", id);
+      throw new NotFoundError("Usuario", id);
     }
 
-    // If email is being changed, check it's not already in use
+    // Si el correo está siendo cambiado, verificar que no esté ya en uso
     if (updateData.email && updateData.email !== existingUser.email) {
       const emailInUse = await userRepository.findByEmail(updateData.email);
       if (emailInUse) {
         throw new BadRequestError(
-          `Email ${updateData.email} is already in use`
+          `El correo ${updateData.email} ya está en uso`
         );
       }
     }
 
-    // Update user
+    // Actualizar usuario
     const updatedUser = await userRepository.update(id, updateData);
 
-    // This should never be null due to the existence check above,
-    // but TypeScript requires handling the null case
+    // Esto nunca debería ser null debido a la verificación de existencia anterior,
+    // pero TypeScript requiere manejar el caso null
     if (!updatedUser) {
-      throw new NotFoundError("User", id);
+      throw new NotFoundError("Usuario", id);
     }
 
     return updatedUser;
   }
 
   /**
-   * Deletes a user from the system.
+   * Elimina un usuario del sistema.
    * 
-   * This is a hard delete that permanently removes the user.
-   * In a production system, you might want to implement soft deletes
-   * (setting isActive = false) instead.
+   * Esta es una eliminación permanente que remueve el usuario permanentemente.
+   * En un sistema de producción, podrías querer implementar eliminaciones suaves
+   * (estableciendo isActive = false) en su lugar.
    * 
    * @async
-   * @param {string} id - The UUID of the user to delete
+   * @param {string} id - El UUID del usuario a eliminar
    * @returns {Promise<void>}
-   * @throws {ValidationError} If ID format is invalid
-   * @throws {NotFoundError} If user doesn't exist
+   * @throws {ValidationError} Si el formato del ID es inválido
+   * @throws {NotFoundError} Si el usuario no existe
    * 
    * @example
    * ```typescript
    * try {
    *   await userService.delete(userId);
-   *   console.log('User deleted successfully');
+   *   console.log('Usuario eliminado exitosamente');
    * } catch (error) {
    *   if (error instanceof NotFoundError) {
-   *     console.error('User not found');
+   *     console.error('Usuario no encontrado');
    *   }
    * }
    * ```
    */
   async delete(id: string): Promise<void> {
-    // Validate ID format
+    // Validar formato del ID
     try {
       UserIdSchema.parse(id);
     } catch (error) {
-      throw new ValidationError(`Invalid user ID format: ${id}`);
+      throw new ValidationError(`Formato de ID de usuario inválido: ${id}`);
     }
 
-    // Attempt to delete
+    // Intentar eliminar
     const deleted = await userRepository.delete(id);
 
     if (!deleted) {
-      throw new NotFoundError("User", id);
+      throw new NotFoundError("Usuario", id);
     }
   }
 
   /**
-   * Checks if a user with the given ID exists.
+   * Verifica si existe un usuario con el ID dado.
    * 
-   * This is useful for validation purposes without fetching the full user object.
+   * Esto es útil para propósitos de validación sin obtener el objeto de usuario completo.
    * 
    * @async
-   * @param {string} id - The UUID to check
-   * @returns {Promise<boolean>} True if user exists, false otherwise
-   * @throws {ValidationError} If ID format is invalid
+   * @param {string} id - El UUID a verificar
+   * @returns {Promise<boolean>} True si el usuario existe, false en caso contrario
+   * @throws {ValidationError} Si el formato del ID es inválido
    * 
    * @example
    * ```typescript
    * const exists = await userService.exists(userId);
    * 
    * if (exists) {
-   *   console.log('User exists');
+   *   console.log('El usuario existe');
    * } else {
-   *   console.log('User does not exist');
+   *   console.log('El usuario no existe');
    * }
    * ```
    */
   async exists(id: string): Promise<boolean> {
-    // Validate ID format
+    // Validar formato del ID
     try {
       UserIdSchema.parse(id);
     } catch (error) {
-      throw new ValidationError(`Invalid user ID format: ${id}`);
+      throw new ValidationError(`Formato de ID de usuario inválido: ${id}`);
     }
 
     return userRepository.exists(id);
   }
 
   /**
-   * Gets the total count of users in the system.
+   * Obtiene el conteo total de usuarios en el sistema.
    * 
-   * Useful for pagination, statistics, and administrative dashboards.
+   * Útil para paginación, estadísticas y paneles administrativos.
    * 
    * @async
-   * @returns {Promise<number>} The total number of users
+   * @returns {Promise<number>} El número total de usuarios
    * 
    * @example
    * ```typescript
    * const totalUsers = await userService.count();
-   * console.log(`Total registered users: ${totalUsers}`);
+   * console.log(`Total de usuarios registrados: ${totalUsers}`);
    * ```
    */
   async count(): Promise<number> {
@@ -422,10 +422,10 @@ export class UserService {
 }
 
 /**
- * Singleton instance of UserService.
+ * Instancia singleton de UserService.
  * 
- * This ensures consistent service usage across the application.
- * In larger applications, you might use dependency injection instead.
+ * Esto asegura un uso de servicio consistente en toda la aplicación.
+ * En aplicaciones más grandes, podrías usar inyección de dependencias en su lugar.
  * 
  * @constant
  * @type {UserService}

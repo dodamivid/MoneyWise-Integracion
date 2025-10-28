@@ -1,32 +1,32 @@
 /**
- * @fileoverview User routes definition for the Money Wise API.
+ * @fileoverview Definición de rutas de usuario para la API de Money Wise.
  * 
- * This module defines all HTTP routes related to user operations.
- * It uses Express Router to organize endpoints and maps them to
- * the appropriate controller methods.
+ * Este módulo define todas las rutas HTTP relacionadas con operaciones de usuario.
+ * Usa Express Router para organizar endpoints y mapearlos a los
+ * métodos apropiados del controlador.
  * 
- * All routes are mounted under the `/api/users` base path as defined
- * in the main application file (index.ts).
+ * Todas las rutas se montan bajo la ruta base `/api/users` como se define
+ * en el archivo principal de la aplicación (index.ts).
  * 
- * **Available Endpoints**:
- * - `GET /api/users/:id` - Get a single user by ID
- * - `GET /api/users` - Get all users
- * - `POST /api/users` - Create a new user
- * - `PATCH /api/users/:id` - Update a user
- * - `DELETE /api/users/:id` - Delete a user
+ * **Endpoints Disponibles**:
+ * - `GET /api/users/:id` - Obtener un único usuario por ID
+ * - `GET /api/users` - Obtener todos los usuarios
+ * - `POST /api/users` - Crear un nuevo usuario
+ * - `PATCH /api/users/:id` - Actualizar un usuario
+ * - `DELETE /api/users/:id` - Eliminar un usuario
  * 
  * @module routes/users.routes
  * @category Routes
  * 
  * @example
  * ```typescript
- * // In index.ts
+ * // En index.ts
  * import usersRouter from './routes/users.routes';
  * 
  * app.use('/api/users', usersRouter);
  * ```
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
@@ -34,10 +34,10 @@ import { Router } from "express";
 import { userController } from "../controllers/user.controller";
 
 /**
- * Express router instance for user-related routes.
+ * Instancia del enrutador Express para rutas relacionadas con usuarios.
  * 
- * This router handles all user CRUD operations and is mounted
- * under the `/api/users` path in the main application.
+ * Este enrutador maneja todas las operaciones CRUD de usuario y se monta
+ * bajo la ruta `/api/users` en la aplicación principal.
  * 
  * @constant
  * @type {Router}
@@ -46,22 +46,22 @@ const router = Router();
 
 /**
  * @route GET /api/users/:id
- * @group Users - Operations related to users
- * @summary Get a user by ID
- * @description Retrieves a single user's information by their unique UUID.
+ * @group Users - Operaciones relacionadas con usuarios
+ * @summary Obtener un usuario por ID
+ * @description Recupera la información de un único usuario por su UUID único.
  * 
- * @param {string} id.path.required - User UUID - eg: 550e8400-e29b-41d4-a716-446655440000
+ * @param {string} id.path.required - UUID del usuario - ej: 550e8400-e29b-41d4-a716-446655440000
  * 
- * @returns {UserResponseDTO} 200 - User found successfully
- * @returns {ErrorResponseDTO} 400 - Invalid user ID format
- * @returns {ErrorResponseDTO} 404 - User not found
- * @returns {ErrorResponseDTO} 500 - Internal server error
+ * @returns {UserResponseDTO} 200 - Usuario encontrado exitosamente
+ * @returns {ErrorResponseDTO} 400 - Formato de ID de usuario inválido
+ * @returns {ErrorResponseDTO} 404 - Usuario no encontrado
+ * @returns {ErrorResponseDTO} 500 - Error interno del servidor
  * 
  * @example
- * // Request
+ * // Petición
  * GET /api/users/550e8400-e29b-41d4-a716-446655440000
  * 
- * // Success Response (200)
+ * // Respuesta Exitosa (200)
  * {
  *   "status": "success",
  *   "data": {
@@ -73,13 +73,13 @@ const router = Router();
  *     "createdAt": "2024-01-01T00:00:00.000Z",
  *     "updatedAt": "2024-01-01T00:00:00.000Z"
  *   },
- *   "message": "User retrieved successfully"
+ *   "message": "Usuario recuperado exitosamente"
  * }
  * 
- * // Error Response (404)
+ * // Respuesta de Error (404)
  * {
  *   "status": "error",
- *   "message": "User with id 550e8400-e29b-41d4-a716-446655440000 not found",
+ *   "message": "Usuario con id 550e8400-e29b-41d4-a716-446655440000 no encontrado",
  *   "statusCode": 404
  * }
  */
@@ -87,21 +87,21 @@ router.get("/:id", userController.getById);
 
 /**
  * @route GET /api/users
- * @group Users - Operations related to users
- * @summary Get all users
- * @description Retrieves a list of all registered users in the system.
+ * @group Users - Operaciones relacionadas con usuarios
+ * @summary Obtener todos los usuarios
+ * @description Recupera una lista de todos los usuarios registrados en el sistema.
  * 
- * **Note**: In a production system, this endpoint would typically include
- * query parameters for pagination, filtering, and sorting.
+ * **Nota**: En un sistema de producción, este endpoint típicamente incluiría
+ * parámetros de consulta para paginación, filtrado y ordenamiento.
  * 
- * @returns {UsersResponseDTO} 200 - Users retrieved successfully
- * @returns {ErrorResponseDTO} 500 - Internal server error
+ * @returns {UsersResponseDTO} 200 - Usuarios recuperados exitosamente
+ * @returns {ErrorResponseDTO} 500 - Error interno del servidor
  * 
  * @example
- * // Request
+ * // Petición
  * GET /api/users
  * 
- * // Success Response (200)
+ * // Respuesta Exitosa (200)
  * {
  *   "status": "success",
  *   "data": [
@@ -124,28 +124,28 @@ router.get("/:id", userController.getById);
  *       "updatedAt": "2024-01-02T00:00:00.000Z"
  *     }
  *   ],
- *   "message": "Users retrieved successfully"
+ *   "message": "Usuarios recuperados exitosamente"
  * }
  */
 router.get("/", userController.getAll);
 
 /**
  * @route POST /api/users
- * @group Users - Operations related to users
- * @summary Create a new user
- * @description Creates a new user account in the system.
+ * @group Users - Operaciones relacionadas con usuarios
+ * @summary Crear un nuevo usuario
+ * @description Crea una nueva cuenta de usuario en el sistema.
  * 
- * All fields except `isActive` are required. The password will be stored
- * as provided (in production, it should be hashed).
+ * Todos los campos excepto `isActive` son requeridos. La contraseña se almacenará
+ * tal como se proporciona (en producción, debería ser hasheada).
  * 
- * @param {CreateUserInput} body.body.required - User creation data
+ * @param {CreateUserInput} body.body.required - Datos de creación de usuario
  * 
- * @returns {UserResponseDTO} 201 - User created successfully
- * @returns {ErrorResponseDTO} 400 - Invalid input data or email already exists
- * @returns {ErrorResponseDTO} 500 - Internal server error
+ * @returns {UserResponseDTO} 201 - Usuario creado exitosamente
+ * @returns {ErrorResponseDTO} 400 - Datos de entrada inválidos o correo ya existe
+ * @returns {ErrorResponseDTO} 500 - Error interno del servidor
  * 
  * @example
- * // Request
+ * // Petición
  * POST /api/users
  * Content-Type: application/json
  * {
@@ -156,7 +156,7 @@ router.get("/", userController.getAll);
  *   "isActive": true
  * }
  * 
- * // Success Response (201)
+ * // Respuesta Exitosa (201)
  * {
  *   "status": "success",
  *   "data": {
@@ -168,20 +168,20 @@ router.get("/", userController.getAll);
  *     "createdAt": "2024-01-01T00:00:00.000Z",
  *     "updatedAt": "2024-01-01T00:00:00.000Z"
  *   },
- *   "message": "User created successfully"
+ *   "message": "Usuario creado exitosamente"
  * }
  * 
- * // Error Response (400) - Email already exists
+ * // Respuesta de Error (400) - Correo ya existe
  * {
  *   "status": "error",
- *   "message": "User with email john.doe@example.com already exists",
+ *   "message": "Usuario con correo john.doe@example.com ya existe",
  *   "statusCode": 400
  * }
  * 
- * // Error Response (400) - Validation error
+ * // Respuesta de Error (400) - Error de validación
  * {
  *   "status": "error",
- *   "message": "Password must be at least 8 characters long, Password must contain at least one uppercase letter",
+ *   "message": "La contraseña debe tener al menos 8 caracteres, La contraseña debe contener al menos una letra mayúscula",
  *   "statusCode": 400
  * }
  */
@@ -189,30 +189,30 @@ router.post("/", userController.create);
 
 /**
  * @route PATCH /api/users/:id
- * @group Users - Operations related to users
- * @summary Update a user
- * @description Updates an existing user's information. All fields are optional.
+ * @group Users - Operaciones relacionadas con usuarios
+ * @summary Actualizar un usuario
+ * @description Actualiza la información de un usuario existente. Todos los campos son opcionales.
  * 
- * You can update any combination of fields. If the email is being changed,
- * the system will verify that it's not already in use by another user.
+ * Puedes actualizar cualquier combinación de campos. Si el correo está siendo cambiado,
+ * el sistema verificará que no esté ya en uso por otro usuario.
  * 
- * @param {string} id.path.required - User UUID
- * @param {UpdateUserInput} body.body.required - User update data (all fields optional)
+ * @param {string} id.path.required - UUID del usuario
+ * @param {UpdateUserInput} body.body.required - Datos de actualización del usuario (todos los campos opcionales)
  * 
- * @returns {UserResponseDTO} 200 - User updated successfully
- * @returns {ErrorResponseDTO} 400 - Invalid input data or email already in use
- * @returns {ErrorResponseDTO} 404 - User not found
- * @returns {ErrorResponseDTO} 500 - Internal server error
+ * @returns {UserResponseDTO} 200 - Usuario actualizado exitosamente
+ * @returns {ErrorResponseDTO} 400 - Datos de entrada inválidos o correo ya en uso
+ * @returns {ErrorResponseDTO} 404 - Usuario no encontrado
+ * @returns {ErrorResponseDTO} 500 - Error interno del servidor
  * 
  * @example
- * // Request - Update single field
+ * // Petición - Actualizar un único campo
  * PATCH /api/users/550e8400-e29b-41d4-a716-446655440000
  * Content-Type: application/json
  * {
  *   "firstName": "Jane"
  * }
  * 
- * // Request - Update multiple fields
+ * // Petición - Actualizar múltiples campos
  * PATCH /api/users/550e8400-e29b-41d4-a716-446655440000
  * Content-Type: application/json
  * {
@@ -221,7 +221,7 @@ router.post("/", userController.create);
  *   "email": "jane.smith@example.com"
  * }
  * 
- * // Success Response (200)
+ * // Respuesta Exitosa (200)
  * {
  *   "status": "success",
  *   "data": {
@@ -233,51 +233,51 @@ router.post("/", userController.create);
  *     "createdAt": "2024-01-01T00:00:00.000Z",
  *     "updatedAt": "2024-01-02T10:30:00.000Z"
  *   },
- *   "message": "User updated successfully"
+ *   "message": "Usuario actualizado exitosamente"
  * }
  */
 router.patch("/:id", userController.update);
 
 /**
  * @route DELETE /api/users/:id
- * @group Users - Operations related to users
- * @summary Delete a user
- * @description Permanently deletes a user from the system.
+ * @group Users - Operaciones relacionadas con usuarios
+ * @summary Eliminar un usuario
+ * @description Elimina permanentemente un usuario del sistema.
  * 
- * **Warning**: This is a hard delete operation and cannot be undone.
- * In a production system, you might want to implement soft deletes
- * (setting isActive = false) instead.
+ * **Advertencia**: Esta es una operación de eliminación permanente y no puede deshacerse.
+ * En un sistema de producción, podrías querer implementar eliminaciones suaves
+ * (estableciendo isActive = false) en su lugar.
  * 
- * @param {string} id.path.required - User UUID
+ * @param {string} id.path.required - UUID del usuario
  * 
- * @returns {Object} 200 - User deleted successfully
- * @returns {ErrorResponseDTO} 400 - Invalid user ID format
- * @returns {ErrorResponseDTO} 404 - User not found
- * @returns {ErrorResponseDTO} 500 - Internal server error
+ * @returns {Object} 200 - Usuario eliminado exitosamente
+ * @returns {ErrorResponseDTO} 400 - Formato de ID de usuario inválido
+ * @returns {ErrorResponseDTO} 404 - Usuario no encontrado
+ * @returns {ErrorResponseDTO} 500 - Error interno del servidor
  * 
  * @example
- * // Request
+ * // Petición
  * DELETE /api/users/550e8400-e29b-41d4-a716-446655440000
  * 
- * // Success Response (200)
+ * // Respuesta Exitosa (200)
  * {
  *   "status": "success",
- *   "message": "User deleted successfully"
+ *   "message": "Usuario eliminado exitosamente"
  * }
  * 
- * // Error Response (404)
+ * // Respuesta de Error (404)
  * {
  *   "status": "error",
- *   "message": "User with id 550e8400-e29b-41d4-a716-446655440000 not found",
+ *   "message": "Usuario con id 550e8400-e29b-41d4-a716-446655440000 no encontrado",
  *   "statusCode": 404
  * }
  */
 router.delete("/:id", userController.delete);
 
 /**
- * Export the configured router.
+ * Exportar el enrutador configurado.
  * 
- * This router should be mounted in the main application file using:
+ * Este enrutador debe montarse en el archivo principal de la aplicación usando:
  * `app.use('/api/users', usersRouter);`
  */
 export default router;

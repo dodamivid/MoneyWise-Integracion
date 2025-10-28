@@ -1,9 +1,9 @@
 /**
- * @fileoverview Custom error classes for consistent error handling across the Money Wise API.
+ * @fileoverview Clases de error personalizadas para manejo consistente de errores en la API de Money Wise.
  * 
- * This module provides specialized error types that extend the base Error class,
- * allowing for consistent error handling and HTTP status code mapping throughout
- * the application. Each error type corresponds to a specific HTTP status code.
+ * Este módulo proporciona tipos de error especializados que extienden la clase Error base,
+ * permitiendo un manejo consistente de errores y mapeo de códigos de estado HTTP a través
+ * de la aplicación. Cada tipo de error corresponde a un código de estado HTTP específico.
  * 
  * @module utils/errors
  * @category Utils
@@ -12,34 +12,34 @@
  * ```typescript
  * import { NotFoundError, ValidationError } from './utils/errors';
  * 
- * // Throw a 404 error
- * throw new NotFoundError('User', '123');
+ * // Lanzar un error 404
+ * throw new NotFoundError('Usuario', '123');
  * 
- * // Throw a 400 error
- * throw new ValidationError('Invalid email format');
+ * // Lanzar un error 400
+ * throw new ValidationError('Formato de correo inválido');
  * ```
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
 /**
- * Base class for all application errors.
+ * Clase base para todos los errores de la aplicación.
  * 
- * This abstract class provides a common structure for all custom errors
- * in the application. It ensures that all errors have a status code and
- * can be properly serialized to JSON for API responses.
+ * Esta clase abstracta proporciona una estructura común para todos los errores personalizados
+ * en la aplicación. Asegura que todos los errores tengan un código de estado y
+ * puedan ser serializados apropiadamente a JSON para respuestas de la API.
  * 
  * @abstract
  * @extends Error
  * 
- * @property {string} name - The name of the error class
- * @property {string} message - The error message
- * @property {number} statusCode - The HTTP status code associated with this error
+ * @property {string} name - El nombre de la clase de error
+ * @property {string} message - El mensaje de error
+ * @property {number} statusCode - El código de estado HTTP asociado con este error
  */
 export abstract class AppError extends Error {
   /**
-   * The HTTP status code that should be returned when this error is thrown.
+   * El código de estado HTTP que debería retornarse cuando este error es lanzado.
    * 
    * @type {number}
    * @readonly
@@ -47,38 +47,38 @@ export abstract class AppError extends Error {
   public readonly statusCode: number;
 
   /**
-   * Creates a new AppError instance.
+   * Crea una nueva instancia de AppError.
    * 
-   * @param {string} message - The error message describing what went wrong
-   * @param {number} statusCode - The HTTP status code for this error (e.g., 404, 400, 500)
+   * @param {string} message - El mensaje de error describiendo qué salió mal
+   * @param {number} statusCode - El código de estado HTTP para este error (ej. 404, 400, 500)
    */
   constructor(message: string, statusCode: number) {
     super(message);
     this.statusCode = statusCode;
     this.name = this.constructor.name;
 
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    // Mantiene el stack trace apropiado para donde nuestro error fue lanzado (solo disponible en V8)
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
     }
   }
 
   /**
-   * Converts the error to a JSON-serializable object.
+   * Convierte el error a un objeto serializable a JSON.
    * 
-   * This method is useful for sending error responses to clients
-   * in a consistent format.
+   * Este método es útil para enviar respuestas de error a los clientes
+   * en un formato consistente.
    * 
-   * @returns {Object} A plain object representation of the error
-   * @returns {string} Object.status - Always "error" for error responses
-   * @returns {string} Object.message - The error message
-   * @returns {number} Object.statusCode - The HTTP status code
+   * @returns {Object} Una representación de objeto plano del error
+   * @returns {string} Object.status - Siempre "error" para respuestas de error
+   * @returns {string} Object.message - El mensaje de error
+   * @returns {number} Object.statusCode - El código de estado HTTP
    * 
    * @example
    * ```typescript
-   * const error = new NotFoundError('User', '123');
+   * const error = new NotFoundError('Usuario', '123');
    * console.log(error.toJSON());
-   * // Output: { status: "error", message: "User with id 123 not found", statusCode: 404 }
+   * // Salida: { status: "error", message: "Usuario con id 123 no encontrado", statusCode: 404 }
    * ```
    */
   toJSON() {
@@ -91,72 +91,72 @@ export abstract class AppError extends Error {
 }
 
 /**
- * Error thrown when a requested resource is not found.
+ * Error lanzado cuando un recurso solicitado no se encuentra.
  * 
- * This error corresponds to HTTP 404 status code and should be used
- * when a client requests a resource (like a user, transaction, etc.)
- * that doesn't exist in the system.
+ * Este error corresponde al código de estado HTTP 404 y debe usarse
+ * cuando un cliente solicita un recurso (como un usuario, transacción, etc.)
+ * que no existe en el sistema.
  * 
  * @extends AppError
  * 
  * @example
  * ```typescript
- * // When a user is not found
- * throw new NotFoundError('User', userId);
+ * // Cuando un usuario no se encuentra
+ * throw new NotFoundError('Usuario', userId);
  * 
- * // When a transaction is not found
- * throw new NotFoundError('Transaction', transactionId);
+ * // Cuando una transacción no se encuentra
+ * throw new NotFoundError('Transacción', transactionId);
  * 
- * // Custom message
- * throw new NotFoundError('The requested resource does not exist');
+ * // Mensaje personalizado
+ * throw new NotFoundError('El recurso solicitado no existe');
  * ```
  */
 export class NotFoundError extends AppError {
   /**
-   * Creates a new NotFoundError instance.
+   * Crea una nueva instancia de NotFoundError.
    * 
-   * @param {string} resource - The type of resource that was not found (e.g., "User", "Transaction")
-   * @param {string} [id] - Optional ID of the resource that was not found
+   * @param {string} resource - El tipo de recurso que no se encontró (ej. "Usuario", "Transacción")
+   * @param {string} [id] - ID opcional del recurso que no se encontró
    * 
    * @example
    * ```typescript
-   * // With resource type and ID
-   * throw new NotFoundError('User', '123');
-   * // Message: "User with id 123 not found"
+   * // Con tipo de recurso e ID
+   * throw new NotFoundError('Usuario', '123');
+   * // Mensaje: "Usuario con id 123 no encontrado"
    * 
-   * // With just resource type
-   * throw new NotFoundError('User');
-   * // Message: "User not found"
+   * // Solo con tipo de recurso
+   * throw new NotFoundError('Usuario');
+   * // Mensaje: "Usuario no encontrado"
    * 
-   * // Custom message (when only one parameter and no second parameter)
-   * throw new NotFoundError('The requested resource does not exist');
+   * // Mensaje personalizado (cuando solo hay un parámetro y no hay segundo parámetro)
+   * throw new NotFoundError('El recurso solicitado no existe');
    * ```
    */
   constructor(resource: string, id?: string) {
     const message = id
-      ? `${resource} with id ${id} not found`
-      : `${resource} not found`;
+      ? `${resource} con id ${id} no encontrado`
+      : `${resource} no encontrado`;
     super(message, 404);
   }
 }
 
 /**
- * Error thrown when input validation fails.
+ * Error lanzado cuando la validación de entrada falla.
  * 
- * This error corresponds to HTTP 400 status code and should be used
- * when client input doesn't meet the required format or validation rules.
+ * Este error corresponde al código de estado HTTP 400 y debe usarse
+ * cuando la entrada del cliente no cumple con el formato requerido o las reglas de validación.
  * 
  * @extends AppError
  * 
  * @example
  * ```typescript
- * // Simple validation error
- * throw new ValidationError('Email is required');
+ * // Error de validación simple
+ * throw new ValidationError('El correo es requerido');
  * 
- * // Multiple validation errors
- * throw new ValidationError('Invalid input: name is required, email must be valid');
+ * // Múltiples errores de validación
+ * throw new ValidationError('Entrada inválida: el nombre es requerido, el correo debe ser válido');
  * 
- * // Using with Zod validation
+ * // Usando con validación Zod
  * try {
  *   userSchema.parse(data);
  * } catch (error) {
@@ -166,15 +166,15 @@ export class NotFoundError extends AppError {
  */
 export class ValidationError extends AppError {
   /**
-   * Creates a new ValidationError instance.
+   * Crea una nueva instancia de ValidationError.
    * 
-   * @param {string} message - Description of what validation failed
+   * @param {string} message - Descripción de qué validación falló
    * 
    * @example
    * ```typescript
-   * throw new ValidationError('User ID must be a valid UUID');
-   * throw new ValidationError('Email format is invalid');
-   * throw new ValidationError('Password must be at least 8 characters long');
+   * throw new ValidationError('El ID de usuario debe ser un UUID válido');
+   * throw new ValidationError('El formato del correo es inválido');
+   * throw new ValidationError('La contraseña debe tener al menos 8 caracteres');
    * ```
    */
   constructor(message: string) {
@@ -183,35 +183,35 @@ export class ValidationError extends AppError {
 }
 
 /**
- * Error thrown when a request is malformed or invalid.
+ * Error lanzado cuando una petición está mal formada o es inválida.
  * 
- * This error corresponds to HTTP 400 status code and should be used
- * for general bad request scenarios that don't fit into validation errors.
+ * Este error corresponde al código de estado HTTP 400 y debe usarse
+ * para escenarios generales de petición incorrecta que no encajan en errores de validación.
  * 
  * @extends AppError
  * 
  * @example
  * ```typescript
- * // Missing required header
- * throw new BadRequestError('Content-Type header is required');
+ * // Encabezado requerido faltante
+ * throw new BadRequestError('El encabezado Content-Type es requerido');
  * 
- * // Invalid request format
- * throw new BadRequestError('Request body must be valid JSON');
+ * // Formato de petición inválido
+ * throw new BadRequestError('El cuerpo de la petición debe ser JSON válido');
  * 
- * // Invalid operation
- * throw new BadRequestError('Cannot delete a user with active transactions');
+ * // Operación inválida
+ * throw new BadRequestError('No se puede eliminar un usuario con transacciones activas');
  * ```
  */
 export class BadRequestError extends AppError {
   /**
-   * Creates a new BadRequestError instance.
+   * Crea una nueva instancia de BadRequestError.
    * 
-   * @param {string} message - Description of why the request is invalid
+   * @param {string} message - Descripción de por qué la petición es inválida
    * 
    * @example
    * ```typescript
-   * throw new BadRequestError('Invalid request format');
-   * throw new BadRequestError('Missing required fields');
+   * throw new BadRequestError('Formato de petición inválido');
+   * throw new BadRequestError('Campos requeridos faltantes');
    * ```
    */
   constructor(message: string) {
@@ -220,65 +220,65 @@ export class BadRequestError extends AppError {
 }
 
 /**
- * Error thrown when an internal server error occurs.
+ * Error lanzado cuando ocurre un error interno del servidor.
  * 
- * This error corresponds to HTTP 500 status code and should be used
- * for unexpected errors that occur on the server side, such as database
- * connection failures, unexpected exceptions, etc.
+ * Este error corresponde al código de estado HTTP 500 y debe usarse
+ * para errores inesperados que ocurren del lado del servidor, como fallas
+ * de conexión a la base de datos, excepciones inesperadas, etc.
  * 
  * @extends AppError
  * 
  * @example
  * ```typescript
- * // Database connection error
- * throw new InternalServerError('Database connection failed');
+ * // Error de conexión a base de datos
+ * throw new InternalServerError('Falló la conexión a la base de datos');
  * 
- * // Unexpected error
+ * // Error inesperado
  * try {
- *   // Some operation
+ *   // Alguna operación
  * } catch (error) {
- *   throw new InternalServerError('An unexpected error occurred');
+ *   throw new InternalServerError('Ocurrió un error inesperado');
  * }
  * ```
  */
 export class InternalServerError extends AppError {
   /**
-   * Creates a new InternalServerError instance.
+   * Crea una nueva instancia de InternalServerError.
    * 
-   * @param {string} [message='Internal server error'] - Description of the internal error
+   * @param {string} [message='Error interno del servidor'] - Descripción del error interno
    * 
    * @example
    * ```typescript
    * throw new InternalServerError();
-   * throw new InternalServerError('Failed to process transaction');
+   * throw new InternalServerError('Falló el procesamiento de la transacción');
    * ```
    */
-  constructor(message: string = "Internal server error") {
+  constructor(message: string = "Error interno del servidor") {
     super(message, 500);
   }
 }
 
 /**
- * Type guard to check if an error is an instance of AppError.
+ * Guardia de tipo para verificar si un error es una instancia de AppError.
  * 
- * This function helps TypeScript narrow down the error type and can be used
- * to differentiate between custom application errors and native JavaScript errors.
+ * Esta función ayuda a TypeScript a reducir el tipo de error y puede usarse
+ * para diferenciar entre errores de aplicación personalizados y errores nativos de JavaScript.
  * 
- * @param {unknown} error - The error to check
- * @returns {boolean} True if the error is an AppError, false otherwise
+ * @param {unknown} error - El error a verificar
+ * @returns {boolean} True si el error es un AppError, false en caso contrario
  * 
  * @example
  * ```typescript
  * try {
- *   // Some operation
+ *   // Alguna operación
  * } catch (error) {
  *   if (isAppError(error)) {
- *     // TypeScript knows error is AppError here
- *     console.log(`Status code: ${error.statusCode}`);
+ *     // TypeScript sabe que error es AppError aquí
+ *     console.log(`Código de estado: ${error.statusCode}`);
  *     res.status(error.statusCode).json(error.toJSON());
  *   } else {
- *     // Handle native errors
- *     console.error('Unexpected error:', error);
+ *     // Manejar errores nativos
+ *     console.error('Error inesperado:', error);
  *   }
  * }
  * ```

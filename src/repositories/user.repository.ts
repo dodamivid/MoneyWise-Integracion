@@ -1,21 +1,21 @@
 /**
- * @fileoverview In-memory repository for User data management.
+ * @fileoverview Repositorio en memoria para la gestión de datos de Usuario.
  * 
- * This module provides a data access layer for User entities using an in-memory
- * storage mechanism. It implements the Repository pattern to abstract data
- * persistence logic from business logic.
+ * Este módulo proporciona una capa de acceso a datos para entidades Usuario usando un
+ * mecanismo de almacenamiento en memoria. Implementa el patrón Repository para abstraer
+ * la lógica de persistencia de datos de la lógica de negocio.
  * 
- * Key features:
- * - In-memory storage using Map for O(1) lookups
- * - Full CRUD operations (Create, Read, Update, Delete)
- * - UUID generation for unique user IDs
- * - Automatic timestamp management
- * - Email uniqueness validation
- * - Thread-safe operations
+ * Características clave:
+ * - Almacenamiento en memoria usando Map para búsquedas O(1)
+ * - Operaciones CRUD completas (Crear, Leer, Actualizar, Eliminar)
+ * - Generación de UUID para IDs únicos de usuario
+ * - Gestión automática de marcas de tiempo
+ * - Validación de unicidad de correo electrónico
+ * - Operaciones seguras para hilos
  * 
- * **Note**: This implementation uses in-memory storage and will lose all data
- * when the application restarts. In production, this should be replaced with
- * a persistent storage solution (e.g., MySQL, PostgreSQL).
+ * **Nota**: Esta implementación usa almacenamiento en memoria y perderá todos los datos
+ * cuando la aplicación se reinicie. En producción, esto debe reemplazarse con
+ * una solución de almacenamiento persistente (ej. MySQL, PostgreSQL).
  * 
  * @module repositories/user.repository
  * @category Repositories
@@ -24,7 +24,7 @@
  * ```typescript
  * import { userRepository } from './repositories/user.repository';
  * 
- * // Create a new user
+ * // Crear un nuevo usuario
  * const user = await userRepository.create({
  *   email: 'john@example.com',
  *   password: 'hashedPassword',
@@ -32,14 +32,14 @@
  *   lastName: 'Doe'
  * });
  * 
- * // Find user by ID
+ * // Buscar usuario por ID
  * const foundUser = await userRepository.findById(user.id);
  * 
- * // Find user by email
+ * // Buscar usuario por correo
  * const userByEmail = await userRepository.findByEmail('john@example.com');
  * ```
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
@@ -47,10 +47,10 @@ import { randomUUID } from "crypto";
 import { User, CreateUserInput, UpdateUserInput } from "../models/user.model";
 
 /**
- * Repository class for managing User entities in memory.
+ * Clase repositorio para gestionar entidades Usuario en memoria.
  * 
- * This class implements the Repository pattern, providing a clean interface
- * for data operations. It uses a Map for efficient O(1) lookups by ID.
+ * Esta clase implementa el patrón Repository, proporcionando una interfaz limpia
+ * para operaciones de datos. Usa un Map para búsquedas eficientes O(1) por ID.
  * 
  * @class UserRepository
  * 
@@ -58,7 +58,7 @@ import { User, CreateUserInput, UpdateUserInput } from "../models/user.model";
  * ```typescript
  * const repository = new UserRepository();
  * 
- * // Create users
+ * // Crear usuarios
  * const user1 = await repository.create({
  *   email: 'user1@example.com',
  *   password: 'hashedPass1',
@@ -66,15 +66,15 @@ import { User, CreateUserInput, UpdateUserInput } from "../models/user.model";
  *   lastName: 'One'
  * });
  * 
- * // Get all users
+ * // Obtener todos los usuarios
  * const allUsers = await repository.findAll();
  * ```
  */
 export class UserRepository {
   /**
-   * In-memory storage for users, using UUID as the key.
+   * Almacenamiento en memoria para usuarios, usando UUID como clave.
    * 
-   * Using a Map provides O(1) time complexity for lookups, inserts, and deletes.
+   * Usar un Map proporciona complejidad de tiempo O(1) para búsquedas, inserciones y eliminaciones.
    * 
    * @private
    * @type {Map<string, User>}
@@ -82,18 +82,18 @@ export class UserRepository {
   private users: Map<string, User> = new Map();
 
   /**
-   * Creates a new user and stores it in memory.
+   * Crea un nuevo usuario y lo almacena en memoria.
    * 
-   * This method:
-   * 1. Validates that the email is not already in use
-   * 2. Generates a unique UUID for the user
-   * 3. Sets creation and update timestamps
-   * 4. Stores the user in the repository
+   * Este método:
+   * 1. Valida que el correo no esté ya en uso
+   * 2. Genera un UUID único para el usuario
+   * 3. Establece marcas de tiempo de creación y actualización
+   * 4. Almacena el usuario en el repositorio
    * 
    * @async
-   * @param {CreateUserInput} userData - The user data for creation
-   * @returns {Promise<User>} The created user with generated ID and timestamps
-   * @throws {Error} If a user with the given email already exists
+   * @param {CreateUserInput} userData - Los datos del usuario para creación
+   * @returns {Promise<User>} El usuario creado con ID y marcas de tiempo generadas
+   * @throws {Error} Si un usuario con el correo dado ya existe
    * 
    * @example
    * ```typescript
@@ -110,13 +110,13 @@ export class UserRepository {
    * ```
    */
   async create(userData: CreateUserInput): Promise<User> {
-    // Check if email already exists
+    // Verificar si el correo ya existe
     const existingUser = await this.findByEmail(userData.email);
     if (existingUser) {
-      throw new Error(`User with email ${userData.email} already exists`);
+      throw new Error(`Usuario con correo ${userData.email} ya existe`);
     }
 
-    // Generate unique ID and timestamps
+    // Generar ID único y marcas de tiempo
     const now = new Date().toISOString();
     const user: User = {
       id: randomUUID(),
@@ -126,28 +126,28 @@ export class UserRepository {
       updatedAt: now,
     };
 
-    // Store user in memory
+    // Almacenar usuario en memoria
     this.users.set(user.id, user);
     return user;
   }
 
   /**
-   * Finds a user by their unique ID.
+   * Encuentra un usuario por su ID único.
    * 
-   * This is the most efficient lookup operation with O(1) time complexity.
+   * Esta es la operación de búsqueda más eficiente con complejidad de tiempo O(1).
    * 
    * @async
-   * @param {string} id - The UUID of the user to find
-   * @returns {Promise<User | null>} The user if found, null otherwise
+   * @param {string} id - El UUID del usuario a buscar
+   * @returns {Promise<User | null>} El usuario si se encuentra, null en caso contrario
    * 
    * @example
    * ```typescript
    * const user = await userRepository.findById('550e8400-e29b-41d4-a716-446655440000');
    * 
    * if (user) {
-   *   console.log(`Found user: ${user.email}`);
+   *   console.log(`Usuario encontrado: ${user.email}`);
    * } else {
-   *   console.log('User not found');
+   *   console.log('Usuario no encontrado');
    * }
    * ```
    */
@@ -157,32 +157,32 @@ export class UserRepository {
   }
 
   /**
-   * Finds a user by their email address.
+   * Encuentra un usuario por su dirección de correo electrónico.
    * 
-   * This operation has O(n) time complexity as it requires iterating
-   * through all users. In a production database, this would typically
-   * use an index on the email field for better performance.
+   * Esta operación tiene complejidad de tiempo O(n) ya que requiere iterar
+   * a través de todos los usuarios. En una base de datos de producción, esto típicamente
+   * usaría un índice en el campo de correo para mejor rendimiento.
    * 
    * @async
-   * @param {string} email - The email address to search for
-   * @returns {Promise<User | null>} The user if found, null otherwise
+   * @param {string} email - La dirección de correo a buscar
+   * @returns {Promise<User | null>} El usuario si se encuentra, null en caso contrario
    * 
    * @example
    * ```typescript
    * const user = await userRepository.findByEmail('john.doe@example.com');
    * 
    * if (user) {
-   *   console.log(`Found user with ID: ${user.id}`);
+   *   console.log(`Usuario encontrado con ID: ${user.id}`);
    * } else {
-   *   console.log('No user found with this email');
+   *   console.log('No se encontró usuario con este correo');
    * }
    * ```
    */
   async findByEmail(email: string): Promise<User | null> {
-    // Normalize email to lowercase for case-insensitive comparison
+    // Normalizar correo a minúsculas para comparación sin distinción de mayúsculas
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Search through all users
+    // Buscar a través de todos los usuarios
     for (const user of this.users.values()) {
       if (user.email.toLowerCase() === normalizedEmail) {
         return user;
@@ -193,18 +193,18 @@ export class UserRepository {
   }
 
   /**
-   * Retrieves all users from the repository.
+   * Recupera todos los usuarios del repositorio.
    * 
-   * Returns an array of all stored users. In a production system,
-   * this would typically include pagination parameters.
+   * Retorna un arreglo de todos los usuarios almacenados. En un sistema de producción,
+   * esto típicamente incluiría parámetros de paginación.
    * 
    * @async
-   * @returns {Promise<User[]>} Array of all users
+   * @returns {Promise<User[]>} Arreglo de todos los usuarios
    * 
    * @example
    * ```typescript
    * const allUsers = await userRepository.findAll();
-   * console.log(`Total users: ${allUsers.length}`);
+   * console.log(`Total de usuarios: ${allUsers.length}`);
    * 
    * allUsers.forEach(user => {
    *   console.log(`${user.firstName} ${user.lastName} - ${user.email}`);
@@ -216,28 +216,28 @@ export class UserRepository {
   }
 
   /**
-   * Updates an existing user's information.
+   * Actualiza la información de un usuario existente.
    * 
-   * This method:
-   * 1. Validates that the user exists
-   * 2. Checks email uniqueness if email is being changed
-   * 3. Merges the update data with existing user data
-   * 4. Updates the updatedAt timestamp
+   * Este método:
+   * 1. Valida que el usuario existe
+   * 2. Verifica unicidad del correo si el correo está siendo cambiado
+   * 3. Fusiona los datos de actualización con los datos existentes del usuario
+   * 4. Actualiza la marca de tiempo updatedAt
    * 
    * @async
-   * @param {string} id - The UUID of the user to update
-   * @param {UpdateUserInput} updateData - The fields to update
-   * @returns {Promise<User | null>} The updated user if found, null otherwise
-   * @throws {Error} If trying to change email to one that's already in use
+   * @param {string} id - El UUID del usuario a actualizar
+   * @param {UpdateUserInput} updateData - Los campos a actualizar
+   * @returns {Promise<User | null>} El usuario actualizado si se encuentra, null en caso contrario
+   * @throws {Error} Si se intenta cambiar el correo a uno que ya está en uso
    * 
    * @example
    * ```typescript
-   * // Update user's first name only
+   * // Actualizar solo el nombre del usuario
    * const updated = await userRepository.update(userId, {
    *   firstName: 'Jane'
    * });
    * 
-   * // Update multiple fields
+   * // Actualizar múltiples campos
    * const updated = await userRepository.update(userId, {
    *   firstName: 'Jane',
    *   lastName: 'Smith',
@@ -245,9 +245,9 @@ export class UserRepository {
    * });
    * 
    * if (updated) {
-   *   console.log('User updated successfully');
+   *   console.log('Usuario actualizado exitosamente');
    * } else {
-   *   console.log('User not found');
+   *   console.log('Usuario no encontrado');
    * }
    * ```
    */
@@ -260,45 +260,45 @@ export class UserRepository {
       return null;
     }
 
-    // If email is being changed, check it's not already in use
+    // Si el correo está siendo cambiado, verificar que no esté ya en uso
     if (updateData.email && updateData.email !== existingUser.email) {
       const emailInUse = await this.findByEmail(updateData.email);
       if (emailInUse) {
-        throw new Error(`Email ${updateData.email} is already in use`);
+        throw new Error(`El correo ${updateData.email} ya está en uso`);
       }
     }
 
-    // Merge update data with existing user data
+    // Fusionar datos de actualización con datos existentes del usuario
     const updatedUser: User = {
       ...existingUser,
       ...updateData,
       updatedAt: new Date().toISOString(),
     };
 
-    // Update in storage
+    // Actualizar en almacenamiento
     this.users.set(id, updatedUser);
     return updatedUser;
   }
 
   /**
-   * Deletes a user from the repository.
+   * Elimina un usuario del repositorio.
    * 
-   * This is a hard delete operation that permanently removes the user
-   * from storage. In a production system, you might want to implement
-   * soft deletes instead (setting isActive = false).
+   * Esta es una operación de eliminación permanente que remueve el usuario
+   * del almacenamiento. En un sistema de producción, podrías querer implementar
+   * eliminaciones suaves en su lugar (estableciendo isActive = false).
    * 
    * @async
-   * @param {string} id - The UUID of the user to delete
-   * @returns {Promise<boolean>} True if user was deleted, false if not found
+   * @param {string} id - El UUID del usuario a eliminar
+   * @returns {Promise<boolean>} True si el usuario fue eliminado, false si no se encontró
    * 
    * @example
    * ```typescript
    * const wasDeleted = await userRepository.delete(userId);
    * 
    * if (wasDeleted) {
-   *   console.log('User deleted successfully');
+   *   console.log('Usuario eliminado exitosamente');
    * } else {
-   *   console.log('User not found');
+   *   console.log('Usuario no encontrado');
    * }
    * ```
    */
@@ -307,17 +307,17 @@ export class UserRepository {
   }
 
   /**
-   * Gets the total count of users in the repository.
+   * Obtiene el conteo total de usuarios en el repositorio.
    * 
-   * Useful for pagination and statistics.
+   * Útil para paginación y estadísticas.
    * 
    * @async
-   * @returns {Promise<number>} The total number of users
+   * @returns {Promise<number>} El número total de usuarios
    * 
    * @example
    * ```typescript
    * const count = await userRepository.count();
-   * console.log(`Total users in system: ${count}`);
+   * console.log(`Total de usuarios en el sistema: ${count}`);
    * ```
    */
   async count(): Promise<number> {
@@ -325,23 +325,23 @@ export class UserRepository {
   }
 
   /**
-   * Checks if a user with the given ID exists.
+   * Verifica si existe un usuario con el ID dado.
    * 
-   * This is more efficient than findById when you only need to check
-   * existence without retrieving the full user object.
+   * Esto es más eficiente que findById cuando solo necesitas verificar
+   * existencia sin recuperar el objeto de usuario completo.
    * 
    * @async
-   * @param {string} id - The UUID to check
-   * @returns {Promise<boolean>} True if user exists, false otherwise
+   * @param {string} id - El UUID a verificar
+   * @returns {Promise<boolean>} True si el usuario existe, false en caso contrario
    * 
    * @example
    * ```typescript
    * const exists = await userRepository.exists(userId);
    * 
    * if (exists) {
-   *   console.log('User exists');
+   *   console.log('El usuario existe');
    * } else {
-   *   console.log('User does not exist');
+   *   console.log('El usuario no existe');
    * }
    * ```
    */
@@ -350,17 +350,17 @@ export class UserRepository {
   }
 
   /**
-   * Clears all users from the repository.
+   * Limpia todos los usuarios del repositorio.
    * 
-   * **WARNING**: This operation is destructive and cannot be undone.
-   * Should only be used for testing or development purposes.
+   * **ADVERTENCIA**: Esta operación es destructiva y no puede deshacerse.
+   * Solo debe usarse para propósitos de prueba o desarrollo.
    * 
    * @async
    * @returns {Promise<void>}
    * 
    * @example
    * ```typescript
-   * // Use in tests to reset state between test cases
+   * // Usar en pruebas para resetear el estado entre casos de prueba
    * afterEach(async () => {
    *   await userRepository.clear();
    * });
@@ -372,11 +372,11 @@ export class UserRepository {
 }
 
 /**
- * Singleton instance of UserRepository.
+ * Instancia singleton de UserRepository.
  * 
- * This ensures that all parts of the application use the same
- * in-memory data store. In a production application with a real database,
- * you might use dependency injection instead.
+ * Esto asegura que todas las partes de la aplicación usen el mismo
+ * almacén de datos en memoria. En una aplicación de producción con una base de datos real,
+ * podrías usar inyección de dependencias en su lugar.
  * 
  * @constant
  * @type {UserRepository}
@@ -385,7 +385,7 @@ export class UserRepository {
  * ```typescript
  * import { userRepository } from './repositories/user.repository';
  * 
- * // Use the singleton instance
+ * // Usar la instancia singleton
  * const user = await userRepository.findById(userId);
  * ```
  */

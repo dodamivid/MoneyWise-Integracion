@@ -1,16 +1,16 @@
 /**
- * @fileoverview Error handling middleware for the Money Wise API.
+ * @fileoverview Middleware de manejo de errores para la API de Money Wise.
  * 
- * This module provides centralized error handling for the application.
- * It catches all errors thrown by controllers and services, formats them
- * consistently, and sends appropriate HTTP responses to clients.
+ * Este módulo proporciona manejo centralizado de errores para la aplicación.
+ * Captura todos los errores lanzados por controladores y servicios, los formatea
+ * de manera consistente y envía respuestas HTTP apropiadas a los clientes.
  * 
- * Key features:
- * - Consistent error response format
- * - Automatic HTTP status code mapping
- * - Development vs production error details
- * - Logging of errors
- * - Handling of both operational and unexpected errors
+ * Características clave:
+ * - Formato de respuesta de error consistente
+ * - Mapeo automático de códigos de estado HTTP
+ * - Detalles de error para desarrollo vs producción
+ * - Registro de errores
+ * - Manejo de errores operacionales e inesperados
  * 
  * @module middlewares/error.middleware
  * @category Middlewares
@@ -19,56 +19,56 @@
  * ```typescript
  * import { errorHandler } from './middlewares/error.middleware';
  * 
- * // In index.ts
+ * // En index.ts
  * app.use(errorHandler);
  * ```
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
 import { Request, Response, NextFunction } from "express";
 import { isAppError, AppError } from "../utils/errors";
-import { createErrorResponse } from "../dtos/User.dto";
+import { createErrorResponse } from "../dtos/user.dto";
 
 /**
- * Centralized error handling middleware.
+ * Middleware centralizado de manejo de errores.
  * 
- * This middleware should be registered after all routes in the Express app.
- * It catches any errors that are passed to `next(error)` from controllers
- * or other middleware, formats them appropriately, and sends a consistent
- * JSON response to the client.
+ * Este middleware debe registrarse después de todas las rutas en la aplicación Express.
+ * Captura cualquier error que se pase a `next(error)` desde controladores
+ * u otro middleware, los formatea apropiadamente y envía una respuesta
+ * JSON consistente al cliente.
  * 
- * Error Handling Flow:
- * 1. Check if error is an instance of AppError (custom errors)
- * 2. If yes, use the error's status code and message
- * 3. If no, treat as unexpected error (500) and log it
- * 4. Format error response using createErrorResponse
- * 5. Send JSON response with appropriate status code
+ * Flujo de Manejo de Errores:
+ * 1. Verificar si el error es una instancia de AppError (errores personalizados)
+ * 2. Si es así, usar el código de estado y mensaje del error
+ * 3. Si no, tratar como error inesperado (500) y registrarlo
+ * 4. Formatear respuesta de error usando createErrorResponse
+ * 5. Enviar respuesta JSON con código de estado apropiado
  * 
- * **Development vs Production**:
- * - In development: Include stack traces and detailed error info
- * - In production: Return generic error messages for unexpected errors
+ * **Desarrollo vs Producción**:
+ * - En desarrollo: Incluir stack traces e información detallada del error
+ * - En producción: Retornar mensajes de error genéricos para errores inesperados
  * 
  * @function errorHandler
- * @param {Error | AppError} err - The error that was thrown
- * @param {Request} req - Express request object
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function (unused but required by Express)
+ * @param {Error | AppError} err - El error que fue lanzado
+ * @param {Request} req - Objeto de petición de Express
+ * @param {Response} res - Objeto de respuesta de Express
+ * @param {NextFunction} next - Función de siguiente middleware de Express (no usado pero requerido por Express)
  * @returns {void}
  * 
  * @example
  * ```typescript
- * // Register error handler (MUST be last middleware)
+ * // Registrar manejador de errores (DEBE ser el último middleware)
  * app.use('/api/users', usersRouter);
  * app.use(errorHandler);
  * 
- * // Error will be caught by this middleware
+ * // El error será capturado por este middleware
  * app.get('/example', async (req, res, next) => {
  *   try {
  *     throw new NotFoundError('User', '123');
  *   } catch (error) {
- *     next(error); // Passes to errorHandler
+ *     next(error); // Pasa a errorHandler
  *   }
  * });
  * ```
@@ -79,8 +79,8 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ): void {
-  // Log the error for debugging (in production, use proper logging service)
-  console.error("Error caught by error handler:", {
+  // Registrar el error para depuración (en producción, usar un servicio de logging apropiado)
+  console.error("Error capturado por el manejador de errores:", {
     name: err.name,
     message: err.message,
     stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
@@ -88,9 +88,9 @@ export function errorHandler(
     method: req.method,
   });
 
-  // Check if it's one of our custom AppError types
+  // Verificar si es uno de nuestros tipos de AppError personalizados
   if (isAppError(err)) {
-    // Handle known application errors
+    // Manejar errores de aplicación conocidos
     const errorResponse = createErrorResponse(
       err.message,
       err.statusCode,
@@ -106,7 +106,7 @@ export function errorHandler(
     return;
   }
 
-  // Handle Zod validation errors
+  // Manejar errores de validación de Zod
   if (err.name === "ZodError") {
     const zodError = err as any;
     const validationErrors = zodError.errors?.map((e: any) => ({
@@ -115,7 +115,7 @@ export function errorHandler(
     }));
 
     const errorResponse = createErrorResponse(
-      "Validation failed",
+      "Validación fallida",
       400,
       process.env.NODE_ENV === "development"
         ? {
@@ -129,12 +129,12 @@ export function errorHandler(
     return;
   }
 
-  // Handle unexpected errors (bugs, unhandled cases, etc.)
+  // Manejar errores inesperados (bugs, casos no manejados, etc.)
   const statusCode = 500;
   const message =
     process.env.NODE_ENV === "development"
       ? err.message
-      : "An unexpected error occurred";
+      : "Ocurrió un error inesperado";
 
   const errorResponse = createErrorResponse(
     message,
@@ -152,38 +152,38 @@ export function errorHandler(
 }
 
 /**
- * Middleware to handle 404 errors for undefined routes.
+ * Middleware para manejar errores 404 para rutas no definidas.
  * 
- * This middleware should be registered after all route definitions
- * but before the main error handler. It catches any requests to
- * routes that haven't been defined and returns a consistent 404 response.
+ * Este middleware debe registrarse después de todas las definiciones de rutas
+ * pero antes del manejador principal de errores. Captura cualquier petición a
+ * rutas que no han sido definidas y retorna una respuesta 404 consistente.
  * 
  * @function notFoundHandler
- * @param {Request} req - Express request object
- * @param {Response} res - Express response object
+ * @param {Request} req - Objeto de petición de Express
+ * @param {Response} res - Objeto de respuesta de Express
  * @returns {void}
  * 
  * @example
  * ```typescript
- * // Register after all routes
+ * // Registrar después de todas las rutas
  * app.use('/api/users', usersRouter);
- * app.use(notFoundHandler);  // Catches undefined routes
- * app.use(errorHandler);      // Catches other errors
+ * app.use(notFoundHandler);  // Captura rutas no definidas
+ * app.use(errorHandler);      // Captura otros errores
  * 
- * // Request to undefined route
+ * // Petición a ruta no definida
  * GET /api/undefined-route
  * 
- * // Response (404)
+ * // Respuesta (404)
  * {
  *   "status": "error",
- *   "message": "Route not found: GET /api/undefined-route",
+ *   "message": "Ruta no encontrada: GET /api/undefined-route",
  *   "statusCode": 404
  * }
  * ```
  */
 export function notFoundHandler(req: Request, res: Response): void {
   const errorResponse = createErrorResponse(
-    `Route not found: ${req.method} ${req.path}`,
+    `Ruta no encontrada: ${req.method} ${req.path}`,
     404
   );
 
@@ -191,30 +191,30 @@ export function notFoundHandler(req: Request, res: Response): void {
 }
 
 /**
- * Async wrapper for route handlers to catch promise rejections.
+ * Envoltorio asíncrono para manejadores de rutas para capturar rechazos de promesas.
  * 
- * This utility function wraps async route handlers to automatically
- * catch any promise rejections and pass them to the error handling
- * middleware. This prevents unhandled promise rejections.
+ * Esta función utilitaria envuelve manejadores de rutas asíncronos para
+ * capturar automáticamente cualquier rechazo de promesa y pasarlos al middleware
+ * de manejo de errores. Esto previene rechazos de promesas no manejados.
  * 
- * **Note**: With Express 5, this is less necessary as Express 5
- * automatically handles promise rejections in async handlers.
+ * **Nota**: Con Express 5, esto es menos necesario ya que Express 5
+ * maneja automáticamente rechazos de promesas en manejadores asíncronos.
  * 
  * @function asyncHandler
- * @param {Function} fn - Async route handler function
- * @returns {Function} Wrapped route handler
+ * @param {Function} fn - Función manejadora de ruta asíncrona
+ * @returns {Function} Manejador de ruta envuelto
  * 
  * @example
  * ```typescript
  * import { asyncHandler } from './middlewares/error.middleware';
  * 
- * // Without asyncHandler (errors might not be caught)
+ * // Sin asyncHandler (los errores podrían no ser capturados)
  * router.get('/:id', async (req, res) => {
  *   const user = await userService.findById(req.params.id);
  *   res.json(user);
  * });
  * 
- * // With asyncHandler (errors automatically caught)
+ * // Con asyncHandler (errores capturados automáticamente)
  * router.get('/:id', asyncHandler(async (req, res) => {
  *   const user = await userService.findById(req.params.id);
  *   res.json(user);
@@ -230,20 +230,20 @@ export function asyncHandler(
 }
 
 /**
- * Request logging middleware.
+ * Middleware de registro de peticiones.
  * 
- * Logs incoming requests with relevant information for debugging
- * and monitoring purposes.
+ * Registra las peticiones entrantes con información relevante para depuración
+ * y propósitos de monitoreo.
  * 
  * @function requestLogger
- * @param {Request} req - Express request object
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function
+ * @param {Request} req - Objeto de petición de Express
+ * @param {Response} res - Objeto de respuesta de Express
+ * @param {NextFunction} next - Función de siguiente middleware de Express
  * @returns {void}
  * 
  * @example
  * ```typescript
- * // Register early in middleware chain
+ * // Registrar temprano en la cadena de middleware
  * app.use(requestLogger);
  * app.use('/api/users', usersRouter);
  * ```
@@ -260,10 +260,10 @@ export function requestLogger(
     ip: req.ip,
   });
 
-  // Log response when it's sent
+  // Registrar respuesta cuando se envíe
   const originalSend = res.json;
   res.json = function (data: any) {
-    console.log(`[${timestamp}] Response ${res.statusCode} for ${req.method} ${req.path}`);
+    console.log(`[${timestamp}] Respuesta ${res.statusCode} para ${req.method} ${req.path}`);
     return originalSend.call(this, data);
   };
 

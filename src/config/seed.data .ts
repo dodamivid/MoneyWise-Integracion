@@ -1,23 +1,23 @@
 /**
- * @fileoverview Seed data for testing the Money Wise API.
+ * @fileoverview Datos semilla para pruebas de la API de Money Wise.
  * 
- * This file provides sample users that can be used to populate
- * the in-memory database for testing purposes.
+ * Este archivo proporciona usuarios de ejemplo que pueden usarse para poblar
+ * la base de datos en memoria con fines de prueba.
  * 
  * @module config/seed.data
  * @category Config
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
 import { CreateUserInput } from "../models/user.model";
 
 /**
- * Sample users for testing and development.
+ * Usuarios de ejemplo para pruebas y desarrollo.
  * 
- * These users can be inserted into the database to test
- * various scenarios and endpoints.
+ * Estos usuarios pueden insertarse en la base de datos para probar
+ * diversos escenarios y endpoints.
  * 
  * @constant
  * @type {CreateUserInput[]}
@@ -61,13 +61,13 @@ export const sampleUsers: CreateUserInput[] = [
 ];
 
 /**
- * Function to seed the database with sample users.
+ * Función para sembrar la base de datos con usuarios de ejemplo.
  * 
- * This function can be called to populate the repository
- * with test data for development and testing.
+ * Esta función puede llamarse para poblar el repositorio
+ * con datos de prueba para desarrollo y testing.
  * 
  * @async
- * @param {UserRepository} repository - The user repository to seed
+ * @param {UserRepository} repository - El repositorio de usuarios a sembrar
  * @returns {Promise<void>}
  * 
  * @example
@@ -75,31 +75,31 @@ export const sampleUsers: CreateUserInput[] = [
  * import { userRepository } from './repositories/user.repository';
  * import { seedDatabase } from './config/seed.data';
  * 
- * // Seed the database
+ * // Sembrar la base de datos
  * await seedDatabase(userRepository);
- * console.log('Database seeded with sample users');
+ * console.log('Base de datos sembrada con usuarios de ejemplo');
  * ```
  */
 export async function seedDatabase(repository: any): Promise<void> {
-  console.log("Seeding database with sample users...");
+  console.log("Sembrando base de datos con usuarios de ejemplo...");
 
   for (const userData of sampleUsers) {
     try {
       await repository.create(userData);
-      console.log(`✓ Created user: ${userData.email}`);
+      console.log(`✓ Usuario creado: ${userData.email}`);
     } catch (error: any) {
-      console.log(`✗ User already exists: ${userData.email}`);
+      console.log(`✗ El usuario ya existe: ${userData.email}`);
     }
   }
 
-  console.log("Database seeding completed!");
+  console.log("¡Sembrado de base de datos completado!");
 }
 
 /**
- * Test user credentials for manual testing.
+ * Credenciales de usuarios de prueba para testing manual.
  * 
- * Use these credentials to test login functionality
- * or other authentication-related features.
+ * Usa estas credenciales para probar la funcionalidad de inicio de sesión
+ * u otras características relacionadas con la autenticación.
  */
 export const testCredentials = {
   admin: {

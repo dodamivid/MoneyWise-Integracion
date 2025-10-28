@@ -1,17 +1,17 @@
 /**
- * @fileoverview User controller for handling HTTP requests and responses.
+ * @fileoverview Controlador de usuarios para manejar peticiones y respuestas HTTP.
  * 
- * This module implements the Controller pattern, handling HTTP-specific logic
- * such as request parsing, response formatting, and status code management.
- * Controllers act as the entry point for HTTP requests, delegating business
- * logic to service layers.
+ * Este módulo implementa el patrón Controller, manejando la lógica específica de HTTP
+ * como el análisis de peticiones, formateo de respuestas y gestión de códigos de estado.
+ * Los controladores actúan como punto de entrada para las peticiones HTTP, delegando la
+ * lógica de negocio a las capas de servicio.
  * 
- * Key responsibilities:
- * - HTTP request/response handling
- * - Input extraction and basic validation
- * - Status code management
- * - Error propagation to error handling middleware
- * - Response formatting using DTOs
+ * Responsabilidades clave:
+ * - Manejo de peticiones/respuestas HTTP
+ * - Extracción de entrada y validación básica
+ * - Gestión de códigos de estado
+ * - Propagación de errores al middleware de manejo de errores
+ * - Formateo de respuestas usando DTOs
  * 
  * @module controllers/user.controller
  * @category Controllers
@@ -26,7 +26,7 @@
  * router.get('/', userController.getAll);
  * ```
  * 
- * @author Money Wise Integration Team
+ * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
 
@@ -36,14 +36,14 @@ import { createUserResponse, createUsersResponse } from "../dtos/user.dto";
 import { isAppError } from "../utils/errors";
 
 /**
- * Controller class for user-related HTTP endpoints.
+ * Clase controladora para los endpoints HTTP relacionados con usuarios.
  * 
- * This class contains handler methods for all user-related routes.
- * Each method follows the Express middleware signature (req, res, next).
+ * Esta clase contiene métodos manejadores para todas las rutas relacionadas con usuarios.
+ * Cada método sigue la firma de middleware de Express (req, res, next).
  * 
- * All methods are designed to be used as Express route handlers and
- * follow async/await patterns with proper error propagation to the
- * error handling middleware.
+ * Todos los métodos están diseñados para ser usados como manejadores de rutas de Express y
+ * siguen patrones async/await con propagación adecuada de errores al middleware de
+ * manejo de errores.
  * 
  * @class UserController
  * 
@@ -51,24 +51,24 @@ import { isAppError } from "../utils/errors";
  * ```typescript
  * const controller = new UserController();
  * 
- * // Use in Express routes
+ * // Usar en rutas de Express
  * app.get('/api/users/:id', controller.getById);
  * app.get('/api/users', controller.getAll);
  * ```
  */
 export class UserController {
   /**
-   * Retrieves a single user by their ID.
+   * Recupera un único usuario por su ID.
    * 
-   * **Route**: GET /api/users/:id
+   * **Ruta**: GET /api/users/:id
    * 
-   * This endpoint:
-   * 1. Extracts the user ID from route parameters
-   * 2. Calls the service to find the user
-   * 3. Returns a 200 response with user data if found
-   * 4. Passes errors to error handling middleware
+   * Este endpoint:
+   * 1. Extrae el ID del usuario de los parámetros de ruta
+   * 2. Llama al servicio para encontrar el usuario
+   * 3. Retorna una respuesta 200 con los datos del usuario si se encuentra
+   * 4. Pasa los errores al middleware de manejo de errores
    * 
-   * **Success Response (200)**:
+   * **Respuesta Exitosa (200)**:
    * ```json
    * {
    *   "status": "success",
@@ -81,45 +81,45 @@ export class UserController {
    *     "createdAt": "2024-01-01T00:00:00.000Z",
    *     "updatedAt": "2024-01-01T00:00:00.000Z"
    *   },
-   *   "message": "User retrieved successfully"
+   *   "message": "Usuario recuperado exitosamente"
    * }
    * ```
    * 
-   * **Error Response (404)**:
+   * **Respuesta de Error (404)**:
    * ```json
    * {
    *   "status": "error",
-   *   "message": "User with id 550e8400-e29b-41d4-a716-446655440000 not found",
+   *   "message": "Usuario con id 550e8400-e29b-41d4-a716-446655440000 no encontrado",
    *   "statusCode": 404
    * }
    * ```
    * 
-   * **Error Response (400)**:
+   * **Respuesta de Error (400)**:
    * ```json
    * {
    *   "status": "error",
-   *   "message": "Invalid user ID format: abc-123",
+   *   "message": "Formato de ID de usuario inválido: abc-123",
    *   "statusCode": 400
    * }
    * ```
    * 
    * @async
-   * @param {Request} req - Express request object
-   * @param {Object} req.params - Route parameters
-   * @param {string} req.params.id - User UUID
-   * @param {Response} res - Express response object
-   * @param {NextFunction} next - Express next middleware function
+   * @param {Request} req - Objeto de petición de Express
+   * @param {Object} req.params - Parámetros de ruta
+   * @param {string} req.params.id - UUID del usuario
+   * @param {Response} res - Objeto de respuesta de Express
+   * @param {NextFunction} next - Función de siguiente middleware de Express
    * @returns {Promise<void>}
    * 
    * @example
    * ```typescript
-   * // Route definition
+   * // Definición de ruta
    * router.get('/:id', userController.getById);
    * 
-   * // Request
+   * // Petición
    * GET /api/users/550e8400-e29b-41d4-a716-446655440000
    * 
-   * // Response (200 OK)
+   * // Respuesta (200 OK)
    * {
    *   "status": "success",
    *   "data": {
@@ -131,7 +131,7 @@ export class UserController {
    *     "createdAt": "2024-01-01T00:00:00.000Z",
    *     "updatedAt": "2024-01-01T00:00:00.000Z"
    *   },
-   *   "message": "User retrieved successfully"
+   *   "message": "Usuario recuperado exitosamente"
    * }
    * ```
    */
@@ -141,37 +141,37 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Extract user ID from route parameters
+      // Extraer ID del usuario de los parámetros de ruta
       const { id } = req.params;
 
-      // Call service to find user
+      // Llamar al servicio para encontrar el usuario
       const user = await userService.findById(id);
 
-      // Format response using DTO
-      const response = createUserResponse(user, "User retrieved successfully");
+      // Formatear respuesta usando DTO
+      const response = createUserResponse(user, "Usuario recuperado exitosamente");
 
-      // Send successful response
+      // Enviar respuesta exitosa
       res.status(200).json(response);
     } catch (error) {
-      // Pass error to error handling middleware
+      // Pasar error al middleware de manejo de errores
       next(error);
     }
   }
 
   /**
-   * Retrieves all users from the system.
+   * Recupera todos los usuarios del sistema.
    * 
-   * **Route**: GET /api/users
+   * **Ruta**: GET /api/users
    * 
-   * This endpoint:
-   * 1. Calls the service to fetch all users
-   * 2. Returns a 200 response with an array of users
-   * 3. Includes metadata about the total count
+   * Este endpoint:
+   * 1. Llama al servicio para obtener todos los usuarios
+   * 2. Retorna una respuesta 200 con un arreglo de usuarios
+   * 3. Incluye metadatos sobre el conteo total
    * 
-   * **Note**: In a production system, this would include pagination,
-   * filtering, and sorting query parameters.
+   * **Nota**: En un sistema de producción, esto incluiría paginación,
+   * filtrado y parámetros de consulta para ordenamiento.
    * 
-   * **Success Response (200)**:
+   * **Respuesta Exitosa (200)**:
    * ```json
    * {
    *   "status": "success",
@@ -195,29 +195,29 @@ export class UserController {
    *       "updatedAt": "2024-01-02T00:00:00.000Z"
    *     }
    *   ],
-   *   "message": "Users retrieved successfully"
+   *   "message": "Usuarios recuperados exitosamente"
    * }
    * ```
    * 
    * @async
-   * @param {Request} req - Express request object
-   * @param {Response} res - Express response object
-   * @param {NextFunction} next - Express next middleware function
+   * @param {Request} req - Objeto de petición de Express
+   * @param {Response} res - Objeto de respuesta de Express
+   * @param {NextFunction} next - Función de siguiente middleware de Express
    * @returns {Promise<void>}
    * 
    * @example
    * ```typescript
-   * // Route definition
+   * // Definición de ruta
    * router.get('/', userController.getAll);
    * 
-   * // Request
+   * // Petición
    * GET /api/users
    * 
-   * // Response (200 OK)
+   * // Respuesta (200 OK)
    * {
    *   "status": "success",
    *   "data": [...],
-   *   "message": "Users retrieved successfully"
+   *   "message": "Usuarios recuperados exitosamente"
    * }
    * ```
    */
@@ -227,35 +227,35 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Call service to fetch all users
+      // Llamar al servicio para obtener todos los usuarios
       const users = await userService.findAll();
 
-      // Format response using DTO
+      // Formatear respuesta usando DTO
       const response = createUsersResponse(
         users,
         undefined,
-        "Users retrieved successfully"
+        "Usuarios recuperados exitosamente"
       );
 
-      // Send successful response
+      // Enviar respuesta exitosa
       res.status(200).json(response);
     } catch (error) {
-      // Pass error to error handling middleware
+      // Pasar error al middleware de manejo de errores
       next(error);
     }
   }
 
   /**
-   * Creates a new user in the system.
+   * Crea un nuevo usuario en el sistema.
    * 
-   * **Route**: POST /api/users
+   * **Ruta**: POST /api/users
    * 
-   * This endpoint:
-   * 1. Extracts user data from request body
-   * 2. Calls service to create the user (includes validation)
-   * 3. Returns a 201 response with the created user
+   * Este endpoint:
+   * 1. Extrae los datos del usuario del cuerpo de la petición
+   * 2. Llama al servicio para crear el usuario (incluye validación)
+   * 3. Retorna una respuesta 201 con el usuario creado
    * 
-   * **Request Body**:
+   * **Cuerpo de la Petición**:
    * ```json
    * {
    *   "email": "john.doe@example.com",
@@ -266,7 +266,7 @@ export class UserController {
    * }
    * ```
    * 
-   * **Success Response (201)**:
+   * **Respuesta Exitosa (201)**:
    * ```json
    * {
    *   "status": "success",
@@ -279,32 +279,32 @@ export class UserController {
    *     "createdAt": "2024-01-01T00:00:00.000Z",
    *     "updatedAt": "2024-01-01T00:00:00.000Z"
    *   },
-   *   "message": "User created successfully"
+   *   "message": "Usuario creado exitosamente"
    * }
    * ```
    * 
-   * **Error Response (400)**:
+   * **Respuesta de Error (400)**:
    * ```json
    * {
    *   "status": "error",
-   *   "message": "User with email john.doe@example.com already exists",
+   *   "message": "Usuario con correo john.doe@example.com ya existe",
    *   "statusCode": 400
    * }
    * ```
    * 
    * @async
-   * @param {Request} req - Express request object
-   * @param {Object} req.body - User creation data
-   * @param {Response} res - Express response object
-   * @param {NextFunction} next - Express next middleware function
+   * @param {Request} req - Objeto de petición de Express
+   * @param {Object} req.body - Datos de creación del usuario
+   * @param {Response} res - Objeto de respuesta de Express
+   * @param {NextFunction} next - Función de siguiente middleware de Express
    * @returns {Promise<void>}
    * 
    * @example
    * ```typescript
-   * // Route definition
+   * // Definición de ruta
    * router.post('/', userController.create);
    * 
-   * // Request
+   * // Petición
    * POST /api/users
    * Content-Type: application/json
    * {
@@ -321,35 +321,35 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Extract user data from request body
+      // Extraer datos del usuario del cuerpo de la petición
       const userData = req.body;
 
-      // Call service to create user (includes validation)
+      // Llamar al servicio para crear el usuario (incluye validación)
       const newUser = await userService.create(userData);
 
-      // Format response using DTO
-      const response = createUserResponse(newUser, "User created successfully");
+      // Formatear respuesta usando DTO
+      const response = createUserResponse(newUser, "Usuario creado exitosamente");
 
-      // Send successful response with 201 status
+      // Enviar respuesta exitosa con estado 201
       res.status(201).json(response);
     } catch (error) {
-      // Pass error to error handling middleware
+      // Pasar error al middleware de manejo de errores
       next(error);
     }
   }
 
   /**
-   * Updates an existing user's information.
+   * Actualiza la información de un usuario existente.
    * 
-   * **Route**: PATCH /api/users/:id
+   * **Ruta**: PATCH /api/users/:id
    * 
-   * This endpoint:
-   * 1. Extracts user ID from route parameters
-   * 2. Extracts update data from request body
-   * 3. Calls service to update the user
-   * 4. Returns a 200 response with the updated user
+   * Este endpoint:
+   * 1. Extrae el ID del usuario de los parámetros de ruta
+   * 2. Extrae los datos de actualización del cuerpo de la petición
+   * 3. Llama al servicio para actualizar el usuario
+   * 4. Retorna una respuesta 200 con el usuario actualizado
    * 
-   * **Request Body** (all fields optional):
+   * **Cuerpo de la Petición** (todos los campos opcionales):
    * ```json
    * {
    *   "email": "newemail@example.com",
@@ -359,7 +359,7 @@ export class UserController {
    * }
    * ```
    * 
-   * **Success Response (200)**:
+   * **Respuesta Exitosa (200)**:
    * ```json
    * {
    *   "status": "success",
@@ -372,25 +372,25 @@ export class UserController {
    *     "createdAt": "2024-01-01T00:00:00.000Z",
    *     "updatedAt": "2024-01-02T10:30:00.000Z"
    *   },
-   *   "message": "User updated successfully"
+   *   "message": "Usuario actualizado exitosamente"
    * }
    * ```
    * 
    * @async
-   * @param {Request} req - Express request object
-   * @param {Object} req.params - Route parameters
-   * @param {string} req.params.id - User UUID
-   * @param {Object} req.body - Update data
-   * @param {Response} res - Express response object
-   * @param {NextFunction} next - Express next middleware function
+   * @param {Request} req - Objeto de petición de Express
+   * @param {Object} req.params - Parámetros de ruta
+   * @param {string} req.params.id - UUID del usuario
+   * @param {Object} req.body - Datos de actualización
+   * @param {Response} res - Objeto de respuesta de Express
+   * @param {NextFunction} next - Función de siguiente middleware de Express
    * @returns {Promise<void>}
    * 
    * @example
    * ```typescript
-   * // Route definition
+   * // Definición de ruta
    * router.patch('/:id', userController.update);
    * 
-   * // Request
+   * // Petición
    * PATCH /api/users/550e8400-e29b-41d4-a716-446655440000
    * Content-Type: application/json
    * {
@@ -405,74 +405,74 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Extract user ID and update data
+      // Extraer ID del usuario y datos de actualización
       const { id } = req.params;
       const updateData = req.body;
 
-      // Call service to update user
+      // Llamar al servicio para actualizar el usuario
       const updatedUser = await userService.update(id, updateData);
 
-      // Format response using DTO
+      // Formatear respuesta usando DTO
       const response = createUserResponse(
         updatedUser,
-        "User updated successfully"
+        "Usuario actualizado exitosamente"
       );
 
-      // Send successful response
+      // Enviar respuesta exitosa
       res.status(200).json(response);
     } catch (error) {
-      // Pass error to error handling middleware
+      // Pasar error al middleware de manejo de errores
       next(error);
     }
   }
 
   /**
-   * Deletes a user from the system.
+   * Elimina un usuario del sistema.
    * 
-   * **Route**: DELETE /api/users/:id
+   * **Ruta**: DELETE /api/users/:id
    * 
-   * This endpoint:
-   * 1. Extracts user ID from route parameters
-   * 2. Calls service to delete the user
-   * 3. Returns a 200 response confirming deletion
+   * Este endpoint:
+   * 1. Extrae el ID del usuario de los parámetros de ruta
+   * 2. Llama al servicio para eliminar el usuario
+   * 3. Retorna una respuesta 200 confirmando la eliminación
    * 
-   * **Success Response (200)**:
+   * **Respuesta Exitosa (200)**:
    * ```json
    * {
    *   "status": "success",
-   *   "message": "User deleted successfully"
+   *   "message": "Usuario eliminado exitosamente"
    * }
    * ```
    * 
-   * **Error Response (404)**:
+   * **Respuesta de Error (404)**:
    * ```json
    * {
    *   "status": "error",
-   *   "message": "User with id 550e8400-e29b-41d4-a716-446655440000 not found",
+   *   "message": "Usuario con id 550e8400-e29b-41d4-a716-446655440000 no encontrado",
    *   "statusCode": 404
    * }
    * ```
    * 
    * @async
-   * @param {Request} req - Express request object
-   * @param {Object} req.params - Route parameters
-   * @param {string} req.params.id - User UUID
-   * @param {Response} res - Express response object
-   * @param {NextFunction} next - Express next middleware function
+   * @param {Request} req - Objeto de petición de Express
+   * @param {Object} req.params - Parámetros de ruta
+   * @param {string} req.params.id - UUID del usuario
+   * @param {Response} res - Objeto de respuesta de Express
+   * @param {NextFunction} next - Función de siguiente middleware de Express
    * @returns {Promise<void>}
    * 
    * @example
    * ```typescript
-   * // Route definition
+   * // Definición de ruta
    * router.delete('/:id', userController.delete);
    * 
-   * // Request
+   * // Petición
    * DELETE /api/users/550e8400-e29b-41d4-a716-446655440000
    * 
-   * // Response (200 OK)
+   * // Respuesta (200 OK)
    * {
    *   "status": "success",
-   *   "message": "User deleted successfully"
+   *   "message": "Usuario eliminado exitosamente"
    * }
    * ```
    */
@@ -482,30 +482,30 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Extract user ID
+      // Extraer ID del usuario
       const { id } = req.params;
 
-      // Call service to delete user
+      // Llamar al servicio para eliminar el usuario
       await userService.delete(id);
 
-      // Send successful response
+      // Enviar respuesta exitosa
       res.status(200).json({
         status: "success",
-        message: "User deleted successfully",
+        message: "Usuario eliminado exitosamente",
       });
     } catch (error) {
-      // Pass error to error handling middleware
+      // Pasar error al middleware de manejo de errores
       next(error);
     }
   }
 }
 
 /**
- * Singleton instance of UserController.
+ * Instancia singleton de UserController.
  * 
- * This instance is used throughout the application to handle user-related
- * HTTP requests. Using a singleton ensures consistent behavior and makes
- * it easy to inject dependencies if needed in the future.
+ * Esta instancia se usa en toda la aplicación para manejar peticiones
+ * HTTP relacionadas con usuarios. Usar un singleton asegura comportamiento
+ * consistente y facilita la inyección de dependencias si se necesita en el futuro.
  * 
  * @constant
  * @type {UserController}
@@ -517,7 +517,7 @@ export class UserController {
  * 
  * const router = Router();
  * 
- * // Define routes
+ * // Definir rutas
  * router.get('/:id', userController.getById);
  * router.get('/', userController.getAll);
  * router.post('/', userController.create);
