@@ -1,27 +1,32 @@
 import express, { NextFunction, Request, Response } from "express";
+import { correlationIdMiddleware } from "./middlewares/correlationId";
+import { httpLogger } from "./middlewares/logger";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 
-// Boot the Express application
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
 
-// Helpful defaults for security and JSON payload parsing
-app.disable("x-powered-by");
-app.use(express.json());
+//  Configuración base
+app.disable("x-powered-by"); //  Oculta el header para mayor seguridad
+app.use(express.json());     //  Permite procesar cuerpos JSON
 
-// Simple root banner to confirm the API is reachable
+//  Middlewares de observabilidad
+app.use(correlationIdMiddleware); //  Asigna un ID único a cada request
+app.use(httpLogger);              //  Registra cada petición y su respuesta
+
+//  Ruta raíz
 app.get("/", (_req, res) => {
   res.json({ message: "MoneyWise API" });
 });
 
-// Health check routes mounted under /health
+// Health check
 app.use("/health", healthRouter);
 
-// User routes mounted under /api/users
+//  Rutas de usuarios
 app.use("/api/users", usersRouter);
 
-// Consistent JSON 404 for any route that is not defined
+//  Manejo de rutas inexistentes (404)
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
     status: "error",
@@ -29,13 +34,18 @@ app.use((_req: Request, res: Response) => {
   });
 });
 
-// Final error handler to catch unexpected failures
+//  Manejador global de errores
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
+  console.error(err); // Muestra el error en consola para debugging
   res.status(500).json({
     status: "error",
-    message: "Internal server error",
+    message: err.message || "Internal server error",
   });
+});
+
+// Iniciar servidor
+app.listen(port, () => {
+  console.log(` Server running on port ${port}`);
 });
 
 export default app;

@@ -13,7 +13,7 @@
       "@/*": ["src/*"],
       "@tests/*": ["__tests__/*"]
     },
-    "forceConsistentCasingInFileNames": true  
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "src/**/*",
@@ -25,3 +25,4 @@
     "coverage"
   ]
 }
+
