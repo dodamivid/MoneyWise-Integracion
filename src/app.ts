@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import { correlationIdMiddleware } from "./middlewares/correlationId";
-import { httpLogger } from "./middlewares/logger";
+import httpLogger from "./middlewares/logger";
+
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 
