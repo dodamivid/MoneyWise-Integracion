@@ -1,6 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import healthRouter from "./routes/health";
-import usersRouter from "./routes/users.routes"; // 🟢 NUEVO
+import usersRouter from "./routes/users.routes"; 
 
 // Boot the Express application and respect an optional PORT env var
 const app = express();
@@ -18,7 +18,7 @@ app.get("/", (_req, res) => {
 // Health check routes mounted under /health
 app.use("/health", healthRouter);
 
-// 🟢 NUEVO: User routes mounted under /api/users
+// User routes mounted under /api/users
 app.use("/api/users", usersRouter);
 
 // Consistent JSON 404 for any route that is not defined
