@@ -1,14 +1,11 @@
-<<<<<<< HEAD
 import express, { NextFunction, Request, Response } from "express";
 import healthRouter from "./routes/health";
-import usersRouter from "./routes/users.routes"; 
-=======
-import app from './app';
->>>>>>> 805c8c2129ee344a2e22d655dbbd75e60aa19f9b
+import usersRouter from "./routes/users.routes";
 
+// Boot the Express application
+const app = express();
 const port = Number(process.env.PORT ?? 3000);
 
-<<<<<<< HEAD
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
 app.use(express.json());
@@ -41,11 +38,4 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-// Start the HTTP server
-=======
->>>>>>> 805c8c2129ee344a2e22d655dbbd75e60aa19f9b
-app.listen(port, () => {
-  console.log(`MoneyWise API running at http://localhost:${port}`);
-  console.log(`Health check available at http://localhost:${port}/health`);
-  console.log(`Users endpoint available at http://localhost:${port}/api/users`);
-});
+export default app;

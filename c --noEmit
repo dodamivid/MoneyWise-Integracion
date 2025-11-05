@@ -1,0 +1,98 @@
+[33mcommit f657180676637940e5f20eda930593a0c566a8c4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mSuperTest(#9)[m[33m)[m
+Merge: 841401b 5017860
+Author: David Rafael Dominguez Quezada <127813089+dodamivid@users.noreply.github.com>
+Date:   Tue Oct 28 09:00:22 2025 -0600
+
+    Merge pull request #12 from dodamivid/implementid
+    
+    se cumple con el ticked numero 5
+
+[33mcommit 501786097f0ee127b6aa6b30b106b3a4b3413ed5[m[33m ([m[1;31morigin/implementid[m[33m)[m
+Author: Carlos Alvarado <carlosalvaradon0464@gmail.com>
+Date:   Mon Oct 27 18:23:15 2025 -0600
+
+    se agrego al documentacion del codigo de manera que sea mas facil su escalabilidad
+
+[33mcommit f7a264f54474ec2566b4d44a67662f3f41b14aa6[m
+Author: Carlos Alvarado <carlosalvaradon0464@gmail.com>
+Date:   Sun Oct 26 22:08:31 2025 -0600
+
+    feat: Implementar servicio de usuario y manejo de errores para operaciones de usuario
+    
+    - Se agregó capa de servicio de usuario para encapsular la lógica de negocio de operaciones relacionadas con usuarios.
+    - Se crearon clases de error personalizadas para un manejo consistente de errores en toda la aplicación.
+    - Se actualizaron las rutas de usuario para utilizar el nuevo servicio de usuario en operaciones CRUD.
+    - Se mejoró la documentación para rutas de usuario y métodos del servicio.
+
+[33mcommit acd556e827c285cd7f18038bd48a8729111272b6[m
+Merge: e61e859 841401b
+Author: Carlos Alvarado <carlosalvaradon0464@gmail.com>
+Date:   Sun Oct 26 21:07:54 2025 -0600
+
+    Merge branch 'main' of github.com:dodamivid/MoneyWise-Integracion into implementid
+
+[33mcommit e61e859d9ed353212954721ce023313f4cd9da4c[m
+Author: Carlos Alvarado <carlosalvaradon0464@gmail.com>
+Date:   Sun Oct 26 21:07:16 2025 -0600
+
+    feat(user-model): implement user model with CRUD operations and response handling
+
+[33mcommit 841401b36e75334000d87284e4ff67ecdba08ed1[m[33m ([m[1;31morigin/issue-2[m[33m, [m[1;31morigin/issue-1[m[33m)[m
+Author: shadenmqz12 <shadenmmqz@gmail.com>
+Date:   Thu Oct 23 16:46:01 2025 -0600
+
+    Added node_modules in gitignore
+
+[33mcommit bbfa51a4d700a36f2d22617c49a416a2548ae07f[m
+Author: shadenmqz12 <shadenmmqz@gmail.com>
+Date:   Thu Oct 23 13:34:54 2025 -0600
+
+    Create openapi.yaml
+
+[33mcommit 476ed815d87cbf446292df4d22e7106e03e33732[m
+Author: dodamivid <dodamivid@gmail.com>
+Date:   Thu Oct 23 08:52:49 2025 -0600
+
+    set up express server health
+
+[33mcommit af562e4c3c6229a26ec66678cf888a9c62f6e1e7[m
+Author: Carlos Alvarado <carlosalvaradon0464@gmail.com>
+Date:   Wed Oct 15 08:48:18 2025 -0600
+
+    se agrego las carpetas y archivos necesarios para ir iniciando
+
+[33mcommit 7e524c5958ab33752bc80b81c43ecf76521c853b[m
+Author: David Rafael Dominguez Quezada <127813089+dodamivid@users.noreply.github.com>
+Date:   Sun Oct 12 22:15:27 2025 -0600
+
+    Update README.md
+
+[33mcommit 6daa6091a6963c02e31aedcdd0762839e4dc98fe[m
+Author: David Rafael Dominguez Quezada <127813089+dodamivid@users.noreply.github.com>
+Date:   Sun Oct 12 21:57:41 2025 -0600
+
+    Update README.md
+
+[33mcommit 736ddb55b6eee3b292894ca71f24a1fae7853742[m
+Author: dodamivid <dodamivid@gmail.com>
+Date:   Wed Oct 8 16:03:28 2025 -0600
+
+    chore(project-automation): workflow to add issues to Project + README instructions for PAT and usage
+
+[33mcommit 5f00b03fc5e99cf6baefb774dd59c5e2c9c3dc4c[m
+Author: dodamivid <dodamivid@gmail.com>
+Date:   Wed Oct 8 15:56:42 2025 -0600
+
+    chore(integration): add issue seeding workflow, issue templates, and initial roadmap; update README with project instructions
+
+[33mcommit 7c77ab66575e7ac039bd558c14fdd12a27e2143f[m
+Author: dodamivid <dodamivid@gmail.com>
+Date:   Mon Oct 6 08:52:24 2025 -0600
+
+    add git ignore
+
+[33mcommit 23df659fa62d5eb15ba7bd88cf483888618d3795[m
+Author: David Rafael Dominguez Quezada <127813089+dodamivid@users.noreply.github.com>
+Date:   Mon Oct 6 08:27:15 2025 -0600
+
+    Initial commit
