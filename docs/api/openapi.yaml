@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: MoneyWise Users API
+  title: MoneyWise API
   version: 1.0.0
-  description: API contract for user creation and retrieval.
+  description: API contract for MoneyWise financial management system.
   contact:
     name: MoneyWise Dev Team
     email: support@moneywise.com
@@ -59,6 +59,195 @@ paths:
         '500':
           description: Internal server error
 
+  /api/v1/egresos:
+    get:
+      summary: Lista egresos con filtros y paginación
+      description: |
+        Retorna lista de egresos del usuario con filtros opcionales.
+        Requiere scope `egresos:leer`. Solo admin puede consultar otro usuarioId.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Solo admins (requiere `admin:egresos`)
+        - name: desde
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Fecha inicial (ISO-8601). Requiere también `hasta`.
+        - name: hasta
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Fecha final (ISO-8601). Requiere también `desde`.
+        - name: tipoId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: destinoId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: min
+          in: query
+          required: false
+          schema:
+            type: number
+            format: decimal
+        - name: max
+          in: query
+          required: false
+          schema:
+            type: number
+            format: decimal
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: tamanoPagina
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: orden
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [creadoEn:asc, creadoEn:desc, fechaInicio:asc, fechaInicio:desc, monto:asc, monto:desc]
+            default: creadoEn:desc
+      responses:
+        '200':
+          description: Lista de egresos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListarEgresosResponse'
+        '403':
+          $ref: '#/components/responses/PermisoDenegado'
+        '422':
+          $ref: '#/components/responses/DatosInvalidos'
+    post:
+      summary: Crea un nuevo egreso
+      description: |
+        Registra un nuevo egreso. Requiere scope `egresos:escribir`.
+        Solo admin puede crear egreso para otro usuarioId.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearEgresoRequest'
+      responses:
+        '201':
+          description: Egreso creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrearEgresoResponse'
+        '403':
+          $ref: '#/components/responses/PermisoDenegado'
+        '422':
+          $ref: '#/components/responses/DatosInvalidos'
+
+  /api/v1/egresos/{id}:
+    get:
+      summary: Obtiene un egreso por ID
+      description: |
+        Retorna egreso específico. Requiere scope `egresos:leer`.
+        Solo el dueño o admin pueden ver el egreso.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Egreso encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObtenerEgresoResponse'
+        '403':
+          $ref: '#/components/responses/PermisoDenegado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    patch:
+      summary: Actualiza un egreso
+      description: |
+        Actualiza campos de un egreso existente. Requiere scope `egresos:escribir`.
+        Solo el dueño o admin pueden actualizar.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEgresoRequest'
+      responses:
+        '200':
+          description: Egreso actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActualizarEgresoResponse'
+        '403':
+          $ref: '#/components/responses/PermisoDenegado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/DatosInvalidos'
+    delete:
+      summary: Elimina un egreso
+      description: |
+        Elimina un egreso existente. Requiere scope `egresos:escribir`.
+        Solo el dueño o admin pueden eliminar.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Egreso eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EliminarEgresoResponse'
+        '403':
+          $ref: '#/components/responses/PermisoDenegado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
 components:
   schemas:
     UserRequest:
@@ -96,3 +285,221 @@ components:
           type: string
           format: date-time
           example: 2025-10-23T09:00:00Z
+
+    # Egresos schemas
+    EgresoDTO:
+      type: object
+      properties:
+        egresoId:
+          type: integer
+          example: 1
+        usuarioId:
+          type: integer
+          example: 1
+        tipoId:
+          type: integer
+          example: 1
+        destinoId:
+          type: integer
+          nullable: true
+          example: 1
+        monto:
+          type: number
+          format: decimal
+          example: 1250.50
+        descripcion:
+          type: string
+          nullable: true
+          example: "Renta mensual"
+        fechaInicio:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00Z"
+        fechaFin:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-31T23:59:59Z"
+        creadoEn:
+          type: string
+          format: date-time
+          example: "2025-01-01T10:00:00Z"
+        actualizadoEn:
+          type: string
+          format: date-time
+          example: "2025-01-01T10:00:00Z"
+
+    CrearEgresoRequest:
+      type: object
+      required:
+        - tipoId
+        - monto
+        - fechaInicio
+      properties:
+        usuarioId:
+          type: string
+          description: Solo admins (requiere `admin:egresos`)
+        tipoId:
+          type: integer
+          example: 1
+        destinoId:
+          type: integer
+          nullable: true
+          example: 1
+        monto:
+          type: number
+          format: decimal
+          example: 1250.50
+        descripcion:
+          type: string
+          maxLength: 255
+          example: "Renta mensual"
+        fechaInicio:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00Z"
+        fechaFin:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-31T23:59:59Z"
+
+    ActualizarEgresoRequest:
+      type: object
+      minProperties: 1
+      properties:
+        tipoId:
+          type: integer
+        destinoId:
+          type: integer
+          nullable: true
+        monto:
+          type: number
+          format: decimal
+        descripcion:
+          type: string
+          maxLength: 255
+        fechaInicio:
+          type: string
+          format: date-time
+        fechaFin:
+          type: string
+          format: date-time
+          nullable: true
+
+    ListarEgresosResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EgresoDTO'
+        meta:
+          type: object
+          properties:
+            paginacion:
+              type: object
+              properties:
+                pagina:
+                  type: integer
+                  example: 1
+                tamanoPagina:
+                  type: integer
+                  example: 20
+                total:
+                  type: integer
+                  example: 2
+
+    CrearEgresoResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            egresoId:
+              type: integer
+              example: 42
+
+    ObtenerEgresoResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/EgresoDTO'
+
+    ActualizarEgresoResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            actualizado:
+              type: boolean
+              example: true
+
+    EliminarEgresoResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            eliminado:
+              type: boolean
+              example: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            codigo:
+              type: string
+              example: "DATOS_INVALIDOS"
+            mensaje:
+              type: string
+              example: "Parámetros inválidos"
+
+  responses:
+    DatosInvalidos:
+      description: Datos inválidos (validación)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PermisoDenegado:
+      description: Permiso denegado (scope insuficiente)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NoEncontrado:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT del sistema MoneyWise. En dev, usar headers `x-mw-user` y `x-mw-scopes`.

@@ -2,6 +2,25 @@
 
 Repositorio del equipo de Integración (endpoints) – Node.js + TypeScript + Express.
 
+## API (dev quickstart)
+
+- Server local: `http://localhost:3000`
+- Health: `GET /health`
+- Users: `POST /api/users`, `GET /api/users/{id}`
+- Egresos (CRUD): base `/api/v1/egresos`
+  - `GET /api/v1/egresos` - Lista con filtros y paginación
+  - `POST /api/v1/egresos` - Crea egreso
+  - `GET /api/v1/egresos/:id` - Obtiene egreso
+  - `PATCH /api/v1/egresos/:id` - Actualiza egreso
+  - `DELETE /api/v1/egresos/:id` - Elimina egreso
+
+Auth (simulada en dev):
+- Por defecto, en desarrollo se inyectan scopes `egresos:leer,egresos:escribir,admin:egresos`, por lo que puedes probar en Postman sin headers.
+- Para simular permisos/403, usa headers opcionales:
+  - `x-mw-user`: ID de usuario (numérico)
+  - `x-mw-scopes`: scopes separados por coma (ej. `egresos:leer,egresos:escribir`)
+- También puedes controlar el default con la variable de entorno `MOCK_DEFAULT_SCOPES`.
+
 ## Qué entregaremos para la tarea
 - Repositorio en GitHub (este).
 - Un Proyecto de GitHub vinculado al repo.
