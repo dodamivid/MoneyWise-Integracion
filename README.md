@@ -2,6 +2,23 @@
 
 Repositorio del equipo de Integración (endpoints) – Node.js + TypeScript + Express.
 
+## API (dev quickstart)
+
+- Server local: `http://localhost:3000`
+- Health: `GET /health`
+- Users: `POST /api/users`, `GET /api/users/{id}`
+- Dashboard (solo lectura): base `GET /api/v1/dashboard` (índice de endpoints)
+  - `GET /api/v1/dashboard/resumen?desde=ISO&hasta=ISO[&usuarioId=uuid]`
+  - `GET /api/v1/dashboard/balance?fechaCorte=ISO[&usuarioId=uuid]`
+  - `GET /api/v1/dashboard/metas-vs-ahorro?desde=ISO&hasta=ISO[&usuarioId=uuid]`
+
+Auth (simulada en dev):
+- Por defecto, en desarrollo se inyectan scopes `dashboard:leer,admin:dashboard`, por lo que puedes probar en Postman sin headers.
+- Para simular permisos/403, usa headers opcionales:
+  - `x-mw-user`: ID de usuario (UUID u otro)
+  - `x-mw-scopes`: scopes separados por coma (ej. `dashboard:leer`)
+- También puedes controlar el default con la variable de entorno `MOCK_DEFAULT_SCOPES`.
+
 ## Qué entregaremos para la tarea
 - Repositorio en GitHub (este).
 - Un Proyecto de GitHub vinculado al repo.

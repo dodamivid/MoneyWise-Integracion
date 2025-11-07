@@ -8,12 +8,55 @@ info:
     email: support@moneywise.com
 
 servers:
-  - url: https://api.moneywise.com/v1
+  - url: https://api.moneywise.com
     description: Production server
   - url: http://localhost:3000
     description: Local development
 
 paths:
+  /api/v1/dashboard:
+    get:
+      summary: Dashboard - Índice
+      description: Devuelve un índice con los endpoints disponibles del módulo Dashboard.
+      responses:
+        '200':
+          description: Índice del módulo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  module:
+                    type: string
+                    example: dashboard
+                  basePath:
+                    type: string
+                    example: /api/v1/dashboard
+                  endpoints:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        method:
+                          type: string
+                          example: GET
+                        path:
+                          type: string
+                          example: /resumen
+                        query:
+                          type: array
+                          items:
+                            type: string
+                          example:
+                            - "desde (ISO)"
+                            - "hasta (ISO)"
+                            - "usuarioId (opcional)"
+                        scope:
+                          type: string
+                          example: dashboard:leer
   /api/users:
     post:
       summary: Create a new user
@@ -59,6 +102,121 @@ paths:
         '500':
           description: Internal server error
 
+  /api/v1/dashboard/resumen:
+    get:
+      summary: Dashboard - Resumen
+      description: |
+        KPIs consolidados de ingresos, egresos y balance por rango.
+        Requiere JWT con scope `dashboard:leer`. Los admins con `admin:dashboard` pueden consultar a otros usuarios pasando `usuarioId`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Fecha inicial (ISO-8601)
+        - name: hasta
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Fecha final (ISO-8601). Debe ser >= `desde`. Rango máximo 12 meses.
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Solo admins (`admin:dashboard`). Si se omite, usa el usuario del token.
+      responses:
+        '200':
+          description: Resumen consolidado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResumenResponse'
+        '403':
+          description: Permiso denegado (scope requerido)
+        '422':
+          description: Datos inválidos (fechas o rango)
+
+  /api/v1/dashboard/balance:
+    get:
+      summary: Dashboard - Balance por fecha de corte
+      description: |
+        Retorna ingresos, egresos y balance acumulados a la fecha de corte.
+        Requiere JWT con `dashboard:leer`. Si `fechaCorte` no se envía, se usa la última fecha registrada.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fechaCorte
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Fecha de corte (ISO-8601). Si se omite, se usa la última.
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Solo admins (`admin:dashboard`). Si se omite, usa el usuario del token.
+      responses:
+        '200':
+          description: Balance acumulado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardBalanceResponse'
+        '403':
+          description: Permiso denegado (scope requerido)
+        '404':
+          description: Fecha de corte no encontrada
+        '422':
+          description: Fecha con formato inválido
+
+  /api/v1/dashboard/metas-vs-ahorro:
+    get:
+      summary: Dashboard - Metas vs Ahorro
+      description: |
+        Lista de metas con avance de ahorro y un resumen agregado para el periodo.
+        Requiere JWT con `dashboard:leer`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: hasta
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Metas y resumen del periodo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetasResponse'
+        '403':
+          description: Permiso denegado (scope requerido)
+        '422':
+          description: Datos inválidos (fechas o rango)
+
 components:
   schemas:
     UserRequest:
@@ -96,3 +254,131 @@ components:
           type: string
           format: date-time
           example: 2025-10-23T09:00:00Z
+    DashboardResumenResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            totales:
+              type: object
+              properties:
+                ingresos:
+                  type: number
+                  example: 45000.0
+                egresos:
+                  type: number
+                  example: 32000.0
+                balance:
+                  type: number
+                  example: 13000.0
+            ingresosPorTipo:
+              type: array
+              items:
+                type: object
+                properties:
+                  tipoId:
+                    type: integer
+                    example: 1
+                  tipo:
+                    type: string
+                    example: Salario
+                  total:
+                    type: number
+                    example: 30000.0
+            egresosPorTipo:
+              type: array
+              items:
+                type: object
+                properties:
+                  tipoId:
+                    type: integer
+                  tipo:
+                    type: string
+                  total:
+                    type: number
+            ingresosPorProcedencia:
+              type: array
+              items:
+                type: object
+                properties:
+                  procedenciaId:
+                    type: integer
+                  procedencia:
+                    type: string
+                  total:
+                    type: number
+            egresosPorDestino:
+              type: array
+              items:
+                type: object
+                properties:
+                  destinoId:
+                    type: integer
+                  destino:
+                    type: string
+                  total:
+                    type: number
+    DashboardBalanceResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            fechaCorte:
+              type: string
+              format: date-time
+              example: 2025-03-31T23:59:59Z
+            ingresosAcumulados:
+              type: number
+              example: 45000.0
+            egresosAcumulados:
+              type: number
+              example: 32000.0
+            balanceAcumulado:
+              type: number
+              example: 13000.0
+    DashboardMetasResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            metas:
+              type: array
+              items:
+                type: object
+                properties:
+                  metaId:
+                    type: integer
+                  nombre:
+                    type: string
+                  montoObjetivo:
+                    type: number
+                  ahorroReal:
+                    type: number
+                  porcentajeAvance:
+                    type: number
+            resumen:
+              type: object
+              properties:
+                totalMetasActivas:
+                  type: integer
+                ahorroTotalPeriodo:
+                  type: number
+                diferenciaObjetivo:
+                  type: number
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

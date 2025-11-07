@@ -12,7 +12,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --silent",
-    "test:verbose": "jest --verbose"
+    "test:verbose": "jest --verbose",
+    "docs:postman": "npx openapi2postmanv2 -s docs/api/openapi.yaml -o postman_collection.json -p"
   },
   "repository": {
     "type": "git",
@@ -27,12 +28,17 @@
   "homepage": "https://github.com/dodamivid/MoneyWise#readme",
   "dependencies": {
     "express": "^5.1.0",
+    "js-yaml": "^4.1.0",
+    "mysql2": "^3.15.3",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
     "jest": "^30.2.0",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
