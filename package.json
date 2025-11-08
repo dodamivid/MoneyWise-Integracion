@@ -27,6 +27,7 @@
   "homepage": "https://github.com/dodamivid/MoneyWise#readme",
   "dependencies": {
     "express": "^5.1.0",
+    "mysql2": "^3.15.3",
     "zod": "^4.1.12"
   },
   "devDependencies": {
