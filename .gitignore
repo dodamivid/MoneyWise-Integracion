@@ -2,7 +2,6 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=androidstudio
 
 /node_modules
-coverage/
 
 ### AndroidStudio ###
 # Covers files to be ignored for android development using Android Studio.
