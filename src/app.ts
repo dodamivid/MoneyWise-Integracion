@@ -2,7 +2,9 @@ import express, { NextFunction, Request, Response } from "express";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import fechasCorteRouter from "./routes/fechasCorte.routes";
+// import egresosRouter from "./routes/egresos.routes"; // TODO: descomentar cuando main tenga este archivo
 import { requestLogger, notFoundHandler, errorHandler } from "./middlewares/error.middleware";
+// import { db } from "./config/db"; // TODO: descomentar cuando main tenga este archivo
 
 // Boot the Express application
 const app = express();
