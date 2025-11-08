@@ -43,7 +43,7 @@ describe('Users API Endpoints', () => {
       const response = await request(app)
         .post('/api/users')
         .send(invalidUserData)
-        .expect(500); 
+        .expect(400);
 
       expect(response.body).toHaveProperty('status', 'error');
     });
@@ -55,7 +55,7 @@ describe('Users API Endpoints', () => {
 
       const response = await request(app)
         .get(`/api/users/${nonExistentId}`)
-        .expect(500); 
+        .expect(404);
 
       expect(response.body).toHaveProperty('status', 'error');
     });

@@ -1,8 +1,19 @@
 openapi: 3.0.3
 info:
-  title: MoneyWise Users API
-  version: 1.0.0
-  description: API contract for user creation and retrieval.
+  title: MoneyWise Core API
+  version: 1.1.0
+  description: |
+    API principal de MoneyWise.
+
+    Módulos incluidos:
+    - Usuarios
+    - Ahorro: Fechas de Corte
+
+    Seguridad (mock actual): headers temporales `X-Usuario-Id` y `X-Scopes` reemplazables por JWT.
+    Scopes relevantes:
+      - `ahorro:leer` para listar fechas de corte.
+      - `ahorro:escribir` para crear/eliminar.
+      - `admin:ahorro` para operar sobre terceros (usuarioId distinto al del token).
   contact:
     name: MoneyWise Dev Team
     email: support@moneywise.com
@@ -35,6 +46,127 @@ paths:
           description: Invalid request data
         '500':
           description: Internal server error
+  /api/v1/ahorro/fechas-corte:
+    get:
+      summary: Listar fechas de corte de ahorro
+      description: |
+        Lista fechas de corte del usuario autenticado o de otro usuario si se tiene el scope `admin:ahorro`.
+        Orden soportado: `fechaCorte|creadoEn[:asc|:desc]`.
+      parameters:
+        - in: query
+          name: usuarioId
+          schema:
+            type: integer
+            minimum: 1
+          description: ID de usuario (solo permitido con scope admin:ahorro).
+        - in: query
+          name: pagina
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: tamanoPagina
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: orden
+          schema:
+            type: string
+            example: fechaCorte:desc
+          description: Campo de orden con dirección opcional.
+      responses:
+        '200':
+          description: Listado paginado exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FechasCorteListadoResponse'
+        '403':
+          description: Permiso denegado para usuarioId distinto sin scope admin:ahorro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Parámetros de paginación u orden inválidos (DATOS_INVALIDOS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Crear fecha de corte
+      description: |
+        Registra una nueva fecha de corte en UTC. Debe ser posterior a la última registrada y no debe existir duplicado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearFechaCorteRequest'
+      responses:
+        '201':
+          description: Fecha de corte creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrearFechaCorteResponse'
+        '403':
+          description: Permiso denegado al intentar crear para otro usuario sin scope admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Fecha duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Regla de negocio (fecha no posterior) o formato inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/ahorro/fechas-corte/{id}:
+    delete:
+      summary: Eliminar fecha de corte
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Eliminada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EliminarFechaCorteResponse'
+        '403':
+          description: Permiso denegado (otro usuario sin scope admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/users/{id}:
     get:
@@ -61,6 +193,132 @@ paths:
 
 components:
   schemas:
+    FechaCorteListado:
+      type: array
+      items:
+        $ref: '#/components/schemas/FechaCorte'
+    RespuestaOKPaginada:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        meta:
+          type: object
+          properties:
+            paginacion:
+              type: object
+              properties:
+                pagina:
+                  type: integer
+                  example: 1
+                tamanoPagina:
+                  type: integer
+                  example: 20
+                total:
+                  type: integer
+                  example: 42
+    ErrorComun:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: DATOS_INVALIDOS
+        statusCode:
+          type: integer
+          example: 422
+    FechaCorte:
+      type: object
+      properties:
+        fechaCorteId:
+          type: integer
+          example: 5
+        usuarioId:
+          type: integer
+          example: 23
+        fechaCorte:
+          type: string
+          format: date-time
+          example: 2025-03-31T23:59:59Z
+        creadoEn:
+          type: string
+          format: date-time
+          example: 2025-03-01T10:00:00Z
+    FechasCorteListadoResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FechaCorte'
+        meta:
+          type: object
+          properties:
+            paginacion:
+              type: object
+              properties:
+                pagina:
+                  type: integer
+                  example: 1
+                tamanoPagina:
+                  type: integer
+                  example: 20
+                total:
+                  type: integer
+                  example: 42
+    CrearFechaCorteRequest:
+      type: object
+      required: [fechaCorte]
+      properties:
+        usuarioId:
+          type: integer
+          example: 23
+        fechaCorte:
+          type: string
+          format: date-time
+          example: 2025-03-31T23:59:59Z
+    CrearFechaCorteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            fechaCorteId:
+              type: integer
+              example: 5
+    EliminarFechaCorteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            eliminado:
+              type: boolean
+              example: true
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: PERMISO_DENEGADO
+        statusCode:
+          type: integer
+          example: 403
     UserRequest:
       type: object
       required:

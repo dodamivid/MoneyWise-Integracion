@@ -8,7 +8,9 @@ describe('General API Behavior', () => {
       .expect(404);
 
     expect(response.body).toHaveProperty('status', 'error');
-    expect(response.body).toHaveProperty('message', 'Route not found');
+  // Mensaje ahora proviene del notFoundHandler centralizado
+  expect(response.body).toHaveProperty('message');
+  expect(String(response.body.message)).toMatch(/Ruta no encontrada/i);
   });
 
   it('should handle internal server errors with 500', async () => {

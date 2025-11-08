@@ -286,3 +286,37 @@ export class InternalServerError extends AppError {
 export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }
+
+/**
+ * Error lanzado cuando el cliente no tiene permisos para ejecutar la acción.
+ * 
+ * Corresponde al código de estado HTTP 403 (Forbidden).
+ */
+export class ForbiddenError extends AppError {
+  constructor(message: string = "Permiso denegado") {
+    super(message, 403);
+  }
+}
+
+/**
+ * Error lanzado cuando hay un conflicto con el estado actual del recurso.
+ * 
+ * Corresponde al código de estado HTTP 409 (Conflict). Útil para duplicados.
+ */
+export class ConflictError extends AppError {
+  constructor(message: string = "Conflicto") {
+    super(message, 409);
+  }
+}
+
+/**
+ * Error lanzado cuando los datos son válidos sintácticamente, pero no pasan reglas de negocio.
+ * 
+ * Corresponde a HTTP 422 (Unprocessable Entity). Úsalo para paginación/orden inválidos
+ * y para la regla de "fecha posterior".
+ */
+export class UnprocessableEntityError extends AppError {
+  constructor(message: string = "DATOS_INVALIDOS") {
+    super(message, 422);
+  }
+}
