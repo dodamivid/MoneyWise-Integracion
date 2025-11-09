@@ -269,3 +269,27 @@ export function requestLogger(
 
   next();
 }
+// =====================================================
+// 🔹 Compatibilidad con controladores (ingresos, egresos)
+// =====================================================
+
+
+/**
+ * handleError — versión simplificada para controladores
+ * Permite manejar errores directamente desde servicios o SPs.
+ */
+export const handleError = (res: Response, error: any): void => {
+  console.error("[ErrorMiddleware]", error);
+
+  const status = error.status || 500;
+  const codigo = error.codigo || "ERROR_INTERNO";
+  const mensaje =
+    error.mensaje ||
+    error.message ||
+    "Error interno del servidor.";
+
+  res.status(status).json({
+    ok: false,
+    error: { codigo, mensaje },
+  });
+};

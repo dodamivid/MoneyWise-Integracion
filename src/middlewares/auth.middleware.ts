@@ -1,12 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-/**
- * Middleware de autenticación simulado para entorno de integración.
- * - Lee encabezados opcionales:
- *   - x-mw-user: ID de usuario
- *   - x-mw-scopes: scopes separados por comas (p.ej. "egresos:leer,egresos:escribir")
- * - Coloca el contexto en res.locals.auth
- */
+
 export function mockAuth(req: Request, res: Response, next: NextFunction) {
   const userId = (req.header("x-mw-user") || "demo-user").trim();
   // En tests dejamos vacío para permitir validar 403; en otros entornos damos scopes básicos por defecto
@@ -32,11 +26,7 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-/**
- * Middleware de autorización por scope.
- * - Verifica que res.locals.auth.scopes incluya el scope requerido.
- * - Si no está presente, retorna 403.
- */
+
 export function requireScope(scope: string) {
   return (req: Request, res: Response, next: NextFunction) => {
     const auth = res.locals.auth as

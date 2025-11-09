@@ -49,3 +49,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 export default app;
+
+import ingresosRoutes from "./routes/ingresos.routes";
+app.use("/api/v1/ingresos", ingresosRoutes);
