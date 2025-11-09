@@ -96,14 +96,6 @@ Rutas → Controladores → Servicios → Repositorios → Modelos
    - `@tests/*` mapea a `__tests__/*`
    - Configurado en `tsconfig.json`
 
-## Advertencia de Conflicto de Merge
-
-**CRÍTICO**: [index.ts](src/index.ts) actualmente tiene **conflictos de merge sin resolver** (líneas 1-51). El archivo contiene tanto:
-- Configuración antigua en línea de la app (líneas 2-42)
-- Nueva importación desde `app.ts` (línea 6)
-
-El enfoque correcto es usar la importación desde `app.ts` (versión post-merge). Limpia los marcadores de conflicto antes de hacer cambios.
-
 ## Framework de Pruebas
 
 - **Test Runner**: Jest con preset ts-jest
