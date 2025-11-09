@@ -1,6 +1,8 @@
 import express from "express";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
+import egresosRouter from "./routes/egresos.routes";
+import { db } from "./config/db";
 import {
   traceIdMiddleware,
   errorHandler,
@@ -18,6 +20,11 @@ app.use(traceIdMiddleware);
 app.disable("x-powered-by");
 app.use(express.json());
 
+// Inicializa la conexión a BD si está habilitada
+if (db.enabled) {
+  db.init().catch((e) => console.error("DB init error:", e.message));
+}
+
 // Simple root banner to confirm the API is reachable
 app.get("/", (_req, res) => {
   res.json({ message: "MoneyWise API" });
@@ -28,6 +35,9 @@ app.use("/health", healthRouter);
 
 // User routes mounted under /api/users
 app.use("/api/users", usersRouter);
+
+// Egresos routes mounted under /api/v1/egresos
+app.use("/api/v1/egresos", egresosRouter);
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);
