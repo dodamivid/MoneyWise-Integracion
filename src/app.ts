@@ -1,10 +1,18 @@
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
+import {
+  traceIdMiddleware,
+  errorHandler,
+  notFoundHandler,
+} from "./middlewares/error.middleware";
 
 // Boot the Express application
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
+
+// Middleware de traceId - DEBE ir primero para rastrear todas las requests
+app.use(traceIdMiddleware);
 
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
@@ -21,21 +29,10 @@ app.use("/health", healthRouter);
 // User routes mounted under /api/users
 app.use("/api/users", usersRouter);
 
-// Consistent JSON 404 for any route that is not defined
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({
-    status: "error",
-    message: "Route not found",
-  });
-});
+// Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
+app.use(notFoundHandler);
 
-// Final error handler to catch unexpected failures
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
-  res.status(500).json({
-    status: "error",
-    message: "Internal server error",
-  });
-});
+// Manejador centralizado de errores - DEBE ir al final
+app.use(errorHandler);
 
 export default app;

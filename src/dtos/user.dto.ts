@@ -155,33 +155,36 @@ export interface UsersResponseDTO {
 
 /**
  * Estructura estándar para respuestas de error.
- * 
+ *
  * Esta interfaz asegura que todas las respuestas de error sigan el mismo formato,
  * haciendo el manejo de errores consistente y predecible para los clientes de la API.
- * 
+ *
  * @interface ErrorResponseDTO
- * 
+ *
  * @property {"error"} status - Siempre "error" para respuestas de error
  * @property {string} message - Mensaje de error legible para humanos
  * @property {number} [statusCode] - Código de estado HTTP (ej. 404, 400, 500)
+ * @property {string} [traceId] - ID único de rastreo para correlacionar este error con logs
  * @property {Object} [details] - Detalles adicionales opcionales del error
  * @property {string} [details.field] - Campo que causó el error
  * @property {string} [details.reason] - Razón detallada del error
- * 
+ *
  * @example
  * ```typescript
  * // Respuesta de error simple
  * const errorResponse: ErrorResponseDTO = {
  *   status: "error",
  *   message: "Usuario no encontrado",
- *   statusCode: 404
+ *   statusCode: 404,
+ *   traceId: "550e8400-e29b-41d4-a716-446655440000"
  * };
- * 
+ *
  * // Respuesta de error con detalles
  * const validationError: ErrorResponseDTO = {
  *   status: "error",
  *   message: "Validación fallida",
  *   statusCode: 400,
+ *   traceId: "660e8400-e29b-41d4-a716-446655440001",
  *   details: {
  *     field: "email",
  *     reason: "Formato de correo inválido"
@@ -193,6 +196,7 @@ export interface ErrorResponseDTO {
   status: "error";
   message: string;
   statusCode?: number;
+  traceId?: string;
   details?: Record<string, any>;
 }
 
