@@ -28,8 +28,65 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+import { randomUUID } from "crypto";
 import { isAppError, AppError } from "../utils/errors";
 import { createErrorResponse } from "../dtos/user.dto";
+
+/**
+ * Extiende la interfaz Request de Express para incluir traceId.
+ * Esto permite que TypeScript reconozca la propiedad traceId en objetos Request.
+ */
+declare global {
+  namespace Express {
+    interface Request {
+      traceId?: string;
+    }
+  }
+}
+
+/**
+ * Middleware para generar y adjuntar un traceId único a cada request.
+ *
+ * Este middleware genera un UUID único para cada request entrante y lo almacena
+ * en `req.traceId`. Este traceId puede ser usado para rastrear requests a través
+ * de toda la aplicación, facilitando el debugging y el monitoreo.
+ *
+ * El traceId también se puede incluir en respuestas y logs para correlacionar
+ * requests con sus respuestas y errores correspondientes.
+ *
+ * @function traceIdMiddleware
+ * @param {Request} req - Objeto de petición de Express
+ * @param {Response} res - Objeto de respuesta de Express
+ * @param {NextFunction} next - Función de siguiente middleware de Express
+ * @returns {void}
+ *
+ * @example
+ * ```typescript
+ * import { traceIdMiddleware } from './middlewares/error.middleware';
+ *
+ * // Registrar como primer middleware
+ * app.use(traceIdMiddleware);
+ *
+ * // Usar en otros middlewares o controladores
+ * app.get('/example', (req, res) => {
+ *   console.log(`Request traceId: ${req.traceId}`);
+ *   res.json({ traceId: req.traceId });
+ * });
+ * ```
+ */
+export function traceIdMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  // Generar un UUID único para este request
+  req.traceId = randomUUID();
+
+  // Opcional: También se puede incluir en el header de respuesta
+  res.setHeader('X-Trace-Id', req.traceId);
+
+  next();
+}
 
 /**
  * Middleware centralizado de manejo de errores.
@@ -79,8 +136,12 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ): void {
+  // Obtener traceId del request
+  const traceId = req.traceId || 'unknown';
+
   // Registrar el error para depuración (en producción, usar un servicio de logging apropiado)
   console.error("Error capturado por el manejador de errores:", {
+    traceId,
     name: err.name,
     message: err.message,
     stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
@@ -98,8 +159,9 @@ export function errorHandler(
         ? {
             name: err.name,
             stack: err.stack,
+            traceId,
           }
-        : undefined
+        : { traceId }
     );
 
     res.status(err.statusCode).json(errorResponse);
@@ -121,8 +183,9 @@ export function errorHandler(
         ? {
             errors: validationErrors,
             stack: err.stack,
+            traceId,
           }
-        : { errors: validationErrors }
+        : { errors: validationErrors, traceId }
     );
 
     res.status(400).json(errorResponse);
@@ -144,8 +207,9 @@ export function errorHandler(
           name: err.name,
           stack: err.stack,
           originalError: err.message,
+          traceId,
         }
-      : undefined
+      : { traceId }
   );
 
   res.status(statusCode).json(errorResponse);
@@ -182,9 +246,12 @@ export function errorHandler(
  * ```
  */
 export function notFoundHandler(req: Request, res: Response): void {
+  const traceId = req.traceId || 'unknown';
+
   const errorResponse = createErrorResponse(
     `Ruta no encontrada: ${req.method} ${req.path}`,
-    404
+    404,
+    { traceId }
   );
 
   res.status(404).json(errorResponse);
