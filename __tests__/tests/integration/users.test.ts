@@ -47,7 +47,7 @@ describe('Users API Endpoints', () => {
 
       expect(response.body).toHaveProperty('status', 'error');
       expect(response.body).toHaveProperty('statusCode', 400);
-      expect(response.body.details).toHaveProperty('traceId');
+      expect(response.body).toHaveProperty('traceId');
     });
   });
 
@@ -61,7 +61,7 @@ describe('Users API Endpoints', () => {
 
       expect(response.body).toHaveProperty('status', 'error');
       expect(response.body).toHaveProperty('statusCode', 404);
-      expect(response.body.details).toHaveProperty('traceId');
+      expect(response.body).toHaveProperty('traceId');
     });
   });
 });
