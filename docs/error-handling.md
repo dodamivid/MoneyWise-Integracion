@@ -79,7 +79,7 @@ app.use(errorHandler);
 
 ### ¿Qué es el TraceId?
 
-El `traceId` es un identificador único (UUID v4) generado para cada request HTTP que permite:
+El `traceId` es un identificador único (UUID v4) que permite:
 
 - **Rastrear** un request a través de toda la aplicación
 - **Correlacionar** logs, errores y respuestas
@@ -88,14 +88,22 @@ El `traceId` es un identificador único (UUID v4) generado para cada request HTT
 
 ### Implementación
 
-#### 1. Generación Automática
+#### 1. Propagación y Generación
 
-El middleware `traceIdMiddleware` genera automáticamente un `traceId` para cada request:
+El middleware `traceIdMiddleware` propaga el correlation ID entrante o genera uno nuevo:
 
 ```typescript
-// Se ejecuta automáticamente para cada request
-req.traceId = randomUUID(); // ej: "550e8400-e29b-41d4-a716-446655440000"
+// Propaga x-correlation-id si existe, sino genera uno nuevo
+const incomingCorrelationId = req.headers['x-correlation-id'];
+req.traceId = typeof incomingCorrelationId === 'string'
+  ? incomingCorrelationId
+  : randomUUID();
 ```
+
+**Ventajas de la propagación:**
+- Permite rastreo distribuido entre microservicios
+- Los clientes pueden proporcionar su propio correlation ID
+- Facilita debugging de flujos complejos
 
 #### 2. Header de Respuesta
 
@@ -201,11 +209,11 @@ interface ErrorResponseDTO {
   "status": "error",
   "message": "Usuario con id 123 no encontrado",
   "statusCode": 404,
-  "details": {
-    "traceId": "550e8400-e29b-41d4-a716-446655440000"
-  }
+  "traceId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+**Nota:** El `traceId` está en el nivel raíz del objeto, no dentro de `details`.
 
 #### Error 400 - Validation Error
 
@@ -214,14 +222,14 @@ interface ErrorResponseDTO {
   "status": "error",
   "message": "Validación fallida",
   "statusCode": 400,
+  "traceId": "660e8400-e29b-41d4-a716-446655440001",
   "details": {
     "errors": [
       {
         "field": "email",
         "message": "Formato de correo electrónico inválido"
       }
-    ],
-    "traceId": "660e8400-e29b-41d4-a716-446655440001"
+    ]
   }
 }
 ```
@@ -234,9 +242,7 @@ interface ErrorResponseDTO {
   "status": "error",
   "message": "Ocurrió un error inesperado",
   "statusCode": 500,
-  "details": {
-    "traceId": "770e8400-e29b-41d4-a716-446655440002"
-  }
+  "traceId": "770e8400-e29b-41d4-a716-446655440002"
 }
 ```
 
@@ -246,10 +252,10 @@ interface ErrorResponseDTO {
   "status": "error",
   "message": "Cannot read property 'name' of undefined",
   "statusCode": 500,
+  "traceId": "770e8400-e29b-41d4-a716-446655440002",
   "details": {
     "name": "TypeError",
-    "stack": "TypeError: Cannot read property...",
-    "traceId": "770e8400-e29b-41d4-a716-446655440002"
+    "stack": "TypeError: Cannot read property..."
   }
 }
 ```
@@ -364,6 +370,7 @@ Response Body (400):
   "status": "error",
   "message": "Validación fallida",
   "statusCode": 400,
+  "traceId": "234e5678-e89b-12d3-a456-426614174001",
   "details": {
     "errors": [
       {
@@ -374,8 +381,7 @@ Response Body (400):
         "field": "password",
         "message": "La contraseña debe tener al menos 8 caracteres"
       }
-    ],
-    "traceId": "234e5678-e89b-12d3-a456-426614174001"
+    ]
   }
 }
 ```
@@ -393,9 +399,7 @@ Response Body (404):
   "status": "error",
   "message": "Usuario con id 999-invalid-id no encontrado",
   "statusCode": 404,
-  "details": {
-    "traceId": "345e6789-e89b-12d3-a456-426614174002"
-  }
+  "traceId": "345e6789-e89b-12d3-a456-426614174002"
 }
 ```
 
@@ -410,13 +414,13 @@ X-Trace-Id: 456e7890-e89b-12d3-a456-426614174003
 Response Body (404):
 {
   "status": "error",
-  "message": "Ruta no encontrada: GET /api/nonexistent",
+  "message": "Route not found: GET /api/nonexistent",
   "statusCode": 404,
-  "details": {
-    "traceId": "456e7890-e89b-12d3-a456-426614174003"
-  }
+  "traceId": "456e7890-e89b-12d3-a456-426614174003"
 }
 ```
+
+**Nota:** El mensaje de "Route not found" se mantiene en inglés para compatibilidad con clientes existentes.
 
 ## Debugging
 
