@@ -47,9 +47,10 @@ declare global {
 /**
  * Middleware para generar y adjuntar un traceId único a cada request.
  *
- * Este middleware genera un UUID único para cada request entrante y lo almacena
- * en `req.traceId`. Este traceId puede ser usado para rastrear requests a través
- * de toda la aplicación, facilitando el debugging y el monitoreo.
+ * Este middleware propaga el correlation ID entrante si existe (header x-correlation-id),
+ * o genera un UUID único para cada request entrante y lo almacena en `req.traceId`.
+ * Este traceId puede ser usado para rastrear requests a través de toda la aplicación,
+ * facilitando el debugging y el monitoreo.
  *
  * El traceId también se puede incluir en respuestas y logs para correlacionar
  * requests con sus respuestas y errores correspondientes.
@@ -79,8 +80,11 @@ export function traceIdMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  // Generar un UUID único para este request
-  req.traceId = randomUUID();
+  // Propagar el correlation ID entrante si existe, o generar uno nuevo
+  const incomingCorrelationId = req.headers['x-correlation-id'];
+  req.traceId = typeof incomingCorrelationId === 'string'
+    ? incomingCorrelationId
+    : randomUUID();
 
   // Opcional: También se puede incluir en el header de respuesta
   res.setHeader('X-Trace-Id', req.traceId);
@@ -249,7 +253,7 @@ export function notFoundHandler(req: Request, res: Response): void {
   const traceId = req.traceId || 'unknown';
 
   const errorResponse = createErrorResponse(
-    `Ruta no encontrada: ${req.method} ${req.path}`,
+    `Route not found: ${req.method} ${req.path}`,
     404,
     { traceId }
   );

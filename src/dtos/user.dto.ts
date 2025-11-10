@@ -311,27 +311,27 @@ export function createUsersResponse(
 
 /**
  * Crea una respuesta de error estandarizada.
- * 
+ *
  * Esta función crea respuestas de error consistentes que pueden enviarse a los clientes.
  * Asegura que todos los errores sigan el mismo formato.
- * 
+ *
  * @function createErrorResponse
  * @param {string} message - Mensaje de error
  * @param {number} [statusCode] - Código de estado HTTP
  * @param {Object} [details] - Detalles adicionales del error
  * @returns {ErrorResponseDTO} Respuesta de error formateada
- * 
+ *
  * @example
  * ```typescript
  * // Error simple
  * const error = createErrorResponse('Usuario no encontrado', 404);
  * res.status(404).json(error);
- * 
- * // Error con detalles
+ *
+ * // Error con detalles y traceId
  * const validationError = createErrorResponse(
  *   'Validación fallida',
  *   400,
- *   { field: 'email', reason: 'Formato inválido' }
+ *   { field: 'email', reason: 'Formato inválido', traceId: 'abc123' }
  * );
  * res.status(400).json(validationError);
  * ```
@@ -341,10 +341,15 @@ export function createErrorResponse(
   statusCode?: number,
   details?: Record<string, any>
 ): ErrorResponseDTO {
+  // Extraer traceId de details si existe, para ponerlo en nivel raíz
+  const traceId = details?.traceId;
+  const { traceId: _removed, ...remainingDetails } = details || {};
+
   return {
     status: "error",
     message,
     ...(statusCode && { statusCode }),
-    ...(details && { details }),
+    ...(traceId && { traceId }),
+    ...(Object.keys(remainingDetails).length > 0 && { details: remainingDetails }),
   };
 }
