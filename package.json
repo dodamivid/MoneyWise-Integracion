@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only --project tsconfig.json src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

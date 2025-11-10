@@ -6,11 +6,9 @@ const enabled =
 export const db = {
   enabled,
   pool: undefined as undefined | mysql.Pool,
-
   async init() {
     if (!enabled) return;
     if (this.pool) return;
-
     const host = process.env.DB_HOST || "127.0.0.1";
     const port = Number(process.env.DB_PORT || 3306);
     const user = process.env.DB_USER || "root";
@@ -29,27 +27,17 @@ export const db = {
       supportBigNumbers: true,
     });
   },
-
   async call<T = any[]>(sp: string, params: any[] = []): Promise<any[]> {
     if (!this.pool) throw new Error("DB pool no inicializado");
     const [rows] = await this.pool.query(`CALL ${sp}`, params);
-
     // mysql2 devuelve arrays anidados para múltiples result sets
     if (Array.isArray(rows) && Array.isArray(rows[0])) {
       return rows as any[];
     }
     return [rows] as any[];
   },
-
-  // ✅ Nuevo método compatible con db.query(...)
-  async query<T = any[]>(sql: string, params: any[] = []): Promise<[T, any]> {
-    if (!this.pool) throw new Error("DB pool no inicializado");
-    const [rows, fields] = await this.pool.query(sql, params);
-    return [rows as T, fields];
-  },
 };
 
-// 🔄 Inicializa automáticamente la conexión al iniciar la app
 (async () => {
   try {
     await db.init();
@@ -60,4 +48,3 @@ export const db = {
     );
   }
 })();
-
