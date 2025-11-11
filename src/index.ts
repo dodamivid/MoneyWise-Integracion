@@ -1,21 +1,30 @@
-<<<<<<< HEAD
 import express, { NextFunction, Request, Response } from "express";
 import healthRouter from "./routes/health";
-import usersRouter from "./routes/users.routes"; 
-=======
-import app from './app';
->>>>>>> 805c8c2129ee344a2e22d655dbbd75e60aa19f9b
+import usersRouter from "./routes/users.routes";
+import catalogosRouter from "./routes/catalogos.routes";
 
+const app = express();
 const port = Number(process.env.PORT ?? 3000);
 
-<<<<<<< HEAD
+// Validate port is a valid number
+if (isNaN(port) || port < 1 || port > 65535) {
+  throw new Error("Invalid PORT environment variable");
+}
+
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Request logging middleware (optional, pero muy útil)
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
 
 // Simple root banner to confirm the API is reachable
 app.get("/", (_req, res) => {
-  res.json({ message: "MoneyWise API" });
+  res.json({ message: "MoneyWise API", version: "1.0.0" });
 });
 
 // Health check routes mounted under /health
@@ -24,9 +33,13 @@ app.use("/health", healthRouter);
 // User routes mounted under /api/users
 app.use("/api/users", usersRouter);
 
+// Catalog routes mounted under /api/v1/catalogos
+app.use("/api/v1/catalogos", catalogosRouter);
+
 // Consistent JSON 404 for any route that is not defined
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
+    ok: false,
     status: "error",
     message: "Route not found",
   });
@@ -34,18 +47,33 @@ app.use((_req: Request, res: Response) => {
 
 // Final error handler to catch unexpected failures
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
+  console.error("Error:", err.message);
   res.status(500).json({
+    ok: false,
     status: "error",
-    message: "Internal server error",
+    message: process.env.NODE_ENV === "development" ? err.message : "Internal server error",
   });
 });
 
 // Start the HTTP server
-=======
->>>>>>> 805c8c2129ee344a2e22d655dbbd75e60aa19f9b
-app.listen(port, () => {
-  console.log(`MoneyWise API running at http://localhost:${port}`);
-  console.log(`Health check available at http://localhost:${port}/health`);
-  console.log(`Users endpoint available at http://localhost:${port}/api/users`);
+const server = app.listen(port, () => {
+  console.log(`✓ MoneyWise API running at http://localhost:${port}`);
+  console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`✓ Health check: http://localhost:${port}/health`);
 });
+
+server.on("error", (err) => {
+  console.error("✗ Server error:", err);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
+
+export default app;
