@@ -1,9 +1,15 @@
 import express from "express";
+import path from "path";
+import fs from "fs";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yaml";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import egresosRouter from "./routes/egresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
 import versionRoutes from "./routes/version.routes";
+// Rutas del dashboard (se agregará el archivo en este ticket)
+import dashboardRoutes from "./routes/dashboard.routes";
 import { db } from "./config/db";
 import {
   traceIdMiddleware,
@@ -31,6 +37,30 @@ app.get("/", (_req, res) => {
   res.json({ message: "MoneyWise API" });
 });
 
+// Swagger UI (dev/build): leer docs/api/openapi.yaml desde la raíz del proyecto
+try {
+  const candidates = [
+    process.env.OPENAPI_PATH,
+    path.join(process.cwd(), "docs", "api", "openapi.yaml"),
+    path.join(process.cwd(), "docs", "api", "openapi.yml"),
+  ].filter((p): p is string => !!p);
+
+  const apiSpecPath = candidates.find((p) => fs.existsSync(p));
+
+  if (apiSpecPath) {
+    const file = fs.readFileSync(apiSpecPath, "utf8");
+    const spec = YAML.parse(file);
+    app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
+    console.log(`Swagger UI disponible en /docs (spec: ${apiSpecPath})`);
+  } else {
+    console.warn(
+      "Swagger UI no disponible: no se encontró docs/api/openapi.yaml en la raíz del proyecto"
+    );
+  }
+} catch (e: any) {
+  console.warn("Swagger UI no disponible:", e?.message || String(e));
+}
+
 // Health check routes mounted under /health
 app.use("/health", healthRouter);
 
@@ -45,6 +75,9 @@ app.use("/api/v1/inversiones", inversionesRouter);
 
 // Version routes mounted under /api/v1/version
 app.use("/api/v1/version", versionRoutes);
+
+// Dashboard routes mounted under /api/v1/dashboard
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);
