@@ -22,45 +22,39 @@ class EgresosController {
       );
 
       return res.status(200).json({
-        ok: true,
-        data: egresos,
-        meta: {
-          paginacion: {
-            pagina,
-            tamanoPagina,
-            total,
+        status: "success",
+        message: "Egresos obtenidos correctamente",
+        data: {
+          egresos,
+          meta: {
+            paginacion: {
+              pagina,
+              tamanoPagina,
+              total,
+            },
           },
         },
       });
     } catch (error: any) {
       if (error instanceof ZodError) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: "Parámetros de consulta inválidos",
-            detalles: error.issues,
-          },
+          status: "error",
+          message: "Parámetros de consulta inválidos",
+          data: error.issues,
         });
       }
 
-      const msg = error.message || "Error";
+      const msg = error.message || "Error interno del servidor";
       if (msg.startsWith("DATOS_INVALIDOS")) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("PERMISO_DENEGADO")) {
         return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
 
@@ -81,54 +75,42 @@ class EgresosController {
       const egresoId = await egresosService.crear(req.body, auth);
 
       return res.status(201).json({
-        ok: true,
+        status: "success",
+        message: "Egreso creado correctamente",
         data: { egresoId },
       });
     } catch (error: any) {
       if (error instanceof ZodError) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: "Datos del egreso inválidos",
-            detalles: error.issues,
-          },
+          status: "error",
+          message: "Datos del egreso inválidos",
+          data: error.issues,
         });
       }
 
-      const msg = error.message || "Error";
+      const msg = error.message || "Error interno del servidor";
       if (msg.startsWith("DATOS_INVALIDOS")) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("FK_INEXISTENTE")) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "FK_INEXISTENTE",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("PERMISO_DENEGADO")) {
         return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
 
       next(error);
     }
   }
-
   /**
    * GET /api/v1/egresos/:id - Obtiene un egreso por ID
    */
@@ -142,38 +124,30 @@ class EgresosController {
       const egresoId = parseInt(req.params.id, 10);
       if (isNaN(egresoId)) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: "ID de egreso inválido",
-          },
+          status: "error",
+          message: "ID de egreso inválido",
         });
       }
 
       const egreso = await egresosService.obtener(egresoId, auth);
 
       return res.status(200).json({
-        ok: true,
+        status: "success",
+        message: "Egreso obtenido correctamente",
         data: egreso,
       });
     } catch (error: any) {
-      const msg = error.message || "Error";
+      const msg = error.message || "Error interno del servidor";
       if (msg.startsWith("NO_ENCONTRADO")) {
         return res.status(404).json({
-          ok: false,
-          error: {
-            codigo: "NO_ENCONTRADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("PERMISO_DENEGADO")) {
         return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
 
@@ -194,11 +168,8 @@ class EgresosController {
       const egresoId = parseInt(req.params.id, 10);
       if (isNaN(egresoId)) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: "ID de egreso inválido",
-          },
+          status: "error",
+          message: "ID de egreso inválido",
         });
       }
 
@@ -209,63 +180,48 @@ class EgresosController {
       );
 
       return res.status(200).json({
-        ok: true,
+        status: "success",
+        message: "Egreso actualizado correctamente",
         data: { actualizado },
       });
     } catch (error: any) {
       if (error instanceof ZodError) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: "Datos de actualización inválidos",
-            detalles: error.issues,
-          },
+          status: "error",
+          message: "Datos de actualización inválidos",
+          data: error.issues,
         });
       }
 
-      const msg = error.message || "Error";
+      const msg = error.message || "Error interno del servidor";
       if (msg.startsWith("DATOS_INVALIDOS")) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("FK_INEXISTENTE")) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "FK_INEXISTENTE",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("NO_ENCONTRADO")) {
         return res.status(404).json({
-          ok: false,
-          error: {
-            codigo: "NO_ENCONTRADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("PERMISO_DENEGADO")) {
         return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
 
       next(error);
     }
   }
-
   /**
    * DELETE /api/v1/egresos/:id - Elimina un egreso
    */
@@ -279,38 +235,30 @@ class EgresosController {
       const egresoId = parseInt(req.params.id, 10);
       if (isNaN(egresoId)) {
         return res.status(422).json({
-          ok: false,
-          error: {
-            codigo: "DATOS_INVALIDOS",
-            mensaje: "ID de egreso inválido",
-          },
+          status: "error",
+          message: "ID de egreso inválido",
         });
       }
 
       const eliminado = await egresosService.eliminar(egresoId, auth);
 
       return res.status(200).json({
-        ok: true,
+        status: "success",
+        message: "Egreso eliminado correctamente",
         data: { eliminado },
       });
     } catch (error: any) {
-      const msg = error.message || "Error";
+      const msg = error.message || "Error interno del servidor";
       if (msg.startsWith("NO_ENCONTRADO")) {
         return res.status(404).json({
-          ok: false,
-          error: {
-            codigo: "NO_ENCONTRADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
       if (msg.startsWith("PERMISO_DENEGADO")) {
         return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: msg,
-          },
+          status: "error",
+          message: msg,
         });
       }
 

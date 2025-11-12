@@ -1,10 +1,11 @@
-import { db } from "../config/db";
 import type {
   EgresoDTO,
   ListarEgresosQuery,
   CrearEgresoBody,
   ActualizarEgresoBody,
 } from "../dtos/egresos.dto";
+import { db } from "../config/db"; // ✅ Import agregado correctamente
+
 
 class EgresosRepository {
   /**

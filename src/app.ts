@@ -1,54 +1,58 @@
 import express, { NextFunction, Request, Response } from "express";
+import { db } from "./config/db";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import egresosRouter from "./routes/egresos.routes";
-import { db } from "./config/db";
+import ingresosRouter from "./routes/ingresos.routes";
 
-// Boot the Express application
+// 🚀 Inicialización de Express
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
 
-// Helpful defaults for security and JSON payload parsing
+// ⚙️ Configuración base
 app.disable("x-powered-by");
 app.use(express.json());
 
-// Inicializa la conexión a BD si está habilitada
+
+// 🗄️ Inicializa la conexión a BD si está habilitada
 if (db.enabled) {
   db.init().catch((e) => console.error("DB init error:", e.message));
+} else {
+  console.warn("⚠️ Base de datos deshabilitada — corriendo en modo mock.");
 }
 
-// Simple root banner to confirm the API is reachable
+// 🌐 Ruta raíz
 app.get("/", (_req, res) => {
-  res.json({ message: "MoneyWise API" });
+  res.json({ status: "success", message: "MoneyWise API" });
 });
 
-// Health check routes mounted under /health
+// 🩺 Health check
 app.use("/health", healthRouter);
 
-// User routes mounted under /api/users
+// 👥 Usuarios
 app.use("/api/users", usersRouter);
 
-// Egresos routes mounted under /api/v1/egresos
+// 💸 Egresos
 app.use("/api/v1/egresos", egresosRouter);
 
-// Consistent JSON 404 for any route that is not defined
+// 💰 Ingresos
+app.use("/api/v1/ingresos", ingresosRouter); // ✅ Colocado antes del export
+
+// 🚫 Manejo de rutas inexistentes (404)
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
     status: "error",
-    message: "Route not found",
+    message: "Ruta no encontrada",
   });
 });
 
-// Final error handler to catch unexpected failures
+// 💥 Manejador global de errores
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.status(500).json({
     status: "error",
-    message: "Internal server error",
+    message: "Error interno del servidor",
   });
 });
 
 export default app;
-
-import ingresosRoutes from "./routes/ingresos.routes";
-app.use("/api/v1/ingresos", ingresosRoutes);
