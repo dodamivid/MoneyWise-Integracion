@@ -41,6 +41,7 @@ import {
   createDeleteMetaResponse,
 } from "../dtos/metas.dto";
 import { MetaQueryParams } from "../models/meta.model";
+import { BadRequestError } from "../utils/errors";
 
 /**
  * Clase controladora para los endpoints HTTP relacionados con metas.
@@ -141,7 +142,7 @@ export class MetasController {
 
       // Validar que sea un número válido
       if (isNaN(metaId)) {
-        throw new Error("ID de meta inválido");
+        throw new BadRequestError("ID de meta inválido");
       }
 
       // Llamar al servicio para encontrar la meta
@@ -440,7 +441,7 @@ export class MetasController {
 
       // Validar que sea un número válido
       if (isNaN(metaId)) {
-        throw new Error("ID de meta inválido");
+        throw new BadRequestError("ID de meta inválido");
       }
 
       // Extraer datos de actualización
@@ -545,7 +546,7 @@ export class MetasController {
 
       // Validar que sea un número válido
       if (isNaN(metaId)) {
-        throw new Error("ID de meta inválido");
+        throw new BadRequestError("ID de meta inválido");
       }
 
       // TODO: Extraer usuarioId del JWT/session
