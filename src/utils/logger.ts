@@ -1,15 +1,22 @@
 import pino from "pino";
 
 /**
- * Configura un logger Pino con formato legible o JSON según el entorno.
- * Se evita usar "pino-pretty" en modo test, ya que Jest no soporta transportes.
+ * Configura el logger Pino con formato legible o JSON según el entorno.
+ * Evita usar "pino-pretty" en modo test (Jest) y producción.
+ *
+ * Entornos:
+ * - development → logs colorizados y legibles
+ * - production  → logs JSON para monitorización
+ * - test/CI     → sin transporte ni salida en consola
  */
-const isTestEnv = process.env.NODE_ENV === "test"; // entorno de test (Jest)
-const isDevEnv = process.env.NODE_ENV !== "production" && !isTestEnv;
+
+const isTestEnv = process.env.NODE_ENV === "test";
+const isDevEnv = process.env.NODE_ENV === "development";
 
 const logger = pino({
   level: process.env.LOG_LEVEL || "info",
-  // Solo usa "pino-pretty" en desarrollo, no en test ni producción
+
+  // Solo usa pino-pretty en desarrollo (no en test ni producción)
   transport: isDevEnv
     ? {
         target: "pino-pretty",
