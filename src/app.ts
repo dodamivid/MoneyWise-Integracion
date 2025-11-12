@@ -7,6 +7,7 @@ import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import egresosRouter from "./routes/egresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
+import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
 // Rutas del dashboard (se agregará el archivo en este ticket)
 import dashboardRoutes from "./routes/dashboard.routes";
@@ -72,6 +73,9 @@ app.use("/api/v1/egresos", egresosRouter);
 
 // Inversiones routes mounted under /api/v1/inversiones
 app.use("/api/v1/inversiones", inversionesRouter);
+
+// Metas routes mounted under /api/v1/metas
+app.use("/api/v1/metas", metasRouter);
 
 // Version routes mounted under /api/v1/version
 app.use("/api/v1/version", versionRoutes);
