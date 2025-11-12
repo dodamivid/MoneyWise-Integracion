@@ -89,3 +89,110 @@ En `.github/ISSUE_TEMPLATE/` hay plantillas para bug, feature y task.
 ## 9) Notas adicionales
 - Asegúrate de tener los permisos necesarios en GitHub para realizar todas las acciones.
 - Comunica cualquier duda o inconveniente al equipo.
+
+## Estilo de código: ESLint + Prettier
+
+Para mantener el código consistente entre Windows, macOS y Linux, este repo incluye configuración de ESLint (v9 flat config) y Prettier.
+
+### Instalación (una vez)
+
+Las dependencias ya están en `package.json`. Si no las tienes instaladas:
+
+```powershell
+npm install
+```
+
+### Scripts disponibles
+
+- Verificar formato (no modifica archivos):
+  ```powershell
+  npm run format
+  ```
+- Aplicar formato con Prettier (modifica archivos):
+  ```powershell
+  npm run format:fix
+  ```
+- Ejecutar ESLint (verifica reglas y estilo):
+  ```powershell
+  npm run lint
+  ```
+- ESLint con autofix cuando sea posible:
+  ```powershell
+  npm run lint:fix
+  ```
+
+### Qué se ignora en el lint
+
+La configuración de ESLint ignora directorios generados y no fuente:
+
+- `dist/**`
+- `coverage/**`
+- `node_modules/**`
+- `docs/**`
+
+Esto evita reportes sobre artefactos compilados o documentación.
+
+### Recomendado en VS Code
+
+Instala las extensiones:
+- ESLint (dbaeumer.vscode-eslint)
+- Prettier (esbenp.prettier-vscode)
+
+Opcional en tu configuración de VS Code (`.vscode/settings.json` local):
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.validate": ["typescript"],
+  "files.eol": "auto"
+}
+```
+
+### Finales de línea (EOL)
+
+Se incluye `.gitattributes` y `.editorconfig` para normalizar EOL:
+
+- Regla general: `* text=auto` (Git adapta EOL por OS).
+- Forzamos LF donde CRLF rompe herramientas (YAML, SQL, Dockerfile, scripts de shell).
+- Scripts Windows (`.bat`, `.cmd`) mantienen CRLF.
+
+Esto no afecta el runtime; sólo reduce diffs y errores de tooling.
+
+### Flujo sugerido antes de PR
+
+```powershell
+npm run format:fix
+npm run lint
+npm test
+```
+
+Si el lint reporta variables sin uso y son intencionales, prefija el nombre con `_` (ej. `_unused`).
+
+### Nota para liderazgo ("El gallo de oro")
+
+- `npm run format:fix` ejecuta Prettier en modo escritura y re-formatea archivos de texto según `.prettierrc`. No cambia la lógica de la app, solo estilo (comillas, espacios, saltos de línea, etc.).
+- Es opcional. No está forzado en pre-commit ni en CI. El equipo puede usarlo antes de un PR para mantener consistencia o decidir no usarlo.
+- Si se usa y no gusta algún cambio, se puede revertir con Git (por archivo o en bloque) antes de hacer commit.
+- Alcance: por defecto Prettier recorre el repo. Si se quiere limitar a código fuente, se puede añadir un `.prettierignore` con:
+  - `dist/`, `coverage/`, `node_modules/`
+- Si en el futuro se quiere hacerlo obligatorio, se puede añadir un job de CI que ejecute `npm run format` (modo check) y falle cuando haya archivos fuera de formato.
+
+### Validación de no-regresión (para revisión rápida)
+
+- Pruebas: 4 suites, 26 tests – PASS.
+- TypeScript: `tsc --noEmit` – PASS.
+- Lint: 18 errores y 565 warnings (principalmente estilo Prettier y variables no usadas). No afecta ejecución ni pruebas; se pueden abordar gradualmente cuando se decida.
+- Sin cambios de lógica en módulos existentes (users/egresos/health); se agregó el módulo Dashboard y tooling opcional.
+
+### Alcance de cambios incluidos en esta rama
+
+- Nuevos (Dashboard): `src/controllers/dashboard.controller.ts`, `src/dtos/dashboard.dto.ts`, `src/repositories/dashboard.repository.ts`, `src/routes/dashboard.routes.ts`.
+- Ajustes: `src/app.ts` (montaje Swagger y rutas), `docs/api/openapi.yaml` (sección Dashboard), `README.md` (esta nota).
+- Tooling/documentación opcional: `.editorconfig`, `.gitattributes`, `.prettierrc`, `eslint.config.js`.
+
+### Recomendaciones opcionales
+
+- Añadir `.prettierignore` con `dist/`, `coverage/`, `node_modules/` si se desea limitar el alcance de `format:fix`.
+- Prefijar con `_` variables no usadas que se mantengan por claridad (silencia el warning del linter).
+- Ajustar `jest.config.js` para el entorno Node en el linter o migrarlo a `export default` (evita `no-undef` en lint), sin impacto en runtime o pruebas.

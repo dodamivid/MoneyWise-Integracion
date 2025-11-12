@@ -1,0 +1,26 @@
+# Normalize text files and let Git handle OS-specific EOL by default
+* text=auto
+
+# Files where CRLF can break tooling/builds — always use LF
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sql text eol=lf
+
+# Windows-specific scripts — keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Keep images/binaries untouched
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.gif -text
+*.ico -text
+*.pdf -text
+*.zip -text
+*.gz -text
+*.tgz -text
+*.7z -text
