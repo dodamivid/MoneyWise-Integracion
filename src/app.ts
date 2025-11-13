@@ -9,11 +9,12 @@ import egresosRouter from "./routes/egresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
 import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
-// Rutas del dashboard (se agregar√° el archivo en este ticket)
 import dashboardRoutes from "./routes/dashboard.routes";
 import { db } from "./config/db";
+import { logger } from "./config/logger";
 import {
   traceIdMiddleware,
+  requestLogger,
   errorHandler,
   notFoundHandler,
 } from "./middlewares/error.middleware";
@@ -21,16 +22,19 @@ import {
 // Boot the Express application
 const app = express();
 
-// Middleware de traceId - DEBE ir primero para rastrear todas las requests
+// Middleware de traceId y logger - deben ir primero
 app.use(traceIdMiddleware);
+app.use(requestLogger);
 
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
 app.use(express.json());
 
-// Inicializa la conexi√≥n a BD si est√° habilitada
+// Inicializa la conexiÛn a BD si est· habilitada
 if (db.enabled) {
-  db.init().catch((e) => console.error("DB init error:", e.message));
+  db.init().catch((e) =>
+    logger.error({ err: e, module: "db" }, "DB init error")
+  );
 }
 
 // Simple root banner to confirm the API is reachable
@@ -38,7 +42,7 @@ app.get("/", (_req, res) => {
   res.json({ message: "MoneyWise API" });
 });
 
-// Swagger UI (dev/build): leer docs/api/openapi.yaml desde la ra√≠z del proyecto
+// Swagger UI (dev/build): leer docs/api/openapi.yaml desde la raÌz del proyecto
 try {
   const candidates = [
     process.env.OPENAPI_PATH,
@@ -52,14 +56,12 @@ try {
     const file = fs.readFileSync(apiSpecPath, "utf8");
     const spec = YAML.parse(file);
     app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
-    console.log(`Swagger UI disponible en /docs (spec: ${apiSpecPath})`);
+    logger.info({ specPath: apiSpecPath }, "Swagger UI disponible en /docs");
   } else {
-    console.warn(
-      "Swagger UI no disponible: no se encontr√≥ docs/api/openapi.yaml en la ra√≠z del proyecto"
-    );
+    logger.warn({ triedPaths: candidates }, "Swagger UI no disponible: docs/api/openapi.yaml no encontrado");
   }
 } catch (e: any) {
-  console.warn("Swagger UI no disponible:", e?.message || String(e));
+  logger.warn({ err: e }, "Swagger UI no disponible");
 }
 
 // Health check routes mounted under /health
@@ -83,10 +85,11 @@ app.use("/api/v1/version", versionRoutes);
 // Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
 
-// Manejador de rutas no encontradas (404) - DEBE ir despu√©s de todas las rutas
+// Manejador de rutas no encontradas (404) - DEBE ir despuÈs de todas las rutas
 app.use(notFoundHandler);
 
 // Manejador centralizado de errores - DEBE ir al final
 app.use(errorHandler);
 
 export default app;
+

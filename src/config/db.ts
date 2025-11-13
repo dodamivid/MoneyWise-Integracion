@@ -1,4 +1,5 @@
 import mysql from "mysql2/promise";
+import { logger } from "./logger";
 
 const enabled =
   (process.env.DB_ENABLED || process.env.USE_DB || "").toLowerCase() === "true";
@@ -28,20 +29,23 @@ export const db = {
       dateStrings: true,
       supportBigNumbers: true,
     });
+
+    logger.info(
+      { host, database, connectionLimit },
+      "DB pool inicializada"
+    );
   },
 
   async call<T = any[]>(sp: string, params: any[] = []): Promise<any[]> {
     if (!this.pool) throw new Error("DB pool no inicializado");
     const [rows] = await this.pool.query(`CALL ${sp}`, params);
 
-    // mysql2 devuelve arrays anidados para múltiples result sets
     if (Array.isArray(rows) && Array.isArray(rows[0])) {
       return rows as any[];
     }
     return [rows] as any[];
   },
 
-  // ✅ Nuevo método compatible con db.query(...)
   async query<T = any[]>(sql: string, params: any[] = []): Promise<[T, any]> {
     if (!this.pool) throw new Error("DB pool no inicializado");
     const [rows, fields] = await this.pool.query(sql, params);
@@ -49,15 +53,13 @@ export const db = {
   },
 };
 
-// 🔄 Inicializa automáticamente la conexión al iniciar la app
 (async () => {
   try {
     await db.init();
   } catch (e) {
-    console.error(
-      "Error inicializando la conexión a BD:",
-      (e as Error).message
+    logger.error(
+      { err: e },
+      "Error inicializando la conexion a BD"
     );
   }
 })();
-

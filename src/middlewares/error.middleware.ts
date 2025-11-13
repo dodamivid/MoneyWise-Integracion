@@ -1,14 +1,14 @@
-/**
+﻿/**
  * @fileoverview Middleware de manejo de errores para la API de Money Wise.
  * 
- * Este módulo proporciona manejo centralizado de errores para la aplicación.
+ * Este mÃ³dulo proporciona manejo centralizado de errores para la aplicaciÃ³n.
  * Captura todos los errores lanzados por controladores y servicios, los formatea
- * de manera consistente y envía respuestas HTTP apropiadas a los clientes.
+ * de manera consistente y envÃ­a respuestas HTTP apropiadas a los clientes.
  * 
- * Características clave:
+ * CaracterÃ­sticas clave:
  * - Formato de respuesta de error consistente
- * - Mapeo automático de códigos de estado HTTP
- * - Detalles de error para desarrollo vs producción
+ * - Mapeo automÃ¡tico de cÃ³digos de estado HTTP
+ * - Detalles de error para desarrollo vs producciÃ³n
  * - Registro de errores
  * - Manejo de errores operacionales e inesperados
  * 
@@ -23,14 +23,16 @@
  * app.use(errorHandler);
  * ```
  * 
- * @author Equipo de Integración Money Wise
+ * @author Equipo de IntegraciÃ³n Money Wise
  * @version 1.0.0
  */
 
 import { Request, Response, NextFunction } from "express";
 import { randomUUID } from "crypto";
+import pinoHttp from "pino-http";
 import { isAppError, AppError } from "../utils/errors";
 import { createErrorResponse } from "../dtos/user.dto";
+import { logger, getLoggerWithTraceId } from "../config/logger";
 
 /**
  * Extiende la interfaz Request de Express para incluir traceId.
@@ -40,25 +42,26 @@ declare global {
   namespace Express {
     interface Request {
       traceId?: string;
+      id?: string;
     }
   }
 }
 
 /**
- * Middleware para generar y adjuntar un traceId único a cada request.
+ * Middleware para generar y adjuntar un traceId Ãºnico a cada request.
  *
  * Este middleware propaga el correlation ID entrante si existe (header x-correlation-id),
- * o genera un UUID único para cada request entrante y lo almacena en `req.traceId`.
- * Este traceId puede ser usado para rastrear requests a través de toda la aplicación,
+ * o genera un UUID Ãºnico para cada request entrante y lo almacena en `req.traceId`.
+ * Este traceId puede ser usado para rastrear requests a travÃ©s de toda la aplicaciÃ³n,
  * facilitando el debugging y el monitoreo.
  *
- * El traceId también se puede incluir en respuestas y logs para correlacionar
+ * El traceId tambiÃ©n se puede incluir en respuestas y logs para correlacionar
  * requests con sus respuestas y errores correspondientes.
  *
  * @function traceIdMiddleware
- * @param {Request} req - Objeto de petición de Express
+ * @param {Request} req - Objeto de peticiÃ³n de Express
  * @param {Response} res - Objeto de respuesta de Express
- * @param {NextFunction} next - Función de siguiente middleware de Express
+ * @param {NextFunction} next - FunciÃ³n de siguiente middleware de Express
  * @returns {void}
  *
  * @example
@@ -80,14 +83,24 @@ export function traceIdMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  // Propagar el correlation ID entrante si existe, o generar uno nuevo
-  const incomingCorrelationId = req.headers['x-correlation-id'];
-  req.traceId = typeof incomingCorrelationId === 'string'
-    ? incomingCorrelationId
-    : randomUUID();
+  const headerCandidates = [
+    req.headers["x-correlation-id"],
+    req.headers["x-request-id"],
+    req.headers["x-trace-id"],
+  ];
 
-  // Opcional: También se puede incluir en el header de respuesta
-  res.setHeader('X-Trace-Id', req.traceId);
+  const candidate = headerCandidates.find((value) => value !== undefined);
+  const headerValue = Array.isArray(candidate) ? candidate[0] : candidate;
+
+  const traceId =
+    typeof headerValue === "string" && headerValue.trim().length > 0
+      ? headerValue
+      : randomUUID();
+
+  req.traceId = traceId;
+  res.locals.traceId = traceId;
+  res.setHeader("X-Trace-Id", traceId);
+  res.setHeader("X-Correlation-Id", traceId);
 
   next();
 }
@@ -95,36 +108,37 @@ export function traceIdMiddleware(
 /**
  * Middleware centralizado de manejo de errores.
  * 
- * Este middleware debe registrarse después de todas las rutas en la aplicación Express.
- * Captura cualquier error que se pase a `next(error)` desde controladores
- * u otro middleware, los formatea apropiadamente y envía una respuesta
+ * Este middleware debe registrarse despuÃ©s de todas las rutas en la aplicaciÃ³n Express.
+ * Captura cualquier error que se pase a 
+ext(error)` desde controladores
+ * u otro middleware, los formatea apropiadamente y envÃ­a una respuesta
  * JSON consistente al cliente.
  * 
  * Flujo de Manejo de Errores:
  * 1. Verificar si el error es una instancia de AppError (errores personalizados)
- * 2. Si es así, usar el código de estado y mensaje del error
+ * 2. Si es asÃ­, usar el cÃ³digo de estado y mensaje del error
  * 3. Si no, tratar como error inesperado (500) y registrarlo
  * 4. Formatear respuesta de error usando createErrorResponse
- * 5. Enviar respuesta JSON con código de estado apropiado
+ * 5. Enviar respuesta JSON con cÃ³digo de estado apropiado
  * 
- * **Desarrollo vs Producción**:
- * - En desarrollo: Incluir stack traces e información detallada del error
- * - En producción: Retornar mensajes de error genéricos para errores inesperados
+ * **Desarrollo vs ProducciÃ³n**:
+ * - En desarrollo: Incluir stack traces e informaciÃ³n detallada del error
+ * - En producciÃ³n: Retornar mensajes de error genÃ©ricos para errores inesperados
  * 
  * @function errorHandler
  * @param {Error | AppError} err - El error que fue lanzado
- * @param {Request} req - Objeto de petición de Express
+ * @param {Request} req - Objeto de peticiÃ³n de Express
  * @param {Response} res - Objeto de respuesta de Express
- * @param {NextFunction} next - Función de siguiente middleware de Express (no usado pero requerido por Express)
+ * @param {NextFunction} next - FunciÃ³n de siguiente middleware de Express (no usado pero requerido por Express)
  * @returns {void}
  * 
  * @example
  * ```typescript
- * // Registrar manejador de errores (DEBE ser el último middleware)
+ * // Registrar manejador de errores (DEBE ser el Ãºltimo middleware)
  * app.use('/api/users', usersRouter);
  * app.use(errorHandler);
  * 
- * // El error será capturado por este middleware
+ * // El error serÃ¡ capturado por este middleware
  * app.get('/example', async (req, res, next) => {
  *   try {
  *     throw new NotFoundError('User', '123');
@@ -138,41 +152,47 @@ export function errorHandler(
   err: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
-  // Obtener traceId del request
-  const traceId = req.traceId || 'unknown';
+  const existingTraceId = req.traceId;
+  const traceId = existingTraceId && existingTraceId !== '' ? existingTraceId : randomUUID();
 
-  // Registrar el error para depuración (en producción, usar un servicio de logging apropiado)
-  console.error("Error capturado por el manejador de errores:", {
-    traceId,
-    name: err.name,
-    message: err.message,
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  if (!existingTraceId) {
+    req.traceId = traceId;
+    res.setHeader("X-Trace-Id", traceId);
+    res.setHeader("X-Correlation-Id", traceId);
+  }
+
+  const env = process.env.NODE_ENV || "development";
+  const includeDebugInfo = env === "development";
+  const log = getLoggerWithTraceId(traceId);
+  const logContext = {
     path: req.path,
     method: req.method,
-  });
+  };
 
-  // Verificar si es uno de nuestros tipos de AppError personalizados
   if (isAppError(err)) {
-    // Manejar errores de aplicación conocidos
+    const detailPayload: Record<string, any> = { traceId };
+    if (err.details) {
+      detailPayload.details = err.details;
+    }
+    if (includeDebugInfo) {
+      detailPayload.name = err.name;
+      detailPayload.stack = err.stack;
+    }
+
+    log.warn({ ...logContext, statusCode: err.statusCode, details: err.details }, err.message);
+
     const errorResponse = createErrorResponse(
       err.message,
       err.statusCode,
-      process.env.NODE_ENV === "development"
-        ? {
-            name: err.name,
-            stack: err.stack,
-            traceId,
-          }
-        : { traceId }
+      detailPayload
     );
 
     res.status(err.statusCode).json(errorResponse);
     return;
   }
 
-  // Manejar errores de validación de Zod
   if (err.name === "ZodError") {
     const zodError = err as any;
     const validationErrors = zodError.errors?.map((e: any) => ({
@@ -180,38 +200,34 @@ export function errorHandler(
       message: e.message,
     }));
 
+    log.warn({ ...logContext, errors: validationErrors }, "Validacion fallida");
+
     const errorResponse = createErrorResponse(
-      "Validación fallida",
+      "Validacion fallida",
       400,
-      process.env.NODE_ENV === "development"
-        ? {
-            errors: validationErrors,
-            stack: err.stack,
-            traceId,
-          }
-        : { errors: validationErrors, traceId }
+      includeDebugInfo
+        ? { traceId, errors: validationErrors, stack: err.stack }
+        : { traceId, errors: validationErrors }
     );
 
     res.status(400).json(errorResponse);
     return;
   }
 
-  // Manejar errores inesperados (bugs, casos no manejados, etc.)
   const statusCode = 500;
-  const message =
-    process.env.NODE_ENV === "development"
-      ? err.message
-      : "Ocurrió un error inesperado";
+  const message = includeDebugInfo ? err.message : "Ocurrio un error inesperado";
+
+  log.error({ ...logContext, statusCode, err }, message);
 
   const errorResponse = createErrorResponse(
     message,
     statusCode,
-    process.env.NODE_ENV === "development"
+    includeDebugInfo
       ? {
+          traceId,
           name: err.name,
           stack: err.stack,
           originalError: err.message,
-          traceId,
         }
       : { traceId }
   );
@@ -222,23 +238,23 @@ export function errorHandler(
 /**
  * Middleware para manejar errores 404 para rutas no definidas.
  * 
- * Este middleware debe registrarse después de todas las definiciones de rutas
- * pero antes del manejador principal de errores. Captura cualquier petición a
+ * Este middleware debe registrarse despuÃ©s de todas las definiciones de rutas
+ * pero antes del manejador principal de errores. Captura cualquier peticiÃ³n a
  * rutas que no han sido definidas y retorna una respuesta 404 consistente.
  * 
  * @function notFoundHandler
- * @param {Request} req - Objeto de petición de Express
+ * @param {Request} req - Objeto de peticiÃ³n de Express
  * @param {Response} res - Objeto de respuesta de Express
  * @returns {void}
  * 
  * @example
  * ```typescript
- * // Registrar después de todas las rutas
+ * // Registrar despuÃ©s de todas las rutas
  * app.use('/api/users', usersRouter);
  * app.use(notFoundHandler);  // Captura rutas no definidas
  * app.use(errorHandler);      // Captura otros errores
  * 
- * // Petición a ruta no definida
+ * // PeticiÃ³n a ruta no definida
  * GET /api/undefined-route
  * 
  * // Respuesta (404)
@@ -250,7 +266,10 @@ export function errorHandler(
  * ```
  */
 export function notFoundHandler(req: Request, res: Response): void {
-  const traceId = req.traceId || 'unknown';
+  const traceId = req.traceId || randomUUID();
+  const log = getLoggerWithTraceId(traceId);
+
+  log.warn({ path: req.path, method: req.method }, "Route not found");
 
   const errorResponse = createErrorResponse(
     `Route not found: ${req.method} ${req.path}`,
@@ -262,30 +281,30 @@ export function notFoundHandler(req: Request, res: Response): void {
 }
 
 /**
- * Envoltorio asíncrono para manejadores de rutas para capturar rechazos de promesas.
+ * Envoltorio asÃ­ncrono para manejadores de rutas para capturar rechazos de promesas.
  * 
- * Esta función utilitaria envuelve manejadores de rutas asíncronos para
- * capturar automáticamente cualquier rechazo de promesa y pasarlos al middleware
+ * Esta funciÃ³n utilitaria envuelve manejadores de rutas asÃ­ncronos para
+ * capturar automÃ¡ticamente cualquier rechazo de promesa y pasarlos al middleware
  * de manejo de errores. Esto previene rechazos de promesas no manejados.
  * 
  * **Nota**: Con Express 5, esto es menos necesario ya que Express 5
- * maneja automáticamente rechazos de promesas en manejadores asíncronos.
+ * maneja automÃ¡ticamente rechazos de promesas en manejadores asÃ­ncronos.
  * 
  * @function asyncHandler
- * @param {Function} fn - Función manejadora de ruta asíncrona
+ * @param {Function} fn - FunciÃ³n manejadora de ruta asÃ­ncrona
  * @returns {Function} Manejador de ruta envuelto
  * 
  * @example
  * ```typescript
  * import { asyncHandler } from './middlewares/error.middleware';
  * 
- * // Sin asyncHandler (los errores podrían no ser capturados)
+ * // Sin asyncHandler (los errores podrÃ­an no ser capturados)
  * router.get('/:id', async (req, res) => {
  *   const user = await userService.findById(req.params.id);
  *   res.json(user);
  * });
  * 
- * // Con asyncHandler (errores capturados automáticamente)
+ * // Con asyncHandler (errores capturados automÃ¡ticamente)
  * router.get('/:id', asyncHandler(async (req, res) => {
  *   const user = await userService.findById(req.params.id);
  *   res.json(user);
@@ -303,13 +322,13 @@ export function asyncHandler(
 /**
  * Middleware de registro de peticiones.
  * 
- * Registra las peticiones entrantes con información relevante para depuración
- * y propósitos de monitoreo.
+ * Registra las peticiones entrantes con informaciÃ³n relevante para depuraciÃ³n
+ * y propÃ³sitos de monitoreo.
  * 
  * @function requestLogger
- * @param {Request} req - Objeto de petición de Express
+ * @param {Request} req - Objeto de peticiÃ³n de Express
  * @param {Response} res - Objeto de respuesta de Express
- * @param {NextFunction} next - Función de siguiente middleware de Express
+ * @param {NextFunction} next - FunciÃ³n de siguiente middleware de Express
  * @returns {void}
  * 
  * @example
@@ -319,24 +338,49 @@ export function asyncHandler(
  * app.use('/api/users', usersRouter);
  * ```
  */
-export function requestLogger(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.path}`, {
-    query: req.query,
-    body: req.method !== "GET" ? req.body : undefined,
-    ip: req.ip,
-  });
+export const requestLogger = pinoHttp({
+  logger,
+  genReqId: (req: Request, res: Response) => {
+    if (!req.traceId) {
+      const newTraceId = randomUUID();
+      req.traceId = newTraceId;
+      res.locals.traceId = newTraceId;
+      res.setHeader("X-Trace-Id", newTraceId);
+      res.setHeader("X-Correlation-Id", newTraceId);
+    }
+    return req.traceId;
+  },
+  customProps: (req) => ({
+    traceId: req.traceId,
+    route: req.route?.path,
+  }),
+  customSuccessMessage: (req) => `${req.method} ${req.originalUrl ?? req.url} completed`,
+  customErrorMessage: (req) => `${req.method} ${req.originalUrl ?? req.url} failed`,
+  customLogLevel: (res, err) => {
+    if (err || res.statusCode >= 500) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    return 'info';
+  },
+  serializers: {
+    req(req) {
+      return {
+        method: req.method,
+        url: req.originalUrl || req.url,
+      };
+    },
+    res(res) {
+      return {
+        statusCode: res.statusCode,
+      };
+    },
+  },
+});
 
-  // Registrar respuesta cuando se envíe
-  const originalSend = res.json;
-  res.json = function (data: any) {
-    console.log(`[${timestamp}] Respuesta ${res.statusCode} para ${req.method} ${req.path}`);
-    return originalSend.call(this, data);
-  };
 
-  next();
-}
+
+
+
+
+
+
+
