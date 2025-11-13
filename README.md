@@ -20,6 +20,7 @@ Auth (simulada en dev):
   - `x-mw-user`: ID de usuario (numérico)
   - `x-mw-scopes`: scopes separados por coma (ej. `egresos:leer,egresos:escribir`)
 - También puedes controlar el default con la variable de entorno `MOCK_DEFAULT_SCOPES`.
+- **Nuevo**: todas las rutas montadas bajo `/api` requieren el header `x-api-key`. En desarrollo puedes enviar cualquier valor (p. ej. `test-x-api-key`), pero si defines `MW_API_KEY`, `MONEYWISE_API_KEY` o `API_KEY` el middleware valida que coincida antes de pasar a los controladores. Recuerda agregar el header tambien en tus pruebas/E2E.
 
 ## Qué entregaremos para la tarea
 - Repositorio en GitHub (este).

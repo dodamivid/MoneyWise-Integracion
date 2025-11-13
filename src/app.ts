@@ -17,6 +17,7 @@ import {
   errorHandler,
   notFoundHandler,
 } from "./middlewares/error.middleware";
+import { requireApiKey } from "./middlewares/api-key.middleware";
 
 // Boot the Express application
 const app = express();
@@ -37,6 +38,9 @@ if (db.enabled) {
 app.get("/", (_req, res) => {
   res.json({ message: "MoneyWise API" });
 });
+
+// Require x-api-key for every /api/* route (placeholder enforcement)
+app.use("/api", requireApiKey);
 
 // Swagger UI (dev/build): leer docs/api/openapi.yaml desde la raíz del proyecto
 try {
