@@ -16,6 +16,12 @@ module.exports = {
   watchPathIgnorePatterns: ['<rootDir>/dist/'],
   testTimeout: 10000,
 
-  // LÍNEA QUE SOLUCIONA TU ERROR
-  diagnostics: { ignoreCodes: [151002] },
+  // 👇 ESTE BLOQUE ES EL FIX REAL — AGREGA ESTO
+  globals: {
+    'ts-jest': {
+      diagnostics: {
+        ignoreCodes: [151002]
+      }
+    }
+  },
 };
