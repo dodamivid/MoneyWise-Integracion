@@ -1,3 +1,4 @@
+//jest.config.js
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
@@ -16,7 +17,7 @@ module.exports = {
   watchPathIgnorePatterns: ['<rootDir>/dist/'],
   testTimeout: 10000,
 
-  // 👇 ESTE BLOQUE ES EL FIX REAL — AGREGA ESTO
+  // 👇 BLOQUE NECESARIO PARA IGNORAR TS151002
   globals: {
     'ts-jest': {
       diagnostics: {
@@ -24,4 +25,9 @@ module.exports = {
       }
     }
   },
+
+  // 👇 BLOQUE EXTRA para que coverage TAMBIÉN ignore TS151002
+  diagnostics: {
+    ignoreCodes: [151002]
+  }
 };
