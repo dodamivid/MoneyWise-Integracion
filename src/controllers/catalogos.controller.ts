@@ -21,7 +21,7 @@ export const listarFrecuencias = async (req: Request, res: Response) => {
     const data = await service.listarFrecuencias(buscar, pagina, tamanoPagina, orden);
     return res.json({ ok: true, data: data.data, meta: data.meta });
   } catch (err: any) {
-    return res.status(422).json({ ok: false, message: err.message });
+    return res.status(422).json({ ok: false, message: err?.message ?? "Unprocessable entity" });
   }
 };
 
@@ -34,7 +34,7 @@ export const crearFrecuencia = async (req: Request, res: Response) => {
     const result = await service.crearFrecuencia(nombre.trim());
     return res.status(201).json({ ok: true, data: result });
   } catch (err: any) {
-    return res.status(err.status || 500).json({ ok: false, message: err.message });
+    return res.status(err?.status ?? 500).json({ ok: false, message: err?.message ?? "Internal error" });
   }
 };
 
@@ -54,7 +54,7 @@ export const actualizarFrecuencia = async (req: Request, res: Response) => {
     const result = await service.actualizarFrecuencia(id, nombre.trim());
     return res.json({ ok: true, data: result });
   } catch (err: any) {
-    return res.status(err.status || 500).json({ ok: false, message: err.message });
+    return res.status(err?.status ?? 500).json({ ok: false, message: err?.message ?? "Internal error" });
   }
 };
 
@@ -69,6 +69,13 @@ export const eliminarFrecuencia = async (req: Request, res: Response) => {
     const result = await service.eliminarFrecuencia(id);
     return res.json({ ok: true, data: result });
   } catch (err: any) {
-    return res.status(err.status || 500).json({ ok: false, message: err.message });
+    return res.status(err?.status ?? 500).json({ ok: false, message: err?.message ?? "Internal error" });
   }
+};
+
+export default {
+  listarFrecuencias,
+  crearFrecuencia,
+  actualizarFrecuencia,
+  eliminarFrecuencia,
 };

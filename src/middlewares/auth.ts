@@ -23,7 +23,7 @@ export const validarJWT = (req: Request, res: Response, next: NextFunction) => {
 
 /**
  * validarScopes - middleware factory
- * acepta scopes esperados (array de strings)
+ * acepta requiredScopes: string[]
  * normaliza req.headers['x-scopes'] que puede ser string | string[] | undefined
  */
 export const validarScopes = (requiredScopes: string[]) => {
@@ -34,21 +34,30 @@ export const validarScopes = (requiredScopes: string[]) => {
     let scopes: string[] = [];
     if (Array.isArray(raw)) {
       // raw puede ser ['a,b', 'c'] o ['a','b']
-      scopes = raw.flatMap((r) => String(r).split(",").map((s) => s.trim()).filter(Boolean));
+      scopes = raw.flatMap((r) =>
+        String(r)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      );
     } else if (typeof raw === "string") {
-      scopes = raw.split(",").map((s) => s.trim()).filter(Boolean);
+      scopes = raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     } else {
       scopes = [];
     }
 
-    // Si no hay scopes suficientes -> 403
     const hasAll = requiredScopes.every((s) => scopes.includes(s));
     if (!hasAll) {
       return res.status(403).json({ ok: false, message: "Insufficient scopes" });
     }
 
-    // attach normalized scopes si se necesita downstream
+    // attach normalized scopes for downstream use if needed
     (req as any).scopes = scopes;
     next();
   };
 };
+
+export default validarScopes;
