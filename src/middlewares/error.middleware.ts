@@ -31,6 +31,7 @@ import { Request, Response, NextFunction } from "express";
 import { randomUUID } from "crypto";
 import { isAppError, AppError } from "../utils/errors";
 import { createErrorResponse } from "../dtos/user.dto";
+import logger from "../utils/logger";
 
 /**
  * Extiende la interfaz Request de Express para incluir traceId.
@@ -324,19 +325,39 @@ export function requestLogger(
   res: Response,
   next: NextFunction
 ): void {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.path}`, {
-    query: req.query,
-    body: req.method !== "GET" ? req.body : undefined,
-    ip: req.ip,
+  const traceId = req.traceId || "unknown";
+  const startTime = process.hrtime.bigint();
+  const method = req.method;
+  const path = req.originalUrl || req.path;
+
+  const requestLog = logger.child({
+    traceId,
+    method,
+    path,
   });
 
-  // Registrar respuesta cuando se envíe
-  const originalSend = res.json;
-  res.json = function (data: any) {
-    console.log(`[${timestamp}] Respuesta ${res.statusCode} para ${req.method} ${req.path}`);
-    return originalSend.call(this, data);
-  };
+  requestLog.info(
+    {
+      query: req.query,
+      body: method === "GET" ? undefined : req.body,
+      ip: req.ip,
+    },
+    "Incoming request"
+  );
+
+  res.once("finish", () => {
+    const durationNs = process.hrtime.bigint() - startTime;
+    const durationMs = Number(durationNs) / 1_000_000;
+
+    requestLog.info(
+      {
+        statusCode: res.statusCode,
+        headers: res.getHeaders(),
+        durationMs,
+      },
+      "Request completed"
+    );
+  });
 
   next();
 }
