@@ -22,22 +22,33 @@ export const validarJWT = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
- * Middleware simulado para validar los scopes (permisos)
+ * validarScopes - middleware factory
+ * acepta scopes esperados (array de strings)
+ * normaliza req.headers['x-scopes'] que puede ser string | string[] | undefined
  */
-export const validarScopes = (scopes: string[]) => {
+export const validarScopes = (requiredScopes: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    // 🔸 En un caso real, los scopes vienen del JWT decodificado
-    const userScopes = (req.headers["x-scopes"] as string)?.split(",") || [];
+    const raw = req.headers["x-scopes"];
 
-    const autorizado = scopes.every((scope) => userScopes.includes(scope));
-
-    if (!autorizado) {
-      return res.status(403).json({
-        ok: false,
-        message: "Permiso denegado (simulado)",
-      });
+    // Normalizar a array de strings
+    let scopes: string[] = [];
+    if (Array.isArray(raw)) {
+      // raw puede ser ['a,b', 'c'] o ['a','b']
+      scopes = raw.flatMap((r) => String(r).split(",").map((s) => s.trim()).filter(Boolean));
+    } else if (typeof raw === "string") {
+      scopes = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    } else {
+      scopes = [];
     }
 
+    // Si no hay scopes suficientes -> 403
+    const hasAll = requiredScopes.every((s) => scopes.includes(s));
+    if (!hasAll) {
+      return res.status(403).json({ ok: false, message: "Insufficient scopes" });
+    }
+
+    // attach normalized scopes si se necesita downstream
+    (req as any).scopes = scopes;
     next();
   };
 };
