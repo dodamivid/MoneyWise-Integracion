@@ -18,11 +18,24 @@ import {
   notFoundHandler,
 } from "./middlewares/error.middleware";
 
+// ---------------------------------------------------------------------------
+// NUEVAS IMPORTACIONES – NO MODIFICAR NADA EXISTENTE
+import { correlationIdMiddleware } from "./middlewares/correlationId.middleware";
+import httpLogger from "./middlewares/logger.middleware";
+// ---------------------------------------------------------------------------
+
 // Boot the Express application
 const app = express();
 
 // Middleware de traceId - DEBE ir primero para rastrear todas las requests
 app.use(traceIdMiddleware);
+
+// ---------------------------------------------------------------------------
+// NUEVAS LÍNEAS – NO MODIFICAR NADA EXISTENTE
+// Middlewares de observabilidad (van después de traceId y antes de express.json)
+app.use(correlationIdMiddleware);
+app.use(httpLogger);
+// ---------------------------------------------------------------------------
 
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
