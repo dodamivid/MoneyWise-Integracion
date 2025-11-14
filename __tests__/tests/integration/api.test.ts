@@ -14,12 +14,12 @@ describe('General API Behavior', () => {
   });
 
   // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
-  // LÍNEAS NUEVAS (REEMPLAZAN EL TEST ANTERIOR)
+  // TEST QUE VERIFICA EL MANEJO CENTRALIZADO DE ERRORES (500)
   // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
   it('should return 500 with formatted error and traceId', async () => {
     const response = await request(app)
-      .get('/_test/boom')   // ⭐ RUTA NUEVA QUE FUERZA EL ERROR
-      .expect(500);         // ⭐ AHORA SÍ ESPERA 500
+      .get('/api/v1/test/boom')   // ✔ ESTA ES LA RUTA CORRECTA
+      .expect(500);               // ✔ AHORA SÍ ESPERA 500
 
     expect(response.body).toHaveProperty('status', 'error');
     expect(response.body).toHaveProperty('statusCode', 500);
