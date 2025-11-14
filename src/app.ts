@@ -99,7 +99,7 @@ app.use("/api/v1/version", versionRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 
 // 👉 NUEVA RUTA PARA TESTEAR EL ERROR HANDLER
-app.use("/_test", testRoutes);
+app.use("/api/v1/test", testRoutes);
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);
