@@ -9,8 +9,10 @@ import egresosRouter from "./routes/egresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
 import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
-// Rutas del dashboard (se agregará el archivo en este ticket)
+// Rutas del dashboard
 import dashboardRoutes from "./routes/dashboard.routes";
+// Rutas de catálogos (destinos)
+import catalogosRoutes from "./routes/catalogos.routes";
 import { db } from "./config/db";
 import {
   traceIdMiddleware,
@@ -82,6 +84,9 @@ app.use("/api/v1/version", versionRoutes);
 
 // Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
+
+// Catálogos routes mounted under /api/v1/catalogos
+app.use("/api/v1/catalogos", catalogosRoutes);
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);
