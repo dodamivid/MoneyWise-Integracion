@@ -1,36 +1,75 @@
 import { Router } from "express";
-import * as controller from "../controllers/catalogos.controller";
-import { validarJWT, validarScopes } from "../middlewares/auth";
+import { catalogosController } from "../controllers/catalogos.controller";
+import { mockAuth, requireScope } from "../middlewares/auth.middleware";
+
+/**
+ * @fileoverview Rutas para catálogos (Destinos y Frecuencias)
+ */
 
 const router = Router();
 
-// 🔹 Rutas CRUD
+// ============================================
+// DESTINOS
+// ============================================
+
+router.get(
+  "/destinos",
+  mockAuth,
+  requireScope("catalogos:leer"),
+  catalogosController.listarDestinos.bind(catalogosController)
+);
+
+router.post(
+  "/destinos",
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  catalogosController.crearDestino.bind(catalogosController)
+);
+
+router.put(
+  "/destinos/:id",
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  catalogosController.actualizarDestino.bind(catalogosController)
+);
+
+router.delete(
+  "/destinos/:id",
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  catalogosController.eliminarDestino.bind(catalogosController)
+);
+
+// ============================================
+// FRECUENCIAS
+// ============================================
+
 router.get(
   "/frecuencias",
-  validarJWT,
-  validarScopes(["catalogos:leer"]),
-  controller.listarFrecuencias
+  mockAuth,
+  requireScope("catalogos:leer"),
+  catalogosController.listarFrecuencias.bind(catalogosController)
 );
 
 router.post(
   "/frecuencias",
-  validarJWT,
-  validarScopes(["catalogos:escribir", "admin:catalogos"]),
-  controller.crearFrecuencia
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  catalogosController.crearFrecuencia.bind(catalogosController)
 );
 
 router.put(
   "/frecuencias/:id",
-  validarJWT,
-  validarScopes(["catalogos:escribir", "admin:catalogos"]),
-  controller.actualizarFrecuencia
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  catalogosController.actualizarFrecuencia.bind(catalogosController)
 );
 
 router.delete(
   "/frecuencias/:id",
-  validarJWT,
-  validarScopes(["catalogos:escribir", "admin:catalogos"]),
-  controller.eliminarFrecuencia
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  catalogosController.eliminarFrecuencia.bind(catalogosController)
 );
 
 export default router;
