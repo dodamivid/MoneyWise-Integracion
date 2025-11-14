@@ -3,51 +3,36 @@ import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import catalogosRouter from "./routes/catalogos.routes";
 
-// Boot the Express application
 const app = express();
-const port = Number(process.env.PORT ?? 3000);
 
-// Helpful defaults for security and JSON payload parsing
+// Basic config
 app.disable("x-powered-by");
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
+app.use(express.json());
 
-// Request logging middleware (optional, pero muy útil)
-app.use((req: Request, _res: Response, next: NextFunction) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});
-
-// Simple root banner to confirm the API is reachable
+// Root banner
 app.get("/", (_req, res) => {
-  res.json({ message: "MoneyWise API", version: "1.0.0" });
+  res.json({ message: "MoneyWise API" });
 });
 
-// Health check routes mounted under /health
+// Routes
 app.use("/health", healthRouter);
-
-// User routes mounted under /api/users
 app.use("/api/users", usersRouter);
-
-// Catalog routes mounted under /api/v1/catalogos
 app.use("/api/v1/catalogos", catalogosRouter);
 
-// Consistent JSON 404 for any route that is not defined
+// 404 handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
-    ok: false,
     status: "error",
     message: "Route not found",
   });
 });
 
-// Final error handler to catch unexpected failures
+// Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error("Error:", err.message);
+  console.error(err);
   res.status(500).json({
-    ok: false,
     status: "error",
-    message: process.env.NODE_ENV === "development" ? err.message : "Internal server error",
+    message: "Internal server error",
   });
 });
 

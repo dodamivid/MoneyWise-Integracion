@@ -11,5 +11,8 @@ module.exports = {
     '!src/index.ts',
   ],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  // Evitar que Jest escanee 'dist' para prevenir colisiones de nombre (p.ej., package.json)
+  modulePathIgnorePatterns: ['<rootDir>/dist/'],
+  watchPathIgnorePatterns: ['<rootDir>/dist/'],
   testTimeout: 10000
 };
