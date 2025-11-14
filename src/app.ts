@@ -22,6 +22,8 @@ import {
 // NUEVAS IMPORTACIONES – NO MODIFICAR NADA EXISTENTE
 import { correlationIdMiddleware } from "./middlewares/correlationId.middleware";
 import httpLogger from "./middlewares/logger.middleware";
+// 👉 IMPORTACIÓN NUEVA PARA TESTS (NO MODIFICAR NADA DE ARRIBA)
+import testRoutes from "./routes/test.routes";
 // ---------------------------------------------------------------------------
 
 // Boot the Express application
@@ -95,6 +97,9 @@ app.use("/api/v1/version", versionRoutes);
 
 // Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
+
+// 👉 NUEVA RUTA PARA TESTEAR EL ERROR HANDLER
+app.use("/_test", testRoutes);
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);

@@ -13,11 +13,17 @@ describe('General API Behavior', () => {
     expect(response.body).toHaveProperty('traceId');
   });
 
-  it('should handle internal server errors with 500', async () => {
+  // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
+  // LÍNEAS NUEVAS (REEMPLAZAN EL TEST ANTERIOR)
+  // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
+  it('should return 500 with formatted error and traceId', async () => {
     const response = await request(app)
-      .get('/')
-      .expect(200); 
+      .get('/_test/boom')   // ⭐ RUTA NUEVA QUE FUERZA EL ERROR
+      .expect(500);         // ⭐ AHORA SÍ ESPERA 500
 
+    expect(response.body).toHaveProperty('status', 'error');
+    expect(response.body).toHaveProperty('statusCode', 500);
     expect(response.body).toHaveProperty('message');
+    expect(response.body).toHaveProperty('traceId');
   });
 });
