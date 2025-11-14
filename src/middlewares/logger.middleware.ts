@@ -14,7 +14,7 @@ const logger = pino({
 
 const httpLogger = pinoHttp({
   logger,
-  customProps: (req, res) => ({
+  customProps: (req: any, res: any) => ({
     correlationId: (req as any).correlationId,
   }),
 });
