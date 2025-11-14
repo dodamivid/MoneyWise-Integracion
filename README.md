@@ -196,3 +196,5 @@ Si el lint reporta variables sin uso y son intencionales, prefija el nombre con 
 - Añadir `.prettierignore` con `dist/`, `coverage/`, `node_modules/` si se desea limitar el alcance de `format:fix`.
 - Prefijar con `_` variables no usadas que se mantengan por claridad (silencia el warning del linter).
 - Ajustar `jest.config.js` para el entorno Node en el linter o migrarlo a `export default` (evita `no-undef` en lint), sin impacto en runtime o pruebas.
+#   a p i - t i p o s - i n g r e s o  
+ 
