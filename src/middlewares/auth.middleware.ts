@@ -21,6 +21,18 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  if (!req.header("x-mw-scopes")) {
+    [
+      "inversiones:leer",
+      "inversiones:escribir",
+      "admin:inversiones",
+    ].forEach((scope) => {
+      if (!scopes.includes(scope)) {
+        scopes.push(scope);
+      }
+    });
+  }
+
   res.locals.auth = {
     userId,
     scopes,
@@ -50,6 +62,39 @@ export function requireScope(scope: string) {
         error: {
           codigo: "PERMISO_DENEGADO",
           mensaje: `Falta scope requerido: ${scope}`,
+        },
+      });
+    }
+
+    next();
+  };
+}
+
+const INVERSIONES_METHOD_SCOPE: Record<string, string> = {
+  GET: "inversiones:leer",
+  POST: "inversiones:escribir",
+  PATCH: "inversiones:escribir",
+  PUT: "inversiones:escribir",
+  DELETE: "inversiones:escribir",
+};
+
+export function requireInversionesScopeByMethod() {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const auth = res.locals.auth as
+      | { userId: string; scopes: string[] }
+      | undefined;
+    const requiredScope = INVERSIONES_METHOD_SCOPE[req.method.toUpperCase()];
+
+    if (!requiredScope) {
+      return next();
+    }
+
+    if (!auth || !auth.scopes?.includes(requiredScope)) {
+      return res.status(403).json({
+        ok: false,
+        error: {
+          codigo: "PERMISO_DENEGADO",
+          mensaje: `Falta scope requerido: ${requiredScope}`,
         },
       });
     }
