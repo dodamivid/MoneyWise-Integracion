@@ -14,5 +14,8 @@ module.exports = {
   // Evitar que Jest escanee 'dist' para prevenir colisiones de nombre (p.ej., package.json)
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   watchPathIgnorePatterns: ['<rootDir>/dist/'],
-  testTimeout: 10000
+  testTimeout: 10000,
+
+  // LÍNEA QUE SOLUCIONA TU ERROR
+  diagnostics: { ignoreCodes: [151002] },
 };
