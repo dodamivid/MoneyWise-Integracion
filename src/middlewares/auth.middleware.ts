@@ -21,6 +21,20 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const scopeHeaderProvided = req.header("x-mw-scopes") !== undefined;
+  if (!scopeHeaderProvided) {
+    const ingresosScopes = [
+      "ingresos:leer",
+      "ingresos:escribir",
+      "admin:ingresos",
+    ];
+    ingresosScopes.forEach((scope) => {
+      if (!scopes.includes(scope)) {
+        scopes.push(scope);
+      }
+    });
+  }
+
   res.locals.auth = {
     userId,
     scopes,
