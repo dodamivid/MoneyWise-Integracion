@@ -25,11 +25,11 @@ const app = express();
 
 // Middleware de traceId - DEBE ir primero para rastrear todas las requests
 app.use(traceIdMiddleware);
-app.use(requestLogger);
 
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
 app.use(express.json());
+app.use(requestLogger);
 
 // Inicializa la conexión a BD si está habilitada
 if (db.enabled) {
