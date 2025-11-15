@@ -4,7 +4,11 @@ module.exports = {
   testEnvironment: 'node',
   rootDir: __dirname,
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      diagnostics: {
+        ignoreCodes: [151002],
+      },
+    }],
   },
   testMatch: ['**/__tests__/**/*.test.ts'],
   collectCoverageFrom: [
@@ -16,18 +20,4 @@ module.exports = {
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   watchPathIgnorePatterns: ['<rootDir>/dist/'],
   testTimeout: 10000,
-
-  // 👇 BLOQUE NECESARIO PARA IGNORAR TS151002
-  globals: {
-    'ts-jest': {
-      diagnostics: {
-        ignoreCodes: [151002]
-      }
-    }
-  },
-
-  // 👇 BLOQUE EXTRA para que coverage TAMBIÉN ignore TS151002
-  diagnostics: {
-    ignoreCodes: [151002]
-  }
 };

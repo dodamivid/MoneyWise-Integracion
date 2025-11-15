@@ -98,8 +98,10 @@ app.use("/api/v1/version", versionRoutes);
 // Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
 
-// 👉 NUEVA RUTA PARA TESTEAR EL ERROR HANDLER
-app.use("/api/v1/test", testRoutes);
+// 👉 NUEVA RUTA PARA TESTEAR EL ERROR HANDLER (sólo habilitada en pruebas)
+if (process.env.NODE_ENV === "test") {
+  app.use("/api/v1/test", testRoutes);
+}
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);
