@@ -20,11 +20,26 @@ import {
 } from "./middlewares/error.middleware";
 import { requireApiKey } from "./middlewares/api-key.middleware";
 
+// ---------------------------------------------------------------------------
+// NUEVAS IMPORTACIONES – NO MODIFICAR NADA EXISTENTE
+import { correlationIdMiddleware } from "./middlewares/correlationId.middleware";
+import httpLogger from "./middlewares/logger.middleware";
+// 👉 IMPORTACIÓN NUEVA PARA TESTS (NO MODIFICAR NADA DE ARRIBA)
+import testRoutes from "./routes/test.routes";
+// ---------------------------------------------------------------------------
+
 // Boot the Express application
 const app = express();
 
 // Middleware de traceId - DEBE ir primero para rastrear todas las requests
 app.use(traceIdMiddleware);
+
+// ---------------------------------------------------------------------------
+// NUEVAS LÍNEAS – NO MODIFICAR NADA EXISTENTE
+// Middlewares de observabilidad (van después de traceId y antes de express.json)
+app.use(correlationIdMiddleware);
+app.use(httpLogger);
+// ---------------------------------------------------------------------------
 
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
@@ -88,6 +103,11 @@ app.use("/api/v1/version", versionRoutes);
 
 // Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
+
+// 👉 NUEVA RUTA PARA TESTEAR EL ERROR HANDLER (sólo habilitada en pruebas)
+if (process.env.NODE_ENV === "test") {
+  app.use("/api/v1/test", testRoutes);
+}
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);

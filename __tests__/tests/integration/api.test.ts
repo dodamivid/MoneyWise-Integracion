@@ -29,10 +29,13 @@ describe('General API Behavior', () => {
   });
 
   it('should handle internal server errors with 500', async () => {
-    const response = await request(app)
-      .get('/')
-      .expect(200);
+    const response = await withApiKey(
+      request(app).get('/api/v1/test/boom')
+    ).expect(500);
 
+    expect(response.body).toHaveProperty('status', 'error');
+    expect(response.body).toHaveProperty('statusCode', 500);
     expect(response.body).toHaveProperty('message');
+    expect(response.body).toHaveProperty('traceId');
   });
 });
