@@ -16,7 +16,9 @@ import {
   traceIdMiddleware,
   errorHandler,
   notFoundHandler,
+  requestLogger,
 } from "./middlewares/error.middleware";
+import { requireApiKey } from "./middlewares/api-key.middleware";
 
 // ---------------------------------------------------------------------------
 // NUEVAS IMPORTACIONES – NO MODIFICAR NADA EXISTENTE
@@ -42,6 +44,7 @@ app.use(httpLogger);
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
 app.use(express.json());
+app.use(requestLogger);
 
 // Inicializa la conexión a BD si está habilitada
 if (db.enabled) {
@@ -52,6 +55,9 @@ if (db.enabled) {
 app.get("/", (_req, res) => {
   res.json({ message: "MoneyWise API" });
 });
+
+// Require x-api-key for every /api/* route (placeholder enforcement)
+app.use("/api", requireApiKey);
 
 // Swagger UI (dev/build): leer docs/api/openapi.yaml desde la raíz del proyecto
 try {
