@@ -1,63 +1,71 @@
-import { db } from "../config/db";
 import { DestinoDTO, FrecuenciaDTO } from "../dtos/catalogos.dto";
 
 /**
- * @fileoverview Repository para catálogos (Destinos y Frecuencias)
+ * Repository en memoria para catálogos (Destinos y Frecuencias).
+ * Esta implementación persiste mientras viva el proceso y sirve como contrato
+ * para que BD adapte sus SPs a nuestra firma:
+ *  - sp_destinos_listar/crear/actualizar/eliminar
+ *  - sp_frecuencias_listar/crear/actualizar/eliminar
  */
-
-// ============================================
-// TIPOS DE RESULTADOS DE SPs - DESTINOS
-// ============================================
-
-interface SPListarDestinosResult {
-  destinoId: number;
-  usuarioId: string | null;
-  nombre: string;
-  esPorDefecto: 0 | 1;
-  creadoEn: string;
-  actualizadoEn: string;
-  totalRegistros?: number;
-}
-
-interface SPCrearDestinoResult {
-  destinoId: number;
-  nombre: string;
-}
-
-interface SPActualizarDestinoResult {
-  actualizado: 0 | 1;
-}
-
-interface SPEliminarDestinoResult {
-  eliminado: 0 | 1;
-}
-
-// ============================================
-// TIPOS DE RESULTADOS DE SPs - FRECUENCIAS
-// ============================================
-
-interface SPListarFrecuenciasResult {
-  frecuenciaId: number;
-  nombre: string;
-  creadoEn: string;
-  actualizadoEn: string;
-  totalRegistros?: number;
-}
-
-interface SPCrearFrecuenciaResult {
-  frecuenciaId: number;
-  nombre: string;
-}
-
-interface SPActualizarFrecuenciaResult {
-  actualizado: 0 | 1;
-}
-
-interface SPEliminarFrecuenciaResult {
-  eliminado: 0 | 1;
-}
-
 export class CatalogosRepository {
+  private destinos: DestinoDTO[] = [];
+  private frecuencias: FrecuenciaDTO[] = [];
+
+  constructor() {
+    const now = new Date().toISOString();
+    this.destinos = [
+      {
+        destinoId: 1,
+        usuarioId: null,
+        nombre: "Renta",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        destinoId: 2,
+        usuarioId: null,
+        nombre: "Servicios",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        destinoId: 3,
+        usuarioId: null,
+        nombre: "Transporte",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        destinoId: 4,
+        usuarioId: null,
+        nombre: "Alimentación",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+    ];
+
+    const seeds = [
+      "Diario",
+      "Semanal",
+      "Quincenal",
+      "Mensual",
+      "Bimestral",
+      "Trimestral",
+      "Semestral",
+      "Anual",
+    ];
+    this.frecuencias = seeds.map((nombre, idx) => ({
+      frecuenciaId: idx + 1,
+      nombre,
+      creadoEn: now,
+      actualizadoEn: now,
+    }));
+  }
+
   // ============================================
   // DESTINOS
   // ============================================
@@ -69,38 +77,51 @@ export class CatalogosRepository {
     tamanoPagina: number,
     orden: string
   ): Promise<{ destinos: DestinoDTO[]; total: number }> {
-    // Simulación: En producción usar db.call()
-    const destinos: DestinoDTO[] = [
-      {
-        destinoId: 1,
-        usuarioId: null,
-        nombre: "Renta",
-        esPorDefecto: true,
-        creadoEn: "2025-01-01T00:00:00Z",
-        actualizadoEn: "2025-01-01T00:00:00Z",
-      },
-      {
-        destinoId: 2,
-        usuarioId: null,
-        nombre: "Servicios",
-        esPorDefecto: true,
-        creadoEn: "2025-01-01T00:00:00Z",
-        actualizadoEn: "2025-01-01T00:00:00Z",
-      },
-    ];
+    const disponibles = this.destinos.filter(
+      (d) => d.usuarioId === null || d.usuarioId === usuarioId
+    );
 
-    return { destinos, total: destinos.length };
+    let filtrados = disponibles;
+    if (buscar) {
+      const term = buscar.toLowerCase();
+      filtrados = filtrados.filter((d) =>
+        d.nombre.toLowerCase().includes(term)
+      );
+    }
+
+    const [campo, direccion] = orden.split(":");
+    const factor = direccion === "desc" ? -1 : 1;
+    filtrados = filtrados.sort((a, b) => {
+      const va = (a as any)[campo] ?? "";
+      const vb = (b as any)[campo] ?? "";
+      if (va < vb) return -1 * factor;
+      if (va > vb) return 1 * factor;
+      return 0;
+    });
+
+    const total = filtrados.length;
+    const inicio = (pagina - 1) * tamanoPagina;
+    const destinos = filtrados.slice(inicio, inicio + tamanoPagina);
+
+    return { destinos, total };
   }
 
   async crearDestino(
     usuarioId: string,
     nombre: string
   ): Promise<{ destinoId: number; nombre: string }> {
-    // Simulación
-    return {
-      destinoId: Math.floor(Math.random() * 1000),
+    const destinoId =
+      Math.max(...this.destinos.map((d) => d.destinoId), 0) + 1;
+    const now = new Date().toISOString();
+    this.destinos.push({
+      destinoId,
+      usuarioId,
       nombre,
-    };
+      esPorDefecto: false,
+      creadoEn: now,
+      actualizadoEn: now,
+    });
+    return { destinoId, nombre };
   }
 
   async actualizarDestino(
@@ -108,13 +129,17 @@ export class CatalogosRepository {
     usuarioId: string,
     nombre: string
   ): Promise<boolean> {
-    // Simulación
+    const destino = this.destinos.find((d) => d.destinoId === destinoId);
+    if (!destino) return false;
+    destino.nombre = nombre;
+    destino.actualizadoEn = new Date().toISOString();
     return true;
   }
 
   async eliminarDestino(destinoId: number, usuarioId: string): Promise<boolean> {
-    // Simulación
-    return true;
+    const len = this.destinos.length;
+    this.destinos = this.destinos.filter((d) => d.destinoId !== destinoId);
+    return this.destinos.length < len;
   }
 
   // ============================================
@@ -127,52 +152,64 @@ export class CatalogosRepository {
     tamanoPagina: number,
     orden: string
   ): Promise<{ frecuencias: FrecuenciaDTO[]; total: number }> {
-    // Simulación: En producción usar db.call()
-    const frecuencias: FrecuenciaDTO[] = [
-      {
-        frecuenciaId: 1,
-        nombre: "Mensual",
-        creadoEn: "2025-01-01T00:00:00Z",
-        actualizadoEn: "2025-01-01T00:00:00Z",
-      },
-      {
-        frecuenciaId: 2,
-        nombre: "Semanal",
-        creadoEn: "2025-01-01T00:00:00Z",
-        actualizadoEn: "2025-01-01T00:00:00Z",
-      },
-      {
-        frecuenciaId: 3,
-        nombre: "Quincenal",
-        creadoEn: "2025-01-01T00:00:00Z",
-        actualizadoEn: "2025-01-01T00:00:00Z",
-      },
-    ];
+    let filtradas = this.frecuencias;
+    if (buscar) {
+      const term = buscar.toLowerCase();
+      filtradas = filtradas.filter((f) =>
+        f.nombre.toLowerCase().includes(term)
+      );
+    }
 
-    return { frecuencias, total: frecuencias.length };
+    const [campo, direccion] = orden.split(":");
+    const factor = direccion === "desc" ? -1 : 1;
+    filtradas = filtradas.sort((a, b) => {
+      const va = (a as any)[campo] ?? "";
+      const vb = (b as any)[campo] ?? "";
+      if (va < vb) return -1 * factor;
+      if (va > vb) return 1 * factor;
+      return 0;
+    });
+
+    const total = filtradas.length;
+    const inicio = (pagina - 1) * tamanoPagina;
+    const frecuencias = filtradas.slice(inicio, inicio + tamanoPagina);
+    return { frecuencias, total };
   }
 
   async crearFrecuencia(
     nombre: string
   ): Promise<{ frecuenciaId: number; nombre: string }> {
-    // Simulación
-    return {
-      frecuenciaId: Math.floor(Math.random() * 1000),
+    const frecuenciaId =
+      Math.max(...this.frecuencias.map((f) => f.frecuenciaId), 0) + 1;
+    const now = new Date().toISOString();
+    this.frecuencias.push({
+      frecuenciaId,
       nombre,
-    };
+      creadoEn: now,
+      actualizadoEn: now,
+    });
+    return { frecuenciaId, nombre };
   }
 
   async actualizarFrecuencia(
     frecuenciaId: number,
     nombre: string
   ): Promise<boolean> {
-    // Simulación
+    const frecuencia = this.frecuencias.find(
+      (f) => f.frecuenciaId === frecuenciaId
+    );
+    if (!frecuencia) return false;
+    frecuencia.nombre = nombre;
+    frecuencia.actualizadoEn = new Date().toISOString();
     return true;
   }
 
   async eliminarFrecuencia(frecuenciaId: number): Promise<boolean> {
-    // Simulación
-    return true;
+    const len = this.frecuencias.length;
+    this.frecuencias = this.frecuencias.filter(
+      (f) => f.frecuenciaId !== frecuenciaId
+    );
+    return this.frecuencias.length < len;
   }
 }
 
