@@ -400,12 +400,15 @@ export const UpdateUserSchema = UserSchema.pick({
  *
  * Todos los campos son opcionales, permitiendo actualizaciones parciales.
  * Solo se pueden actualizar los campos de perfil (nombre, apellidos, fechaN).
+ * Los campos actualizadoEn y contrasena son para uso interno del repositorio.
  *
  * @typedef {Object} UpdateUserInput
  * @property {string} [nombre] - Nuevo nombre
  * @property {string} [apellidoP] - Nuevo apellido paterno
  * @property {string} [apellidoM] - Nuevo apellido materno
  * @property {string} [fechaN] - Nueva fecha de nacimiento (YYYY-MM-DD)
+ * @property {string} [actualizadoEn] - Timestamp de actualización (uso interno)
+ * @property {string} [contrasena] - Contraseña hasheada (uso interno)
  *
  * @example
  * ```typescript
@@ -415,7 +418,10 @@ export const UpdateUserSchema = UserSchema.pick({
  * };
  * ```
  */
-export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+export type UpdateUserInput = z.infer<typeof UpdateUserSchema> & {
+  actualizadoEn?: string;
+  contrasena?: string;
+};
 
 /**
  * Esquema para validación de ID de usuario.
