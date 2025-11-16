@@ -1,12 +1,14 @@
 import request from 'supertest';
 import app from '../../../src/app';
 
+const TEST_API_KEY = process.env.TEST_API_KEY ?? 'test-x-api-key';
+const apiGet = (path: string) => request(app).get(path).set('x-api-key', TEST_API_KEY);
+const apiPost = (path: string) => request(app).post(path).set('x-api-key', TEST_API_KEY);
+
 describe('Users API Endpoints', () => {
   describe('GET /api/users', () => {
     it('should return list of users with success status', async () => {
-      const response = await request(app)
-        .get('/api/users')
-        .expect(200);
+      const response = await apiGet('/api/users').expect(200);
 
       expect(response.body).toHaveProperty('status', 'success');
       expect(response.body).toHaveProperty('data');
@@ -23,8 +25,7 @@ describe('Users API Endpoints', () => {
         lastName: 'User'
       };
 
-      const response = await request(app)
-        .post('/api/users')
+      const response = await apiPost('/api/users')
         .send(userData)
         .set('Accept', 'application/json')
         .expect(201);
@@ -40,8 +41,7 @@ describe('Users API Endpoints', () => {
         password: 'short'
       };
 
-      const response = await request(app)
-        .post('/api/users')
+      const response = await apiPost('/api/users')
         .send(invalidUserData)
         .expect(400);
 
@@ -55,9 +55,7 @@ describe('Users API Endpoints', () => {
     it('should return error for non-existent user ID', async () => {
       const nonExistentId = '550e8400-e29b-41d4-a716-446655440000';
 
-      const response = await request(app)
-        .get(`/api/users/${nonExistentId}`)
-        .expect(404);
+      const response = await apiGet(`/api/users/${nonExistentId}`).expect(404);
 
       expect(response.body).toHaveProperty('status', 'error');
       expect(response.body).toHaveProperty('statusCode', 404);

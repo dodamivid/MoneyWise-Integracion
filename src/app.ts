@@ -16,7 +16,12 @@ import {
   traceIdMiddleware,
   errorHandler,
   notFoundHandler,
+  requestLogger,
 } from "./middlewares/error.middleware";
+import { requireApiKey } from "./middlewares/api-key.middleware";
+import { correlationIdMiddleware } from "./middlewares/correlationId.middleware";
+import httpLogger from "./middlewares/logger.middleware";
+import testRoutes from "./routes/test.routes";
 
 // Boot the Express application
 const app = express();
@@ -24,9 +29,17 @@ const app = express();
 // Middleware de traceId - DEBE ir primero para rastrear todas las requests
 app.use(traceIdMiddleware);
 
+// Observabilidad antes de parsear body
+app.use(correlationIdMiddleware);
+app.use(httpLogger);
+
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
 app.use(express.json());
+app.use(requestLogger);
+
+// Require x-api-key para todas las rutas bajo /api (placeholder)
+app.use("/api", requireApiKey);
 
 // Inicializa la conexión a BD si está habilitada
 if (db.enabled) {
@@ -85,6 +98,11 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Catálogos routes mounted under /api/v1/catalogos
 app.use("/api/v1/catalogos", catalogosRoutes);
+
+// Ruta de prueba de error handler (solo en entorno de test)
+if (process.env.NODE_ENV === "test") {
+  app.use("/api/v1/test", testRoutes);
+}
 
 // Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);
