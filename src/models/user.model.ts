@@ -38,6 +38,27 @@
 import { z } from "zod";
 
 /**
+ * Función helper para capitalizar la primera letra de cada palabra.
+ * Normaliza el texto eliminando espacios extra y capitalizando correctamente.
+ *
+ * @param {string} text - El texto a capitalizar
+ * @returns {string} El texto capitalizado
+ *
+ * @example
+ * ```typescript
+ * capitalize("juan pérez") // "Juan Pérez"
+ * capitalize("  maría  lópez  ") // "María López"
+ * ```
+ */
+function capitalize(text: string): string {
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/**
  * Esquema Zod para validar datos de usuario.
  *
  * Este esquema define las reglas de validación para todos los campos de usuario:
@@ -132,7 +153,7 @@ export const UserSchema = z.object({
   /**
    * Nombre del usuario.
    * Debe tener entre 2 y 80 caracteres y contener solo letras y espacios.
-   * Se normalizará (trim y capitalización).
+   * Se normaliza automáticamente (trim y capitalización).
    *
    * @example 'Juan'
    */
@@ -149,12 +170,13 @@ export const UserSchema = z.object({
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
       message: "El nombre debe contener solo letras y espacios",
     })
-    .trim(),
+    .trim()
+    .transform(capitalize),
 
   /**
    * Apellido paterno del usuario.
    * Debe tener entre 2 y 80 caracteres y contener solo letras y espacios.
-   * Se normalizará (trim y capitalización).
+   * Se normaliza automáticamente (trim y capitalización).
    *
    * @example 'Pérez'
    */
@@ -171,12 +193,13 @@ export const UserSchema = z.object({
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
       message: "El apellido paterno debe contener solo letras y espacios",
     })
-    .trim(),
+    .trim()
+    .transform(capitalize),
 
   /**
    * Apellido materno del usuario.
    * Debe tener entre 2 y 80 caracteres y contener solo letras y espacios.
-   * Se normalizará (trim y capitalización).
+   * Se normaliza automáticamente (trim y capitalización).
    *
    * @example 'López'
    */
@@ -193,7 +216,8 @@ export const UserSchema = z.object({
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
       message: "El apellido materno debe contener solo letras y espacios",
     })
-    .trim(),
+    .trim()
+    .transform(capitalize),
 
   /**
    * Fecha de nacimiento del usuario (formato YYYY-MM-DD).
