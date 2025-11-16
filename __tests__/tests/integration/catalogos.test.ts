@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../../../src/app";
 
 const headers = {
+  "x-api-key": process.env.TEST_API_KEY ?? "test-x-api-key",
   "x-mw-user": "user-1",
   "x-mw-scopes": "catalogos:leer,catalogos:escribir,admin:catalogos",
 };
