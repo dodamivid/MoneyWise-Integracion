@@ -1,9 +1,14 @@
+//jest.config.js
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   rootDir: __dirname,
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      diagnostics: {
+        ignoreCodes: [151002],
+      },
+    }],
   },
   testMatch: ['**/__tests__/**/*.test.ts'],
   collectCoverageFrom: [
@@ -14,5 +19,5 @@ module.exports = {
   // Evitar que Jest escanee 'dist' para prevenir colisiones de nombre (p.ej., package.json)
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   watchPathIgnorePatterns: ['<rootDir>/dist/'],
-  testTimeout: 10000
+  testTimeout: 10000,
 };
