@@ -21,11 +21,15 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  // Si no vienen scopes en header, añadimos los scopes de inversiones e ingresos para pruebas locales
   if (!req.header("x-mw-scopes")) {
     [
       "inversiones:leer",
       "inversiones:escribir",
       "admin:inversiones",
+      "ingresos:leer",
+      "ingresos:escribir",
+      "admin:ingresos",
     ].forEach((scope) => {
       if (!scopes.includes(scope)) {
         scopes.push(scope);

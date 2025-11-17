@@ -6,6 +6,7 @@ import YAML from "yaml";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import egresosRouter from "./routes/egresos.routes";
+import ingresosRouter from "./routes/ingresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
 import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
@@ -83,6 +84,9 @@ app.use("/api/users", usersRouter);
 
 // Egresos routes mounted under /api/v1/egresos
 app.use("/api/v1/egresos", egresosRouter);
+
+// Ingresos routes mounted under /api/v1/ingresos
+app.use("/api/v1/ingresos", ingresosRouter);
 
 // Inversiones routes mounted under /api/v1/inversiones
 app.use("/api/v1/inversiones", inversionesRouter);
