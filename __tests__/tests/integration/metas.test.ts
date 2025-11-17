@@ -1,8 +1,8 @@
-/**
- * @fileoverview Pruebas de integración para endpoints de Metas.
+﻿/**
+ * @fileoverview Pruebas de integraci├│n para endpoints de Metas.
  *
- * Este archivo contiene pruebas de integración completas para todos los endpoints
- * de la API de metas, incluyendo casos de éxito y casos de error.
+ * Este archivo contiene pruebas de integraci├│n completas para todos los endpoints
+ * de la API de metas, incluyendo casos de ├®xito y casos de error.
  *
  * @module tests/integration/metas.test
  * @category Tests
@@ -11,6 +11,8 @@
 import request from "supertest";
 import app from "../../../src/app";
 import { metasRepository } from "../../../src/repositories/metas.repository";
+
+const TEST_API_KEY = process.env.TEST_API_KEY ?? "test-x-api-key";
 
 describe("Metas API Endpoints", () => {
   // Limpiar el repositorio antes de cada prueba para asegurar estado limpio
@@ -31,6 +33,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send(metaData)
         .set("Accept", "application/json")
         .expect(201);
@@ -51,6 +54,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send(metaData)
         .set("Accept", "application/json")
         .expect(201);
@@ -62,13 +66,14 @@ describe("Metas API Endpoints", () => {
     it("should return error for invalid meta data - montoObjetivo negative", async () => {
       const invalidMetaData = {
         usuarioId: 23,
-        nombre: "Meta inválida",
+        nombre: "Meta inv├ílida",
         montoObjetivo: -1000.0,
         fechaInicio: "2025-01-01T00:00:00Z",
       };
 
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send(invalidMetaData)
         .expect(400);
 
@@ -79,7 +84,7 @@ describe("Metas API Endpoints", () => {
     it("should return error for fechaFin before fechaInicio", async () => {
       const invalidMetaData = {
         usuarioId: 23,
-        nombre: "Meta con fechas inválidas",
+        nombre: "Meta con fechas inv├ílidas",
         montoObjetivo: 10000.0,
         fechaInicio: "2025-12-31T00:00:00Z",
         fechaFin: "2025-01-01T00:00:00Z",
@@ -87,6 +92,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send(invalidMetaData)
         .expect(400);
 
@@ -102,6 +108,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send(invalidMetaData)
         .expect(400);
 
@@ -111,13 +118,14 @@ describe("Metas API Endpoints", () => {
     it("should return error for nombre too long", async () => {
       const invalidMetaData = {
         usuarioId: 23,
-        nombre: "A".repeat(121), // Excede el máximo de 120 caracteres
+        nombre: "A".repeat(121), // Excede el m├íximo de 120 caracteres
         montoObjetivo: 10000.0,
         fechaInicio: "2025-01-01T00:00:00Z",
       };
 
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send(invalidMetaData)
         .expect(400);
 
@@ -138,6 +146,7 @@ describe("Metas API Endpoints", () => {
 
       const createResponse = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send(metaData)
         .expect(201);
 
@@ -146,6 +155,7 @@ describe("Metas API Endpoints", () => {
       // Luego obtenerla por ID
       const response = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(response.body).toHaveProperty("ok", true);
@@ -162,6 +172,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .get(`/api/v1/metas/${nonExistentId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(404);
 
       expect(response.body).toHaveProperty("status", "error");
@@ -173,6 +184,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .get(`/api/v1/metas/${invalidId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(400);
 
       expect(response.body).toHaveProperty("status", "error");
@@ -184,6 +196,7 @@ describe("Metas API Endpoints", () => {
       // Crear varias metas de prueba
       await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send({
           usuarioId: 23,
           nombre: "Meta 1",
@@ -194,6 +207,7 @@ describe("Metas API Endpoints", () => {
 
       await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send({
           usuarioId: 23,
           nombre: "Meta 2",
@@ -204,6 +218,7 @@ describe("Metas API Endpoints", () => {
 
       await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send({
           usuarioId: 24,
           nombre: "Meta 3",
@@ -216,6 +231,7 @@ describe("Metas API Endpoints", () => {
     it("should return list of metas with pagination", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .query({ pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
@@ -232,6 +248,7 @@ describe("Metas API Endpoints", () => {
     it("should filter metas by usuarioId", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .query({ usuarioId: 23, pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
@@ -245,6 +262,7 @@ describe("Metas API Endpoints", () => {
     it("should filter metas by activa status", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .query({ activa: true, pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
@@ -257,13 +275,14 @@ describe("Metas API Endpoints", () => {
     it("should support ordering by fechaInicio:desc", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .query({ orden: "fechaInicio:desc", pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
       expect(response.body).toHaveProperty("ok", true);
       expect(response.body.data.length).toBeGreaterThan(0);
 
-      // Verificar que están ordenadas correctamente
+      // Verificar que est├ín ordenadas correctamente
       for (let i = 0; i < response.body.data.length - 1; i++) {
         const fecha1 = new Date(response.body.data[i].fechaInicio);
         const fecha2 = new Date(response.body.data[i + 1].fechaInicio);
@@ -274,6 +293,7 @@ describe("Metas API Endpoints", () => {
     it("should return error for invalid pagination parameters", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .query({ pagina: -1, tamanoPagina: 10 })
         .expect(400);
 
@@ -283,6 +303,7 @@ describe("Metas API Endpoints", () => {
     it("should return error for invalid orden parameter", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .query({ orden: "campoInvalido:asc" })
         .expect(400);
 
@@ -297,6 +318,7 @@ describe("Metas API Endpoints", () => {
       // Crear una meta de prueba
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send({
           usuarioId: 23,
           nombre: "Meta original",
@@ -315,15 +337,17 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send(updateData)
         .expect(200);
 
       expect(response.body).toHaveProperty("ok", true);
       expect(response.body.data).toHaveProperty("actualizado", true);
 
-      // Verificar que se actualizó correctamente
+      // Verificar que se actualiz├│ correctamente
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(50000.0);
@@ -338,14 +362,16 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send(updateData)
         .expect(200);
 
       expect(response.body).toHaveProperty("ok", true);
 
-      // Verificar actualización
+      // Verificar actualizaci├│n
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.nombre).toBe("Meta actualizada");
@@ -359,14 +385,16 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send(updateData)
         .expect(200);
 
       expect(response.body).toHaveProperty("ok", true);
 
-      // Verificar actualización
+      // Verificar actualizaci├│n
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.activa).toBe(false);
@@ -379,6 +407,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send(updateData)
         .expect(400);
 
@@ -392,6 +421,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch("/api/v1/metas/9999")
+        .set("x-api-key", TEST_API_KEY)
         .send(updateData)
         .expect(404);
 
@@ -405,6 +435,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send(updateData)
         .expect(400);
 
@@ -419,6 +450,7 @@ describe("Metas API Endpoints", () => {
       // Crear una meta de prueba
       const response = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send({
           usuarioId: 23,
           nombre: "Meta a eliminar",
@@ -433,15 +465,17 @@ describe("Metas API Endpoints", () => {
     it("should delete meta (soft delete)", async () => {
       const response = await request(app)
         .delete(`/api/v1/metas/${metaId}`)
-        .send({ usuarioId: 23 }) // Simulando autenticación
+        .set("x-api-key", TEST_API_KEY)
+        .send({ usuarioId: 23 }) // Simulando autenticaci├│n
         .expect(200);
 
       expect(response.body).toHaveProperty("ok", true);
       expect(response.body.data).toHaveProperty("eliminado", true);
 
-      // Verificar que la meta sigue existiendo pero está inactiva
+      // Verificar que la meta sigue existiendo pero est├í inactiva
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.activa).toBe(false);
@@ -450,6 +484,7 @@ describe("Metas API Endpoints", () => {
     it("should return error for non-existent meta", async () => {
       const response = await request(app)
         .delete("/api/v1/metas/9999")
+        .set("x-api-key", TEST_API_KEY)
         .send({ usuarioId: 23 })
         .expect(404);
 
@@ -459,6 +494,7 @@ describe("Metas API Endpoints", () => {
     it("should return error when deleting meta from different user", async () => {
       const response = await request(app)
         .delete(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send({ usuarioId: 999 }) // Usuario diferente
         .expect(400);
 
@@ -471,6 +507,7 @@ describe("Metas API Endpoints", () => {
       // 1. Crear meta
       const createResponse = await request(app)
         .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
         .send({
           usuarioId: 23,
           nombre: "Vacaciones 2026",
@@ -486,6 +523,7 @@ describe("Metas API Endpoints", () => {
       // 2. Obtener meta - verificar estado inicial
       let getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(0.0);
@@ -494,11 +532,13 @@ describe("Metas API Endpoints", () => {
       // 3. Actualizar ahorro - 25% progreso
       await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send({ ahorroReal: 25000.0 })
         .expect(200);
 
       getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(25000.0);
@@ -507,11 +547,13 @@ describe("Metas API Endpoints", () => {
       // 4. Actualizar ahorro - 100% progreso
       await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send({ ahorroReal: 100000.0 })
         .expect(200);
 
       getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(100000.0);
@@ -520,11 +562,13 @@ describe("Metas API Endpoints", () => {
       // 5. Cerrar meta (marcar como completada)
       await request(app)
         .patch(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .send({ activa: false })
         .expect(200);
 
       getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
+        .set("x-api-key", TEST_API_KEY)
         .expect(200);
 
       expect(getResponse.body.data.activa).toBe(false);

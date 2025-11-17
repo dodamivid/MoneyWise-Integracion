@@ -1,16 +1,15 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import path from "path";
 import fs from "fs";
-import swaggerUi from "swagger-ui-express";
-import YAML from "yaml";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import egresosRouter from "./routes/egresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
 import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
-// Rutas del dashboard (se agregará el archivo en este ticket)
 import dashboardRoutes from "./routes/dashboard.routes";
+import catalogosRoutes from "./routes/catalogos.routes";
+import authRoutes from "./routes/auth.routes";
 import { db } from "./config/db";
 import {
   traceIdMiddleware,
@@ -18,28 +17,37 @@ import {
   notFoundHandler,
 } from "./middlewares/error.middleware";
 
-// Boot the Express application
 const app = express();
 
-// Middleware de traceId - DEBE ir primero para rastrear todas las requests
+// Middlewares de seguridad y parsing
 app.use(traceIdMiddleware);
-
-// Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// Inicializa la conexión a BD si está habilitada
+// Request logging
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
+// Inicializar BD si está habilitada
 if (db.enabled) {
   db.init().catch((e) => console.error("DB init error:", e.message));
 }
 
-// Simple root banner to confirm the API is reachable
+// Root endpoint
 app.get("/", (_req, res) => {
-  res.json({ message: "MoneyWise API" });
+  res.json({ message: "MoneyWise API", version: "1.0.0" });
 });
 
-// Swagger UI (dev/build): leer docs/api/openapi.yaml desde la raíz del proyecto
+// Swagger UI - carga dinámico para no romper si no están instaladas las dependencias
 try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const swaggerUi = require("swagger-ui-express");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const YAML = require("yaml");
+
   const candidates = [
     process.env.OPENAPI_PATH,
     path.join(process.cwd(), "docs", "api", "openapi.yaml"),
@@ -52,41 +60,26 @@ try {
     const file = fs.readFileSync(apiSpecPath, "utf8");
     const spec = YAML.parse(file);
     app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
-    console.log(`Swagger UI disponible en /docs (spec: ${apiSpecPath})`);
-  } else {
-    console.warn(
-      "Swagger UI no disponible: no se encontró docs/api/openapi.yaml en la raíz del proyecto"
-    );
+    console.log(`✓ Swagger UI disponible en /docs`);
   }
-} catch (e: any) {
-  console.warn("Swagger UI no disponible:", e?.message || String(e));
+} catch (e) {
+  // Silenciar si swagger no está instalado; no debe romper la app
+  // console.debug("Swagger no disponible:", (e as Error).message);
 }
 
-// Health check routes mounted under /health
+// Routes
 app.use("/health", healthRouter);
-
-// User routes mounted under /api/users
 app.use("/api/users", usersRouter);
-
-// Egresos routes mounted under /api/v1/egresos
+app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/egresos", egresosRouter);
-
-// Inversiones routes mounted under /api/v1/inversiones
 app.use("/api/v1/inversiones", inversionesRouter);
-
-// Metas routes mounted under /api/v1/metas
 app.use("/api/v1/metas", metasRouter);
-
-// Version routes mounted under /api/v1/version
 app.use("/api/v1/version", versionRoutes);
-
-// Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/catalogos", catalogosRoutes);
 
-// Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
+// Error handlers (orden importante)
 app.use(notFoundHandler);
-
-// Manejador centralizado de errores - DEBE ir al final
 app.use(errorHandler);
 
 export default app;

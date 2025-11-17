@@ -20,6 +20,7 @@ Auth (simulada en dev):
   - `x-mw-user`: ID de usuario (numérico)
   - `x-mw-scopes`: scopes separados por coma (ej. `egresos:leer,egresos:escribir`)
 - También puedes controlar el default con la variable de entorno `MOCK_DEFAULT_SCOPES`.
+- **Nuevo**: todas las rutas montadas bajo `/api` requieren el header `x-api-key`. En desarrollo puedes enviar cualquier valor (p. ej. `test-x-api-key`), pero si defines `MW_API_KEY`, `MONEYWISE_API_KEY` o `API_KEY` el middleware valida que coincida antes de pasar a los controladores. Recuerda agregar el header tambien en tus pruebas/E2E.
 
 ## Qué entregaremos para la tarea
 - Repositorio en GitHub (este).
@@ -196,5 +197,3 @@ Si el lint reporta variables sin uso y son intencionales, prefija el nombre con 
 - Añadir `.prettierignore` con `dist/`, `coverage/`, `node_modules/` si se desea limitar el alcance de `format:fix`.
 - Prefijar con `_` variables no usadas que se mantengan por claridad (silencia el warning del linter).
 - Ajustar `jest.config.js` para el entorno Node en el linter o migrarlo a `export default` (evita `no-undef` en lint), sin impacto en runtime o pruebas.
-#   a p i - t i p o s - i n g r e s o  
- 

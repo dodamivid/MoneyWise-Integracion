@@ -1,14 +1,20 @@
-import request from "supertest";
+﻿import request from "supertest";
 import app from "../../../src/app";
 
-describe("API Egresos - Integración", () => {
-  const baseHeaders = {
+const TEST_API_KEY = process.env.TEST_API_KEY ?? "test-x-api-key";
+const withApiKey = (headers: Record<string, string>) => ({
+  "x-api-key": TEST_API_KEY,
+  ...headers,
+});
+
+describe("API Egresos - Integraci├│n", () => {
+  const baseHeaders = withApiKey({
     "x-mw-user": "1",
     "x-mw-scopes": "egresos:leer,egresos:escribir,admin:egresos",
-  };
+  });
 
   describe("GET /api/v1/egresos", () => {
-    it("200 - lista egresos con parámetros válidos", async () => {
+    it("200 - lista egresos con par├ímetros v├ílidos", async () => {
       const response = await request(app)
         .get("/api/v1/egresos")
         .set(baseHeaders)
@@ -29,7 +35,7 @@ describe("API Egresos - Integración", () => {
       });
     });
 
-    it("422 - rechaza rango de fechas inválido (desde sin hasta)", async () => {
+    it("422 - rechaza rango de fechas inv├ílido (desde sin hasta)", async () => {
       const response = await request(app)
         .get("/api/v1/egresos")
         .set(baseHeaders)
@@ -58,10 +64,10 @@ describe("API Egresos - Integración", () => {
     it("403 - rechaza consulta de otro usuario sin scope admin", async () => {
       const response = await request(app)
         .get("/api/v1/egresos")
-        .set({
+        .set(withApiKey({
           "x-mw-user": "1",
           "x-mw-scopes": "egresos:leer",
-        })
+        }))
         .query({
           usuarioId: "99",
         });
@@ -73,7 +79,7 @@ describe("API Egresos - Integración", () => {
   });
 
   describe("POST /api/v1/egresos", () => {
-    it("201 - crea egreso con datos válidos", async () => {
+    it("201 - crea egreso con datos v├ílidos", async () => {
       const response = await request(app)
         .post("/api/v1/egresos")
         .set(baseHeaders)
@@ -125,10 +131,10 @@ describe("API Egresos - Integración", () => {
     it("403 - rechaza crear egreso para otro usuario sin scope admin", async () => {
       const response = await request(app)
         .post("/api/v1/egresos")
-        .set({
+        .set(withApiKey({
           "x-mw-user": "1",
           "x-mw-scopes": "egresos:escribir",
-        })
+        }))
         .send({
           usuarioId: "99",
           tipoId: 1,
@@ -165,7 +171,7 @@ describe("API Egresos - Integración", () => {
       expect(response.body.error.codigo).toBe("NO_ENCONTRADO");
     });
 
-    it("422 - ID inválido", async () => {
+    it("422 - ID inv├ílido", async () => {
       const response = await request(app)
         .get("/api/v1/egresos/abc")
         .set(baseHeaders);
@@ -190,7 +196,7 @@ describe("API Egresos - Integración", () => {
       expect(response.body.data).toHaveProperty("actualizado", true);
     });
 
-    it("422 - body vacío", async () => {
+    it("422 - body vac├¡o", async () => {
       const response = await request(app)
         .patch("/api/v1/egresos/1")
         .set(baseHeaders)
@@ -234,14 +240,14 @@ describe("API Egresos - Integración", () => {
     });
   });
 
-  describe("Autorización - scopes", () => {
+  describe("Autorizaci├│n - scopes", () => {
     it("403 - rechaza GET sin scope egresos:leer", async () => {
       const response = await request(app)
         .get("/api/v1/egresos")
-        .set({
+        .set(withApiKey({
           "x-mw-user": "1",
           "x-mw-scopes": "",
-        });
+        }));
 
       expect(response.status).toBe(403);
       expect(response.body.ok).toBe(false);
@@ -250,10 +256,10 @@ describe("API Egresos - Integración", () => {
     it("403 - rechaza POST sin scope egresos:escribir", async () => {
       const response = await request(app)
         .post("/api/v1/egresos")
-        .set({
+        .set(withApiKey({
           "x-mw-user": "1",
           "x-mw-scopes": "egresos:leer",
-        })
+        }))
         .send({
           tipoId: 1,
           monto: 100,
