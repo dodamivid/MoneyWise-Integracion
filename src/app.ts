@@ -9,8 +9,8 @@ import egresosRouter from "./routes/egresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
 import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
-// Rutas del dashboard (se agregará el archivo en este ticket)
 import dashboardRoutes from "./routes/dashboard.routes";
+import catalogosRoutes from "./routes/catalogos.routes";
 import { db } from "./config/db";
 import {
   traceIdMiddleware,
@@ -19,14 +19,9 @@ import {
   requestLogger,
 } from "./middlewares/error.middleware";
 import { requireApiKey } from "./middlewares/api-key.middleware";
-
-// ---------------------------------------------------------------------------
-// NUEVAS IMPORTACIONES – NO MODIFICAR NADA EXISTENTE
 import { correlationIdMiddleware } from "./middlewares/correlationId.middleware";
 import httpLogger from "./middlewares/logger.middleware";
-// 👉 IMPORTACIÓN NUEVA PARA TESTS (NO MODIFICAR NADA DE ARRIBA)
 import testRoutes from "./routes/test.routes";
-// ---------------------------------------------------------------------------
 
 // Boot the Express application
 const app = express();
@@ -34,17 +29,17 @@ const app = express();
 // Middleware de traceId - DEBE ir primero para rastrear todas las requests
 app.use(traceIdMiddleware);
 
-// ---------------------------------------------------------------------------
-// NUEVAS LÍNEAS – NO MODIFICAR NADA EXISTENTE
-// Middlewares de observabilidad (van después de traceId y antes de express.json)
+// Observabilidad antes de parsear body
 app.use(correlationIdMiddleware);
 app.use(httpLogger);
-// ---------------------------------------------------------------------------
 
 // Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
 app.use(express.json());
 app.use(requestLogger);
+
+// Require x-api-key para todas las rutas bajo /api (placeholder)
+app.use("/api", requireApiKey);
 
 // Inicializa la conexión a BD si está habilitada
 if (db.enabled) {
@@ -55,9 +50,6 @@ if (db.enabled) {
 app.get("/", (_req, res) => {
   res.json({ message: "MoneyWise API" });
 });
-
-// Require x-api-key for every /api/* route (placeholder enforcement)
-app.use("/api", requireApiKey);
 
 // Swagger UI (dev/build): leer docs/api/openapi.yaml desde la raíz del proyecto
 try {
@@ -104,7 +96,10 @@ app.use("/api/v1/version", versionRoutes);
 // Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
 
-// 👉 NUEVA RUTA PARA TESTEAR EL ERROR HANDLER (sólo habilitada en pruebas)
+// Catálogos routes mounted under /api/v1/catalogos
+app.use("/api/v1/catalogos", catalogosRoutes);
+
+// Ruta de prueba de error handler (solo en entorno de test)
 if (process.env.NODE_ENV === "test") {
   app.use("/api/v1/test", testRoutes);
 }
