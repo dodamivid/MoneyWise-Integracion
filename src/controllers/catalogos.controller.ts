@@ -5,24 +5,144 @@ import {
   CrearDestinoBodySchema,
   ActualizarDestinoBodySchema,
   DestinoIdParamSchema,
+  ListarFrecuenciasQuerySchema,
+  CrearFrecuenciaBodySchema,
+  ActualizarFrecuenciaBodySchema,
+  FrecuenciaIdParamSchema,
 } from "../dtos/catalogos.dto";
 import { ValidationError } from "../utils/errors";
 
 /**
- * @fileoverview Controller para endpoints de catálogos de destinos
- * Maneja Request/Response y delega lógica al Service
+ * @fileoverview Controller para endpoints de catálogos (Destinos y Frecuencias)
  */
 
 export class CatalogosController {
-  /**
-   * GET /api/v1/catalogos/destinos
-   * Lista destinos con paginación
-   */
+  // ============================================
+  // DESTINOS
+  // ============================================
+
   async listarDestinos(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validar query params
       const queryValidation = ListarDestinosQuerySchema.safeParse(req.query);
+      if (!queryValidation.success) {
+        throw new ValidationError(
+          queryValidation.error.issues
+            .map((e) => `${e.path.join(".")}: ${e.message}`)
+            .join(", ")
+        );
+      }
 
+      const { buscar, pagina, tamanoPagina, orden } = queryValidation.data;
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+
+      const { destinos, total } = await catalogosService.listarDestinos(
+        auth.userId,
+        buscar,
+        pagina,
+        tamanoPagina,
+        orden,
+        auth.scopes
+      );
+
+      res.status(200).json({
+        ok: true,
+        data: destinos,
+        meta: { paginacion: { pagina, tamanoPagina, total } },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async crearDestino(req: Request, res: Response, next: NextFunction) {
+    try {
+      const bodyValidation = CrearDestinoBodySchema.safeParse(req.body);
+      if (!bodyValidation.success) {
+        throw new ValidationError(
+          bodyValidation.error.issues
+            .map((e) => `${e.path.join(".")}: ${e.message}`)
+            .join(", ")
+        );
+      }
+
+      const { nombre } = bodyValidation.data;
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+
+      const resultado = await catalogosService.crearDestino(auth.userId, nombre);
+
+      res.status(201).json({ ok: true, data: resultado });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async actualizarDestino(req: Request, res: Response, next: NextFunction) {
+    try {
+      const paramValidation = DestinoIdParamSchema.safeParse(req.params);
+      if (!paramValidation.success) {
+        throw new ValidationError(
+          paramValidation.error.issues
+            .map((e) => `${e.path.join(".")}: ${e.message}`)
+            .join(", ")
+        );
+      }
+
+      const { id: destinoId } = paramValidation.data;
+
+      const bodyValidation = ActualizarDestinoBodySchema.safeParse(req.body);
+      if (!bodyValidation.success) {
+        throw new ValidationError(
+          bodyValidation.error.issues
+            .map((e) => `${e.path.join(".")}: ${e.message}`)
+            .join(", ")
+        );
+      }
+
+      const { nombre } = bodyValidation.data;
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+
+      await catalogosService.actualizarDestino(
+        destinoId,
+        auth.userId,
+        nombre,
+        auth.scopes
+      );
+
+      res.status(200).json({ ok: true, data: { actualizado: true } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async eliminarDestino(req: Request, res: Response, next: NextFunction) {
+    try {
+      const paramValidation = DestinoIdParamSchema.safeParse(req.params);
+      if (!paramValidation.success) {
+        throw new ValidationError(
+          paramValidation.error.issues
+            .map((e) => `${e.path.join(".")}: ${e.message}`)
+            .join(", ")
+        );
+      }
+
+      const { id: destinoId } = paramValidation.data;
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+
+      await catalogosService.eliminarDestino(destinoId, auth.userId, auth.scopes);
+
+      res.status(200).json({ ok: true, data: { eliminado: true } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ============================================
+  // FRECUENCIAS
+  // ============================================
+
+  async listarFrecuencias(req: Request, res: Response, next: NextFunction) {
+    try {
+      const queryValidation = ListarFrecuenciasQuerySchema.safeParse(req.query);
       if (!queryValidation.success) {
         throw new ValidationError(
           queryValidation.error.issues
@@ -33,48 +153,70 @@ export class CatalogosController {
 
       const { buscar, pagina, tamanoPagina, orden } = queryValidation.data;
 
-      // Obtener usuario y scopes del middleware de auth
-      const auth = res.locals.auth as {
-        userId: string;
-        scopes: string[];
-      };
-
-      // Llamar al service
-      const { destinos, total } = await catalogosService.listarDestinos(
-        auth.userId,
+      const { frecuencias, total } = await catalogosService.listarFrecuencias(
         buscar,
         pagina,
         tamanoPagina,
-        orden,
-        auth.scopes
+        orden
       );
 
-      // Respuesta exitosa
       res.status(200).json({
         ok: true,
-        data: destinos,
-        meta: {
-          paginacion: {
-            pagina,
-            tamanoPagina,
-            total,
+        data: frecuencias,
+        meta: { paginacion: { pagina, tamanoPagina, total } },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async crearFrecuencia(req: Request, res: Response, next: NextFunction) {
+    try {
+      const bodyValidation = CrearFrecuenciaBodySchema.safeParse(req.body);
+      if (!bodyValidation.success) {
+        throw new ValidationError(
+          bodyValidation.error.issues
+            .map((e) => `${e.path.join(".")}: ${e.message}`)
+            .join(", ")
+        );
+      }
+
+      const { nombre } = bodyValidation.data;
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+
+      // Verificar scope admin
+      if (!auth.scopes.includes("admin:catalogos")) {
+        return res.status(403).json({
+          ok: false,
+          error: {
+            codigo: "PERMISO_DENEGADO",
+            mensaje: "Se requiere scope admin:catalogos",
           },
-        },
-      });
+        });
+      }
+
+      const resultado = await catalogosService.crearFrecuencia(nombre);
+
+      res.status(201).json({ ok: true, data: resultado });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * POST /api/v1/catalogos/destinos
-   * Crea un nuevo destino
-   */
-  async crearDestino(req: Request, res: Response, next: NextFunction) {
+  async actualizarFrecuencia(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validar body
-      const bodyValidation = CrearDestinoBodySchema.safeParse(req.body);
+      const paramValidation = FrecuenciaIdParamSchema.safeParse(req.params);
+      if (!paramValidation.success) {
+        throw new ValidationError(
+          paramValidation.error.issues
+            .map((e) => `${e.path.join(".")}: ${e.message}`)
+            .join(", ")
+        );
+      }
 
+      const { id: frecuenciaId } = paramValidation.data;
+
+      const bodyValidation = ActualizarFrecuenciaBodySchema.safeParse(req.body);
       if (!bodyValidation.success) {
         throw new ValidationError(
           bodyValidation.error.issues
@@ -84,38 +226,30 @@ export class CatalogosController {
       }
 
       const { nombre } = bodyValidation.data;
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
 
-      // Obtener usuario del middleware de auth
-      const auth = res.locals.auth as {
-        userId: string;
-        scopes: string[];
-      };
+      // Verificar scope admin
+      if (!auth.scopes.includes("admin:catalogos")) {
+        return res.status(403).json({
+          ok: false,
+          error: {
+            codigo: "PERMISO_DENEGADO",
+            mensaje: "Se requiere scope admin:catalogos",
+          },
+        });
+      }
 
-      // Llamar al service
-      const resultado = await catalogosService.crearDestino(
-        auth.userId,
-        nombre
-      );
+      await catalogosService.actualizarFrecuencia(frecuenciaId, nombre);
 
-      // Respuesta exitosa
-      res.status(201).json({
-        ok: true,
-        data: resultado,
-      });
+      res.status(200).json({ ok: true, data: { actualizado: true } });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * PUT /api/v1/catalogos/destinos/:id
-   * Actualiza un destino existente
-   */
-  async actualizarDestino(req: Request, res: Response, next: NextFunction) {
+  async eliminarFrecuencia(req: Request, res: Response, next: NextFunction) {
     try {
-      // Validar ID del parámetro
-      const paramValidation = DestinoIdParamSchema.safeParse(req.params);
-
+      const paramValidation = FrecuenciaIdParamSchema.safeParse(req.params);
       if (!paramValidation.success) {
         throw new ValidationError(
           paramValidation.error.issues
@@ -124,91 +258,27 @@ export class CatalogosController {
         );
       }
 
-      const { id: destinoId } = paramValidation.data;
+      const { id: frecuenciaId } = paramValidation.data;
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
 
-      // Validar body
-      const bodyValidation = ActualizarDestinoBodySchema.safeParse(req.body);
-
-      if (!bodyValidation.success) {
-        throw new ValidationError(
-          bodyValidation.error.issues
-            .map((e) => `${e.path.join(".")}: ${e.message}`)
-            .join(", ")
-        );
+      // Verificar scope admin
+      if (!auth.scopes.includes("admin:catalogos")) {
+        return res.status(403).json({
+          ok: false,
+          error: {
+            codigo: "PERMISO_DENEGADO",
+            mensaje: "Se requiere scope admin:catalogos",
+          },
+        });
       }
 
-      const { nombre } = bodyValidation.data;
+      await catalogosService.eliminarFrecuencia(frecuenciaId);
 
-      // Obtener usuario y scopes del middleware de auth
-      const auth = res.locals.auth as {
-        userId: string;
-        scopes: string[];
-      };
-
-      // Llamar al service
-      await catalogosService.actualizarDestino(
-        destinoId,
-        auth.userId,
-        nombre,
-        auth.scopes
-      );
-
-      // Respuesta exitosa
-      res.status(200).json({
-        ok: true,
-        data: {
-          actualizado: true,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * DELETE /api/v1/catalogos/destinos/:id
-   * Elimina un destino (soft delete)
-   */
-  async eliminarDestino(req: Request, res: Response, next: NextFunction) {
-    try {
-      // Validar ID del parámetro
-      const paramValidation = DestinoIdParamSchema.safeParse(req.params);
-
-      if (!paramValidation.success) {
-        throw new ValidationError(
-          paramValidation.error.issues
-            .map((e) => `${e.path.join(".")}: ${e.message}`)
-            .join(", ")
-        );
-      }
-
-      const { id: destinoId } = paramValidation.data;
-
-      // Obtener usuario y scopes del middleware de auth
-      const auth = res.locals.auth as {
-        userId: string;
-        scopes: string[];
-      };
-
-      // Llamar al service
-      await catalogosService.eliminarDestino(
-        destinoId,
-        auth.userId,
-        auth.scopes
-      );
-
-      // Respuesta exitosa
-      res.status(200).json({
-        ok: true,
-        data: {
-          eliminado: true,
-        },
-      });
+      res.status(200).json({ ok: true, data: { eliminado: true } });
     } catch (error) {
       next(error);
     }
   }
 }
 
-// Exportar instancia singleton
 export const catalogosController = new CatalogosController();

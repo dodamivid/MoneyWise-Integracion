@@ -2,19 +2,18 @@ import { catalogosRepository } from "../repositories/catalogos.repository";
 import {
   NotFoundError,
   BadRequestError,
-  ValidationError,
 } from "../utils/errors";
-import { DestinoDTO } from "../dtos/catalogos.dto";
+import { DestinoDTO, FrecuenciaDTO } from "../dtos/catalogos.dto";
 
 /**
- * @fileoverview Service para la lógica de negocio de catálogos
- * Valida reglas de negocio antes de delegar al repository
+ * @fileoverview Service para catálogos (Destinos y Frecuencias)
  */
 
 export class CatalogosService {
-  /**
-   * Lista destinos con paginación y filtros
-   */
+  // ============================================
+  // DESTINOS
+  // ============================================
+
   async listarDestinos(
     usuarioId: string,
     buscar: string | undefined,
@@ -23,9 +22,6 @@ export class CatalogosService {
     orden: string,
     scopes: string[]
   ): Promise<{ destinos: DestinoDTO[]; total: number }> {
-    // Si se solicita ver destinos de otro usuario, validar scope admin
-    // (Por ahora solo vemos los del usuario actual + globales)
-
     const { destinos, total } = await catalogosRepository.listarDestinos(
       usuarioId,
       buscar || null,
@@ -37,15 +33,10 @@ export class CatalogosService {
     return { destinos, total };
   }
 
-  /**
-   * Crea un nuevo destino
-   * Valida que no exista duplicado
-   */
   async crearDestino(
     usuarioId: string,
     nombre: string
   ): Promise<{ destinoId: number; nombre: string }> {
-    // Validar duplicado: buscar si ya existe con ese nombre
     const { destinos } = await catalogosRepository.listarDestinos(
       usuarioId,
       nombre,
@@ -64,15 +55,10 @@ export class CatalogosService {
       );
     }
 
-    // Crear el destino
     try {
-      const resultado = await catalogosRepository.crearDestino(
-        usuarioId,
-        nombre
-      );
+      const resultado = await catalogosRepository.crearDestino(usuarioId, nombre);
       return resultado;
     } catch (error: any) {
-      // Si el SP lanza error de duplicado (por race condition)
       if (error.message?.includes("Duplicate") || error.code === "ER_DUP_ENTRY") {
         throw new BadRequestError(
           `Ya existe un destino con el nombre "${nombre}"`
@@ -82,17 +68,12 @@ export class CatalogosService {
     }
   }
 
-  /**
-   * Actualiza un destino existente
-   * Valida permisos y unicidad
-   */
   async actualizarDestino(
     destinoId: number,
     usuarioId: string,
     nombre: string,
     scopes: string[]
   ): Promise<boolean> {
-    // Verificar que el destino existe y pertenece al usuario
     const { destinos } = await catalogosRepository.listarDestinos(
       usuarioId,
       null,
@@ -107,14 +88,12 @@ export class CatalogosService {
       throw new NotFoundError("Destino", destinoId.toString());
     }
 
-    // Validar que no sea un destino por defecto (a menos que tenga scope admin)
     if (destinoExistente.esPorDefecto && !scopes.includes("admin:catalogos")) {
       throw new BadRequestError(
         "No puedes editar destinos por defecto sin permisos de administrador"
       );
     }
 
-    // Validar que el destino pertenezca al usuario (o sea global con permisos admin)
     if (
       destinoExistente.usuarioId !== null &&
       destinoExistente.usuarioId !== usuarioId
@@ -122,7 +101,6 @@ export class CatalogosService {
       throw new BadRequestError("No tienes permiso para editar este destino");
     }
 
-    // Validar duplicado con el nuevo nombre
     const duplicado = destinos.find(
       (d) =>
         d.nombre.toLowerCase() === nombre.toLowerCase() &&
@@ -135,7 +113,6 @@ export class CatalogosService {
       );
     }
 
-    // Actualizar
     const actualizado = await catalogosRepository.actualizarDestino(
       destinoId,
       usuarioId,
@@ -149,16 +126,11 @@ export class CatalogosService {
     return true;
   }
 
-  /**
-   * Elimina un destino (soft delete)
-   * Valida que no sea destino por defecto
-   */
   async eliminarDestino(
     destinoId: number,
     usuarioId: string,
     scopes: string[]
   ): Promise<boolean> {
-    // Verificar que el destino existe
     const { destinos } = await catalogosRepository.listarDestinos(
       usuarioId,
       null,
@@ -173,12 +145,10 @@ export class CatalogosService {
       throw new NotFoundError("Destino", destinoId.toString());
     }
 
-    // No permitir eliminar destinos por defecto
     if (destinoExistente.esPorDefecto) {
       throw new BadRequestError("No puedes eliminar destinos por defecto");
     }
 
-    // Validar permisos de usuario
     if (
       destinoExistente.usuarioId !== null &&
       destinoExistente.usuarioId !== usuarioId
@@ -186,7 +156,6 @@ export class CatalogosService {
       throw new BadRequestError("No tienes permiso para eliminar este destino");
     }
 
-    // Eliminar
     const eliminado = await catalogosRepository.eliminarDestino(
       destinoId,
       usuarioId
@@ -198,7 +167,127 @@ export class CatalogosService {
 
     return true;
   }
+
+  // ============================================
+  // FRECUENCIAS
+  // ============================================
+
+  async listarFrecuencias(
+    buscar: string | undefined,
+    pagina: number,
+    tamanoPagina: number,
+    orden: string
+  ): Promise<{ frecuencias: FrecuenciaDTO[]; total: number }> {
+    const { frecuencias, total } = await catalogosRepository.listarFrecuencias(
+      buscar || null,
+      pagina,
+      tamanoPagina,
+      orden
+    );
+
+    return { frecuencias, total };
+  }
+
+  async crearFrecuencia(
+    nombre: string
+  ): Promise<{ frecuenciaId: number; nombre: string }> {
+    const { frecuencias } = await catalogosRepository.listarFrecuencias(
+      nombre,
+      1,
+      10,
+      "nombre:asc"
+    );
+
+    const duplicado = frecuencias.find(
+      (f) => f.nombre.toLowerCase() === nombre.toLowerCase()
+    );
+
+    if (duplicado) {
+      throw new BadRequestError(
+        `Ya existe una frecuencia con el nombre "${nombre}"`
+      );
+    }
+
+    try {
+      const resultado = await catalogosRepository.crearFrecuencia(nombre);
+      return resultado;
+    } catch (error: any) {
+      if (error.message?.includes("Duplicate") || error.code === "ER_DUP_ENTRY") {
+        throw new BadRequestError(
+          `Ya existe una frecuencia con el nombre "${nombre}"`
+        );
+      }
+      throw error;
+    }
+  }
+
+  async actualizarFrecuencia(
+    frecuenciaId: number,
+    nombre: string
+  ): Promise<boolean> {
+    const { frecuencias } = await catalogosRepository.listarFrecuencias(
+      null,
+      1,
+      1000,
+      "nombre:asc"
+    );
+
+    const frecuenciaExistente = frecuencias.find(
+      (f) => f.frecuenciaId === frecuenciaId
+    );
+
+    if (!frecuenciaExistente) {
+      throw new NotFoundError("Frecuencia", frecuenciaId.toString());
+    }
+
+    const duplicado = frecuencias.find(
+      (f) =>
+        f.nombre.toLowerCase() === nombre.toLowerCase() &&
+        f.frecuenciaId !== frecuenciaId
+    );
+
+    if (duplicado) {
+      throw new BadRequestError(
+        `Ya existe otra frecuencia con el nombre "${nombre}"`
+      );
+    }
+
+    const actualizado = await catalogosRepository.actualizarFrecuencia(
+      frecuenciaId,
+      nombre
+    );
+
+    if (!actualizado) {
+      throw new NotFoundError("Frecuencia", frecuenciaId.toString());
+    }
+
+    return true;
+  }
+
+  async eliminarFrecuencia(frecuenciaId: number): Promise<boolean> {
+    const { frecuencias } = await catalogosRepository.listarFrecuencias(
+      null,
+      1,
+      1000,
+      "nombre:asc"
+    );
+
+    const frecuenciaExistente = frecuencias.find(
+      (f) => f.frecuenciaId === frecuenciaId
+    );
+
+    if (!frecuenciaExistente) {
+      throw new NotFoundError("Frecuencia", frecuenciaId.toString());
+    }
+
+    const eliminado = await catalogosRepository.eliminarFrecuencia(frecuenciaId);
+
+    if (!eliminado) {
+      throw new NotFoundError("Frecuencia", frecuenciaId.toString());
+    }
+
+    return true;
+  }
 }
 
-// Exportar instancia singleton
 export const catalogosService = new CatalogosService();

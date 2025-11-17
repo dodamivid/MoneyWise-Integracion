@@ -1,42 +1,75 @@
-import { db } from "../config/db";
-import { DestinoDTO } from "../dtos/catalogos.dto";
+import { DestinoDTO, FrecuenciaDTO } from "../dtos/catalogos.dto";
 
 /**
- * @fileoverview Repository para catálogos de destinos
- * Maneja las llamadas a Stored Procedures de MySQL
+ * Repository en memoria para catálogos (Destinos y Frecuencias).
+ * Esta implementación persiste mientras viva el proceso y sirve como contrato
+ * para que BD adapte sus SPs a nuestra firma:
+ *  - sp_destinos_listar/crear/actualizar/eliminar
+ *  - sp_frecuencias_listar/crear/actualizar/eliminar
  */
-
-/**
- * Tipo para el resultado de paginación del SP
- */
-interface SPListarResult {
-  destinoId: number;
-  usuarioId: string | null;
-  nombre: string;
-  esPorDefecto: 0 | 1; // MySQL devuelve BOOLEAN como 0/1
-  creadoEn: string;
-  actualizadoEn: string;
-  totalRegistros?: number; // Solo viene en la primera fila
-}
-
-interface SPCrearResult {
-  destinoId: number;
-  nombre: string;
-}
-
-interface SPActualizarResult {
-  actualizado: 0 | 1;
-}
-
-interface SPEliminarResult {
-  eliminado: 0 | 1;
-}
-
 export class CatalogosRepository {
-  /**
-   * Lista destinos con filtros y paginación
-   * SP: sp_destinos_listar(pUsuarioId, pBuscar, pPagina, pTam, pOrden)
-   */
+  private destinos: DestinoDTO[] = [];
+  private frecuencias: FrecuenciaDTO[] = [];
+
+  constructor() {
+    const now = new Date().toISOString();
+    this.destinos = [
+      {
+        destinoId: 1,
+        usuarioId: null,
+        nombre: "Renta",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        destinoId: 2,
+        usuarioId: null,
+        nombre: "Servicios",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        destinoId: 3,
+        usuarioId: null,
+        nombre: "Transporte",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        destinoId: 4,
+        usuarioId: null,
+        nombre: "Alimentación",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+    ];
+
+    const seeds = [
+      "Diario",
+      "Semanal",
+      "Quincenal",
+      "Mensual",
+      "Bimestral",
+      "Trimestral",
+      "Semestral",
+      "Anual",
+    ];
+    this.frecuencias = seeds.map((nombre, idx) => ({
+      frecuenciaId: idx + 1,
+      nombre,
+      creadoEn: now,
+      actualizadoEn: now,
+    }));
+  }
+
+  // ============================================
+  // DESTINOS
+  // ============================================
+
   async listarDestinos(
     usuarioId: string,
     buscar: string | null,
@@ -44,103 +77,140 @@ export class CatalogosRepository {
     tamanoPagina: number,
     orden: string
   ): Promise<{ destinos: DestinoDTO[]; total: number }> {
-    const [resultSets] = await db.call<SPListarResult[]>(
-      "sp_destinos_listar(?, ?, ?, ?, ?)",
-      [usuarioId, buscar, pagina, tamanoPagina, orden]
+    const disponibles = this.destinos.filter(
+      (d) => d.usuarioId === null || d.usuarioId === usuarioId
     );
 
-    const rows = resultSets as unknown as SPListarResult[];
-
-    if (!rows || rows.length === 0) {
-      return { destinos: [], total: 0 };
+    let filtrados = disponibles;
+    if (buscar) {
+      const term = buscar.toLowerCase();
+      filtrados = filtrados.filter((d) =>
+        d.nombre.toLowerCase().includes(term)
+      );
     }
 
-    // El total viene en todas las filas (misma columna calculada)
-    const total = rows[0].totalRegistros || 0;
+    const [campo, direccion] = orden.split(":");
+    const factor = direccion === "desc" ? -1 : 1;
+    filtrados = filtrados.sort((a, b) => {
+      const va = (a as any)[campo] ?? "";
+      const vb = (b as any)[campo] ?? "";
+      if (va < vb) return -1 * factor;
+      if (va > vb) return 1 * factor;
+      return 0;
+    });
 
-    // Mapear a DTO y convertir 0/1 a boolean
-    const destinos: DestinoDTO[] = rows.map((row) => ({
-      destinoId: row.destinoId,
-      usuarioId: row.usuarioId,
-      nombre: row.nombre,
-      esPorDefecto: row.esPorDefecto === 1,
-      creadoEn: row.creadoEn,
-      actualizadoEn: row.actualizadoEn,
-    }));
+    const total = filtrados.length;
+    const inicio = (pagina - 1) * tamanoPagina;
+    const destinos = filtrados.slice(inicio, inicio + tamanoPagina);
 
     return { destinos, total };
   }
 
-  /**
-   * Crea un nuevo destino
-   * SP: sp_destinos_crear(pUsuarioId, pNombre)
-   */
   async crearDestino(
     usuarioId: string,
     nombre: string
   ): Promise<{ destinoId: number; nombre: string }> {
-    const [resultSets] = await db.call<SPCrearResult[]>(
-      "sp_destinos_crear(?, ?)",
-      [usuarioId, nombre]
-    );
-
-    const rows = resultSets as unknown as SPCrearResult[];
-
-    if (!rows || rows.length === 0) {
-      throw new Error("El SP no devolvió resultado");
-    }
-
-    return {
-      destinoId: rows[0].destinoId,
-      nombre: rows[0].nombre,
-    };
+    const destinoId =
+      Math.max(...this.destinos.map((d) => d.destinoId), 0) + 1;
+    const now = new Date().toISOString();
+    this.destinos.push({
+      destinoId,
+      usuarioId,
+      nombre,
+      esPorDefecto: false,
+      creadoEn: now,
+      actualizadoEn: now,
+    });
+    return { destinoId, nombre };
   }
 
-  /**
-   * Actualiza un destino existente
-   * SP: sp_destinos_actualizar(pDestinoId, pUsuarioId, pNombre)
-   */
   async actualizarDestino(
     destinoId: number,
     usuarioId: string,
     nombre: string
   ): Promise<boolean> {
-    const [resultSets] = await db.call<SPActualizarResult[]>(
-      "sp_destinos_actualizar(?, ?, ?)",
-      [destinoId, usuarioId, nombre]
-    );
-
-    const rows = resultSets as unknown as SPActualizarResult[];
-
-    if (!rows || rows.length === 0) {
-      return false;
-    }
-
-    return rows[0].actualizado === 1;
+    const destino = this.destinos.find((d) => d.destinoId === destinoId);
+    if (!destino) return false;
+    destino.nombre = nombre;
+    destino.actualizadoEn = new Date().toISOString();
+    return true;
   }
 
-  /**
-   * Elimina un destino (soft delete)
-   * SP: sp_destinos_eliminar(pDestinoId, pUsuarioId)
-   */
-  async eliminarDestino(
-    destinoId: number,
-    usuarioId: string
-  ): Promise<boolean> {
-    const [resultSets] = await db.call<SPEliminarResult[]>(
-      "sp_destinos_eliminar(?, ?)",
-      [destinoId, usuarioId]
-    );
+  async eliminarDestino(destinoId: number, usuarioId: string): Promise<boolean> {
+    const len = this.destinos.length;
+    this.destinos = this.destinos.filter((d) => d.destinoId !== destinoId);
+    return this.destinos.length < len;
+  }
 
-    const rows = resultSets as unknown as SPEliminarResult[];
+  // ============================================
+  // FRECUENCIAS
+  // ============================================
 
-    if (!rows || rows.length === 0) {
-      return false;
+  async listarFrecuencias(
+    buscar: string | null,
+    pagina: number,
+    tamanoPagina: number,
+    orden: string
+  ): Promise<{ frecuencias: FrecuenciaDTO[]; total: number }> {
+    let filtradas = this.frecuencias;
+    if (buscar) {
+      const term = buscar.toLowerCase();
+      filtradas = filtradas.filter((f) =>
+        f.nombre.toLowerCase().includes(term)
+      );
     }
 
-    return rows[0].eliminado === 1;
+    const [campo, direccion] = orden.split(":");
+    const factor = direccion === "desc" ? -1 : 1;
+    filtradas = filtradas.sort((a, b) => {
+      const va = (a as any)[campo] ?? "";
+      const vb = (b as any)[campo] ?? "";
+      if (va < vb) return -1 * factor;
+      if (va > vb) return 1 * factor;
+      return 0;
+    });
+
+    const total = filtradas.length;
+    const inicio = (pagina - 1) * tamanoPagina;
+    const frecuencias = filtradas.slice(inicio, inicio + tamanoPagina);
+    return { frecuencias, total };
+  }
+
+  async crearFrecuencia(
+    nombre: string
+  ): Promise<{ frecuenciaId: number; nombre: string }> {
+    const frecuenciaId =
+      Math.max(...this.frecuencias.map((f) => f.frecuenciaId), 0) + 1;
+    const now = new Date().toISOString();
+    this.frecuencias.push({
+      frecuenciaId,
+      nombre,
+      creadoEn: now,
+      actualizadoEn: now,
+    });
+    return { frecuenciaId, nombre };
+  }
+
+  async actualizarFrecuencia(
+    frecuenciaId: number,
+    nombre: string
+  ): Promise<boolean> {
+    const frecuencia = this.frecuencias.find(
+      (f) => f.frecuenciaId === frecuenciaId
+    );
+    if (!frecuencia) return false;
+    frecuencia.nombre = nombre;
+    frecuencia.actualizadoEn = new Date().toISOString();
+    return true;
+  }
+
+  async eliminarFrecuencia(frecuenciaId: number): Promise<boolean> {
+    const len = this.frecuencias.length;
+    this.frecuencias = this.frecuencias.filter(
+      (f) => f.frecuenciaId !== frecuenciaId
+    );
+    return this.frecuencias.length < len;
   }
 }
 
-// Exportar instancia singleton
 export const catalogosRepository = new CatalogosRepository();
