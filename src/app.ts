@@ -12,6 +12,7 @@ import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import catalogosRoutes from "./routes/catalogos.routes";
+import catalogosProcedenciaRoutes from "./routes/catalogosProcedencia.routes";
 import { db } from "./config/db";
 import tiposIngresoRoutes from "./routes/tiposIngreso.routes";
 import {
@@ -103,6 +104,9 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Catálogos routes mounted under /api/v1/catalogos
 app.use("/api/v1/catalogos", catalogosRoutes);
+
+// Procedencias de Ingreso routes mounted under /api/v1/catalogos/procedencias
+app.use("/api/v1/catalogos", catalogosProcedenciaRoutes);
 
 // Ruta de prueba de error handler (solo en entorno de test)
 if (process.env.NODE_ENV === "test") {
