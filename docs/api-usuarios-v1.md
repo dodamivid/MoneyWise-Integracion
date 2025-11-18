@@ -1,17 +1,19 @@
 # API de Usuarios v1 - Documentación de Implementación
 
 **Ticket**: MWI-#29
-**Fecha de implementación**: 2025-11-15
-**Versión**: 1.0.0
-**Estado**: ✅ Completado
+**Fecha de implementación**: 2025-11-15 - 2025-11-17
+**Versión**: 2.0.0
+**Estado**: ✅ 85% Completado (listo para testing)
 
 ## Tabla de Contenidos
 
 - [Resumen Ejecutivo](#resumen-ejecutivo)
+- [Autenticación y Autorización](#autenticación-y-autorización)
 - [Endpoints Implementados](#endpoints-implementados)
 - [Cambios Arquitectónicos](#cambios-arquitectónicos)
 - [Seguridad](#seguridad)
 - [Validaciones](#validaciones)
+- [Stored Procedures MySQL](#stored-procedures-mysql)
 - [Estructura de Respuestas](#estructura-de-respuestas)
 - [Ejemplos de Uso](#ejemplos-de-uso)
 - [Migración desde Versión Anterior](#migración-desde-versión-anterior)
@@ -29,15 +31,63 @@ Se ha completado la implementación de la API de Usuarios v1 según la especific
 - ✅ Tres endpoints RESTful para gestión de usuarios
 - ✅ Validaciones automáticas de datos y edad
 - ✅ Normalización automática de texto
+- ✅ **Autenticación mock con scopes** (NUEVO v2.0)
+- ✅ **Validación de permisos de propiedad** (NUEVO v2.0)
+- ✅ **Stored Procedures MySQL completos** (NUEVO v2.0)
 
 ### Commits Realizados
 
-| Commit | Descripción | Hash |
-|--------|-------------|------|
-| 1 | Implementar modelo, DTOs y servicios según especificación API v1 | `3daca01` |
-| 2 | Actualizar repositorio para IDs numéricos y campos en español | `e007d67` |
-| 3 | Actualizar controladores y rutas según especificación API v1 | `eb57ef7` |
-| 4 | Agregar normalización automática de texto en modelo | `05512b2` |
+| # | Commit | Descripción | Hash |
+|---|--------|-------------|------|
+| 1 | Modelo, DTOs y servicios | Implementar según especificación API v1 | `3daca01` |
+| 2 | Repositorio | Actualizar para IDs numéricos y campos en español | `e007d67` |
+| 3 | Controladores y rutas | Actualizar según especificación API v1 | `eb57ef7` |
+| 4 | Normalización | Agregar normalización automática de texto | `05512b2` |
+| 5 | Documentación | Agregar documentación completa | `02c8b4c` |
+| 6 | Merge | Merge branch 'main' into MWI-#29 | `9478afe` |
+| 7 | **Auth & Scopes** ⭐ | Implementar autenticación y autorización | `729e12f` |
+| 8 | **MySQL SPs** ⭐ | Crear stored procedures MySQL | `1fcf417` |
+
+---
+
+## Autenticación y Autorización
+
+### Middleware de Autenticación Mock
+
+La API utiliza un sistema de autenticación mock para desarrollo y testing:
+
+```typescript
+// Headers requeridos
+x-mw-user: 1              // ID del usuario autenticado
+x-mw-scopes: usuarios:leer,usuarios:escribir   // Scopes del usuario
+```
+
+**Scopes Disponibles**:
+- `usuarios:leer` - Permite consultar perfiles
+- `usuarios:escribir` - Permite actualizar perfil y contraseña
+- `admin:usuarios` - Permite gestionar cualquier usuario
+
+### Validación de Permisos
+
+Cada endpoint valida permisos automáticamente:
+
+1. **mockAuth** - Valida presencia de headers de autenticación
+2. **requireScope** - Valida que el usuario tenga el scope requerido
+3. **requireUserOwnership** - Valida que:
+   - El usuario accede a su propio perfil (userId === :id), O
+   - El usuario tiene scope `admin:usuarios`
+
+**Ejemplo de Error 403**:
+```json
+{
+  "ok": false,
+  "mensaje": "No tienes permiso para acceder a este recurso",
+  "codigo": 403,
+  "detalles": {
+    "razon": "Requiere admin:usuarios para acceder a otros usuarios"
+  }
+}
+```
 
 ---
 
@@ -372,6 +422,106 @@ function capitalize(text: string): string {
 
 ---
 
+## Stored Procedures MySQL
+
+Se han creado 3 stored procedures completos listos para producción en [db/stored-procedures/sp_usuarios.sql](../db/stored-procedures/sp_usuarios.sql):
+
+### 1. sp_usuarios_obtenerPorId
+
+**Propósito**: Obtener perfil de usuario por ID
+
+**Firma**:
+```sql
+CALL sp_usuarios_obtenerPorId(pUsuarioId INT)
+```
+
+**Retorna**:
+```sql
+SELECT usuarioId, nombre, apellidoP, apellidoM, correo, fechaN,
+       creadoEn, actualizadoEn, activo
+FROM usuarios
+WHERE usuarioId = pUsuarioId;
+```
+
+**Errores**:
+- `NO_ENCONTRADO` (404) - Si el usuario no existe
+
+### 2. sp_usuarios_actualizar
+
+**Propósito**: Actualizar campos de perfil
+
+**Firma**:
+```sql
+CALL sp_usuarios_actualizar(
+    pUsuarioId INT,
+    pNombre VARCHAR(80),
+    pApellidoP VARCHAR(80),
+    pApellidoM VARCHAR(80),
+    pFechaN DATE
+)
+```
+
+**Retorna**:
+```sql
+SELECT TRUE AS actualizado, NOW() AS actualizadoEn;
+```
+
+**Características**:
+- Usa `COALESCE` para actualizar solo campos no-NULL
+- Actualiza `actualizadoEn` automáticamente
+
+**Errores**:
+- `NO_ENCONTRADO` (404) - Si el usuario no existe
+
+### 3. sp_usuarios_cambiarContrasena
+
+**Propósito**: Cambiar contraseña validando la actual
+
+**Firma**:
+```sql
+CALL sp_usuarios_cambiarContrasena(
+    pUsuarioId INT,
+    pHashViejo VARCHAR(72),  -- Hash bcrypt actual
+    pHashNuevo VARCHAR(72)   -- Hash bcrypt nuevo
+)
+```
+
+**Retorna**:
+```sql
+SELECT TRUE AS cambiado;
+```
+
+**Características**:
+- Valida que el hash actual coincida
+- Actualiza `actualizadoEn` automáticamente
+
+**Errores**:
+- `NO_ENCONTRADO` (404) - Si el usuario no existe
+- `CONTRASENA_INCORRECTA` (401) - Si la contraseña actual no coincide
+
+**Nota**: La validación con `bcrypt.compare()` se hace en el servicio de Node.js antes de llamar al SP.
+
+### Uso desde Node.js (Ejemplo)
+
+```typescript
+// Ejemplo de integración futura
+import { pool } from '../config/db';
+
+async findById(id: number): Promise<User | null> {
+  try {
+    const [rows] = await pool.execute('CALL sp_usuarios_obtenerPorId(?)', [id]);
+    return rows[0] || null;
+  } catch (error: any) {
+    if (error.sqlMessage === 'NO_ENCONTRADO') {
+      return null;
+    }
+    throw error;
+  }
+}
+```
+
+---
+
 ## Estructura de Respuestas
 
 ### Respuestas Exitosas
@@ -630,27 +780,23 @@ interface Usuario {
 
 ## Pendientes y Trabajo Futuro
 
-### 🔄 En Progreso
+### ✅ Completado Recientemente
 
-- [ ] Implementación de autenticación JWT
-- [ ] Middleware de verificación de scopes
-- [ ] Validación de permisos basada en JWT `sub`
+- [x] **Autenticación Mock** - Middleware `mockAuth` con headers `x-mw-user` y `x-mw-scopes`
+- [x] **Sistema de Scopes** - `usuarios:leer`, `usuarios:escribir`, `admin:usuarios`
+- [x] **Validación de Permisos** - Middleware `requireUserOwnership` verifica userId === :id o admin:usuarios
+- [x] **Stored Procedures MySQL** - 3 SPs creados en `db/stored-procedures/sp_usuarios.sql`
+  - [x] `sp_usuarios_obtenerPorId(pUsuarioId INT)` ✅
+  - [x] `sp_usuarios_actualizar(pUsuarioId INT, ...)` ✅
+  - [x] `sp_usuarios_cambiarContrasena(pUsuarioId INT, ...)` ✅
 
 ### 📋 Próximos Pasos
 
-1. **Autenticación y Autorización** (Alta prioridad)
-   - Implementar generación de JWT tokens
-   - Middleware de verificación de tokens
-   - Sistema de scopes: `usuarios:leer`, `usuarios:escribir`, `admin:usuarios`
-   - Validación de que usuarios solo puedan modificar su propio perfil (excepto admins)
-
-2. **Base de Datos MySQL** (Alta prioridad)
-   - Crear stored procedures:
-     - `sp_usuarios_obtenerPorId(pUsuarioId INT)`
-     - `sp_usuarios_actualizar(pUsuarioId INT, ...)`
-     - `sp_usuarios_cambiarContrasena(pUsuarioId INT, ...)`
+1. **Base de Datos MySQL** (Alta prioridad)
    - Migrar repositorio de in-memory a MySQL
-   - Implementar manejo de errores desde stored procedures
+   - Integrar stored procedures en el repositorio
+   - Implementar manejo de errores SIGNAL desde stored procedures
+   - Mapear errores MySQL a errores de aplicación (NotFoundError, BadRequestError)
 
 3. **Pruebas** (Media prioridad)
    - Pruebas unitarias para servicios
@@ -673,9 +819,12 @@ interface Usuario {
 ### ⚠️ Limitaciones Conocidas
 
 - **Sin persistencia**: Los datos se pierden al reiniciar el servidor (usando Map en memoria)
-- **Sin autenticación**: Actualmente no hay verificación de JWT
-- **Sin validación de permisos**: Cualquiera puede modificar cualquier perfil
+  - ✅ **Solución lista**: Stored procedures creados, solo falta migrar repositorio
+- **Autenticación Mock**: Usa headers HTTP en lugar de JWT real
+  - ℹ️ **Para testing**: Suficiente para desarrollo y pruebas
+  - 🔄 **Para producción**: Reemplazar `mockAuth` con middleware JWT real
 - **Sin datos seed**: No hay usuarios de prueba precargados
+  - 💡 **Workaround**: Crear usuarios manualmente o usar script de seed
 
 ---
 
@@ -684,27 +833,40 @@ interface Usuario {
 ```
 src/
 ├── models/
-│   └── user.model.ts           # Esquemas Zod y tipos TypeScript
+│   └── user.model.ts              # Esquemas Zod y tipos TypeScript
 ├── dtos/
-│   └── user.dto.ts             # DTOs de respuesta API
+│   └── user.dto.ts                # DTOs de respuesta API
 ├── repositories/
-│   └── user.repository.ts      # Capa de acceso a datos (in-memory)
+│   └── user.repository.ts         # Capa de acceso a datos (in-memory)
 ├── services/
-│   └── user.service.ts         # Lógica de negocio y bcrypt
+│   └── user.service.ts            # Lógica de negocio y bcrypt
 ├── controllers/
-│   └── user.controller.ts      # Manejo de peticiones HTTP
-└── routes/
-    └── users.routes.ts         # Definición de rutas Express
+│   └── user.controller.ts         # Manejo de peticiones HTTP
+├── routes/
+│   └── users.routes.ts            # Definición de rutas Express
+├── middlewares/
+│   └── auth.middleware.ts         # Auth mock y validación de scopes ✅ NUEVO
+└── db/
+    └── stored-procedures/
+        └── sp_usuarios.sql        # Stored Procedures MySQL ✅ NUEVO
 ```
 
 ### Flujo de Datos
 
 ```
-Request
+Request (HTTP)
+   ↓
+Middlewares
+   ├─ mockAuth (x-mw-user, x-mw-scopes) ✅ NUEVO
+   ├─ requireScope('usuarios:leer') ✅ NUEVO
+   └─ requireUserOwnership ✅ NUEVO
    ↓
 Routes (users.routes.ts)
    ↓
 Controller (user.controller.ts)
+   ├─ Extrae params (id)
+   ├─ Extrae body
+   └─ Formatea respuestas con DTOs
    ↓
 Service (user.service.ts)
    ├─ Validación Zod
@@ -713,8 +875,8 @@ Service (user.service.ts)
    ↓
 Repository (user.repository.ts)
    ↓
-In-Memory Map
-   ↓
+In-Memory Map (temporal)
+   ↓ [Futuro: MySQL SPs] ✅ SPs LISTOS
 Response (formatted with DTOs)
 ```
 
@@ -723,7 +885,22 @@ Response (formatted with DTOs)
 ## Contacto y Soporte
 
 **Equipo**: Equipo de Integración Money Wise
-**Versión de Documentación**: 1.0.0
-**Última Actualización**: 2025-11-15
+**Versión de Documentación**: 2.0.0
+**Última Actualización**: 2025-11-17
+**Branch**: MWI-#29
+
+### Historial de Cambios
+
+**v2.0.0** (2025-11-17)
+- ✅ Implementada autenticación mock con scopes
+- ✅ Agregado middleware de validación de permisos
+- ✅ Creados stored procedures MySQL completos
+- ✅ Actualizada documentación con nuevas funcionalidades
+
+**v1.0.0** (2025-11-15)
+- ✅ Implementación inicial de API v1
+- ✅ Modelo, DTOs, servicios, controladores y rutas
+- ✅ Validaciones con Zod y bcrypt
+- ✅ Normalización de texto automática
 
 Para preguntas o issues, consultar el repositorio del proyecto.
