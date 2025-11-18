@@ -1,53 +1,43 @@
-import { Pool, RowDataPacket } from "mysql2/promise";
 import { TipoEgresoDTO } from "../dtos/tiposEgreso.dto";
 
 /**
- * @fileoverview Repository para operaciones de Tipos de Egreso
- * Issue #21 - Maneja la comunicación con stored procedures de la BD
+ * Repository en memoria para Tipos de Egreso.
+ * En ambientes sin BD usa seeds y operaciones síncronas simuladas.
+ * Si en el futuro se conecta a SPs, adaptar aquí manteniendo la firma.
  */
-
-// ============================================
-// INTERFACES INTERNAS
-// ============================================
-
-interface TipoEgresoConTotal extends RowDataPacket {
-  tipoEgresoId: number;
-  usuarioId: string | null;
-  nombre: string;
-  esPorDefecto: boolean;
-  creadoEn: Date;
-  actualizadoEn: Date;
-  totalRegistros: number;
-}
-
-interface TipoEgresoCreadoRow extends RowDataPacket {
-  tipoEgresoId: number;
-  nombre: string;
-}
-
-interface ResultadoOperacionRow extends RowDataPacket {
-  actualizado?: boolean;
-  eliminado?: boolean;
-}
-
-// ============================================
-// REPOSITORY - TIPOS DE EGRESO
-// ============================================
-
 export class TiposEgresoRepository {
-  constructor(private readonly pool: Pool) {}
+  private tipos: TipoEgresoDTO[] = [];
 
-  /**
-   * Listar tipos de egreso con paginación
-   * Llama al SP: sp_tiposEgreso_listar
-   * 
-   * @param usuarioId - ID del usuario autenticado
-   * @param buscar - Término de búsqueda (opcional)
-   * @param pagina - Número de página (default: 1)
-   * @param tamanoPagina - Registros por página (default: 20, max: 100)
-   * @param orden - Campo de orden (default: "nombre:asc")
-   * @returns Lista de tipos de egreso y total de registros
-   */
+  constructor() {
+    const now = new Date().toISOString();
+    this.tipos = [
+      {
+        tipoEgresoId: 1,
+        usuarioId: null,
+        nombre: "Renta",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        tipoEgresoId: 2,
+        usuarioId: null,
+        nombre: "Servicios",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        tipoEgresoId: 3,
+        usuarioId: null,
+        nombre: "Transporte",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+    ];
+  }
+
   async listarTiposEgreso(
     usuarioId: string,
     buscar: string | null,
@@ -55,144 +45,88 @@ export class TiposEgresoRepository {
     tamanoPagina: number,
     orden: string
   ): Promise<{ datos: TipoEgresoDTO[]; total: number }> {
-    try {
-      const [rows] = await this.pool.query<TipoEgresoConTotal[]>(
-        "CALL sp_tiposEgreso_listar(?, ?, ?, ?, ?)",
-        [usuarioId, buscar, pagina, tamanoPagina, orden]
+    const disponibles = this.tipos.filter(
+      (t) => t.usuarioId === null || t.usuarioId === usuarioId
+    );
+
+    let filtrados = disponibles;
+    if (buscar) {
+      const term = buscar.toLowerCase();
+      filtrados = filtrados.filter((t) =>
+        t.nombre.toLowerCase().includes(term)
       );
-
-      // Los SPs retornan un array de resultsets, tomamos el primero
-      const resultados = (rows as any)[0] as TipoEgresoConTotal[];
-
-      if (!resultados || resultados.length === 0) {
-        return { datos: [], total: 0 };
-      }
-
-      const total = resultados[0]?.totalRegistros || 0;
-
-      const datos: TipoEgresoDTO[] = resultados.map((row) => ({
-        tipoEgresoId: row.tipoEgresoId,
-        usuarioId: row.usuarioId,
-        nombre: row.nombre,
-        esPorDefecto: Boolean(row.esPorDefecto),
-        creadoEn: row.creadoEn.toISOString(),
-        actualizadoEn: row.actualizadoEn.toISOString(),
-      }));
-
-      return { datos, total };
-    } catch (error) {
-      console.error("[TiposEgresoRepository] Error en listarTiposEgreso:", error);
-      throw error;
     }
+
+    const [campo, direccion] = orden.split(":");
+    const factor = direccion === "desc" ? -1 : 1;
+    filtrados = filtrados.sort((a, b) => {
+      const va = (a as any)[campo] ?? "";
+      const vb = (b as any)[campo] ?? "";
+      if (va < vb) return -1 * factor;
+      if (va > vb) return 1 * factor;
+      return 0;
+    });
+
+    const total = filtrados.length;
+    const inicio = (pagina - 1) * tamanoPagina;
+    const datos = filtrados.slice(inicio, inicio + tamanoPagina);
+
+    return { datos, total };
   }
 
-  /**
-   * Crear nuevo tipo de egreso
-   * Llama al SP: sp_tiposEgreso_crear
-   * 
-   * @param usuarioId - ID del usuario autenticado
-   * @param nombre - Nombre del tipo de egreso (3-60 caracteres)
-   * @returns Tipo de egreso creado con su ID
-   */
   async crearTipoEgreso(
     usuarioId: string,
     nombre: string
   ): Promise<{ tipoEgresoId: number; nombre: string }> {
-    try {
-      const [rows] = await this.pool.query<TipoEgresoCreadoRow[]>(
-        "CALL sp_tiposEgreso_crear(?, ?)",
-        [usuarioId, nombre]
-      );
-
-      const resultado = (rows as any)[0] as TipoEgresoCreadoRow[];
-
-      if (!resultado || resultado.length === 0) {
-        throw new Error("No se pudo crear el tipo de egreso");
-      }
-
-      return {
-        tipoEgresoId: resultado[0].tipoEgresoId,
-        nombre: resultado[0].nombre,
-      };
-    } catch (error: any) {
-      // Propagar errores del SP (el equipo de BD define los mensajes)
-      if (error.sqlState === "45000") {
-        throw new Error(error.sqlMessage || "Error al crear tipo de egreso");
-      }
-      console.error("[TiposEgresoRepository] Error en crearTipoEgreso:", error);
-      throw error;
+    const existe = this.tipos.find(
+      (t) => t.nombre.toLowerCase() === nombre.toLowerCase()
+    );
+    if (existe) {
+      throw new Error("Ya existe un tipo de egreso con este nombre");
     }
+
+    const tipoEgresoId =
+      Math.max(...this.tipos.map((t) => t.tipoEgresoId), 0) + 1;
+    const now = new Date().toISOString();
+    this.tipos.push({
+      tipoEgresoId,
+      usuarioId,
+      nombre,
+      esPorDefecto: false,
+      creadoEn: now,
+      actualizadoEn: now,
+    });
+    return { tipoEgresoId, nombre };
   }
 
-  /**
-   * Actualizar tipo de egreso existente
-   * Llama al SP: sp_tiposEgreso_actualizar
-   * 
-   * @param tipoEgresoId - ID del tipo de egreso a actualizar
-   * @param usuarioId - ID del usuario autenticado
-   * @param nombre - Nuevo nombre del tipo de egreso
-   * @returns true si se actualizó correctamente
-   */
   async actualizarTipoEgreso(
     tipoEgresoId: number,
     usuarioId: string,
     nombre: string
   ): Promise<boolean> {
-    try {
-      const [rows] = await this.pool.query<ResultadoOperacionRow[]>(
-        "CALL sp_tiposEgreso_actualizar(?, ?, ?)",
-        [tipoEgresoId, usuarioId, nombre]
-      );
-
-      const resultado = (rows as any)[0] as ResultadoOperacionRow[];
-
-      if (!resultado || resultado.length === 0) {
-        return false;
-      }
-
-      return Boolean(resultado[0].actualizado);
-    } catch (error: any) {
-      // Propagar errores del SP
-      if (error.sqlState === "45000") {
-        throw new Error(error.sqlMessage || "Error al actualizar tipo de egreso");
-      }
-      console.error("[TiposEgresoRepository] Error en actualizarTipoEgreso:", error);
-      throw error;
+    const tipo = this.tipos.find((t) => t.tipoEgresoId === tipoEgresoId);
+    if (!tipo) return false;
+    if (tipo.esPorDefecto && tipo.usuarioId === null && usuarioId !== "admin") {
+      throw new Error("No tienes permiso para modificar este tipo de egreso");
     }
+    tipo.nombre = nombre;
+    tipo.actualizadoEn = new Date().toISOString();
+    return true;
   }
 
-  /**
-   * Eliminar tipo de egreso (soft delete)
-   * Llama al SP: sp_tiposEgreso_eliminar
-   * 
-   * @param tipoEgresoId - ID del tipo de egreso a eliminar
-   * @param usuarioId - ID del usuario autenticado
-   * @returns true si se eliminó correctamente
-   */
   async eliminarTipoEgreso(
     tipoEgresoId: number,
     usuarioId: string
   ): Promise<boolean> {
-    try {
-      const [rows] = await this.pool.query<ResultadoOperacionRow[]>(
-        "CALL sp_tiposEgreso_eliminar(?, ?)",
-        [tipoEgresoId, usuarioId]
-      );
-
-      const resultado = (rows as any)[0] as ResultadoOperacionRow[];
-
-      if (!resultado || resultado.length === 0) {
-        return false;
-      }
-
-      return Boolean(resultado[0].eliminado);
-    } catch (error: any) {
-      // Propagar errores del SP
-      if (error.sqlState === "45000") {
-        throw new Error(error.sqlMessage || "Error al eliminar tipo de egreso");
-      }
-      console.error("[TiposEgresoRepository] Error en eliminarTipoEgreso:", error);
-      throw error;
+    const tipo = this.tipos.find((t) => t.tipoEgresoId === tipoEgresoId);
+    if (!tipo) return false;
+    if (tipo.esPorDefecto && tipo.usuarioId === null && usuarioId !== "admin") {
+      throw new Error("No puedes eliminar tipos de egreso por defecto");
     }
+    const len = this.tipos.length;
+    this.tipos = this.tipos.filter((t) => t.tipoEgresoId !== tipoEgresoId);
+    return this.tipos.length < len;
   }
 }
+
+export const tiposEgresoRepository = new TiposEgresoRepository();

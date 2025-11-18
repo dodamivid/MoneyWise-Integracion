@@ -6,174 +6,138 @@ import {
   ActualizarTipoEgresoBodySchema,
   TipoEgresoIdParamSchema,
 } from "../dtos/tiposEgreso.dto";
-import { UnauthorizedError, ForbiddenError } from "../utils/errors";
-
-/**
- * @fileoverview Controller para endpoints de Tipos de Egreso
- * Issue #21 - Maneja requests HTTP y validaciones con Zod
- */
-
-// ============================================
-// INTERFAZ DE REQUEST AUTENTICADO
-// ============================================
-
-/**
- * Interfaz extendida de Request con datos de autenticación
- * Asume que el middleware de auth ya agregó estos datos
- */
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    usuarioId: string;
-    scopes: string[];
-    esAdmin?: boolean;
-  };
-}
-
-// ============================================
-// CONTROLLER
-// ============================================
 
 export class TiposEgresoController {
   constructor(private readonly service: TiposEgresoService) {}
 
-  /**
-   * GET /api/v1/catalogos/tipos-egreso
-   * Listar tipos de egreso con paginación
-   */
   listarTiposEgreso = async (
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
-      // Verificar autenticación
-      if (!req.user?.usuarioId) {
-        throw new UnauthorizedError("Usuario no autenticado");
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const validated = ListarTiposEgresoQuerySchema.safeParse(req.query);
+      if (!validated.success) {
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: validated.error.issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
       }
 
-      // Verificar scope
-      if (!req.user.scopes.includes("catalogos:leer")) {
-        throw new ForbiddenError("No tienes permiso para leer catálogos");
-      }
-
-      // Validar query params con Zod
-      const validatedQuery = ListarTiposEgresoQuerySchema.parse(req.query);
-
-      // Llamar al servicio
+      const { buscar, pagina, tamanoPagina, orden } = validated.data;
       const resultado = await this.service.listarTiposEgreso(
-        req.user.usuarioId,
-        validatedQuery.buscar,
-        validatedQuery.pagina,
-        validatedQuery.tamanoPagina,
-        validatedQuery.orden
+        auth.userId,
+        buscar,
+        pagina,
+        tamanoPagina,
+        orden
       );
-
       res.status(200).json(resultado);
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * POST /api/v1/catalogos/tipos-egreso
-   * Crear nuevo tipo de egreso
-   */
   crearTipoEgreso = async (
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
-      if (!req.user?.usuarioId) {
-        throw new UnauthorizedError("Usuario no autenticado");
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const validated = CrearTipoEgresoBodySchema.safeParse(req.body);
+      if (!validated.success) {
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: validated.error.issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
       }
 
-      if (!req.user.scopes.includes("catalogos:escribir")) {
-        throw new ForbiddenError("No tienes permiso para crear catálogos");
-      }
-
-      // Validar body con Zod
-      const validatedBody = CrearTipoEgresoBodySchema.parse(req.body);
-
-      // Llamar al servicio
       const resultado = await this.service.crearTipoEgreso(
-        req.user.usuarioId,
-        validatedBody.nombre
+        auth.userId,
+        validated.data.nombre
       );
-
       res.status(201).json(resultado);
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * PUT /api/v1/catalogos/tipos-egreso/:id
-   * Actualizar tipo de egreso existente
-   */
   actualizarTipoEgreso = async (
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
-      if (!req.user?.usuarioId) {
-        throw new UnauthorizedError("Usuario no autenticado");
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const params = TipoEgresoIdParamSchema.safeParse(req.params);
+      const body = ActualizarTipoEgresoBodySchema.safeParse(req.body);
+
+      if (!params.success || !body.success) {
+        const issues = [
+          ...(params.success ? [] : params.error.issues),
+          ...(body.success ? [] : body.error.issues),
+        ];
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
       }
 
-      if (!req.user.scopes.includes("catalogos:escribir")) {
-        throw new ForbiddenError("No tienes permiso para actualizar catálogos");
-      }
-
-      // Validar parámetro ID con Zod
-      const validatedParams = TipoEgresoIdParamSchema.parse(req.params);
-
-      // Validar body con Zod
-      const validatedBody = ActualizarTipoEgresoBodySchema.parse(req.body);
-
-      // Llamar al servicio
       const resultado = await this.service.actualizarTipoEgreso(
-        validatedParams.id,
-        req.user.usuarioId,
-        validatedBody.nombre
+        params.data.id,
+        auth.userId,
+        body.data.nombre
       );
-
       res.status(200).json(resultado);
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * DELETE /api/v1/catalogos/tipos-egreso/:id
-   * Eliminar tipo de egreso (soft delete)
-   */
   eliminarTipoEgreso = async (
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
-      if (!req.user?.usuarioId) {
-        throw new UnauthorizedError("Usuario no autenticado");
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const params = TipoEgresoIdParamSchema.safeParse(req.params);
+      if (!params.success) {
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: params.error.issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
       }
 
-      if (!req.user.scopes.includes("catalogos:escribir")) {
-        throw new ForbiddenError("No tienes permiso para eliminar catálogos");
-      }
-
-      // Validar parámetro ID con Zod
-      const validatedParams = TipoEgresoIdParamSchema.parse(req.params);
-
-      // Llamar al servicio
       const resultado = await this.service.eliminarTipoEgreso(
-        validatedParams.id,
-        req.user.usuarioId
+        params.data.id,
+        auth.userId
       );
-
       res.status(200).json(resultado);
     } catch (error) {
       next(error);
     }
   };
 }
+
+export const tiposEgresoController = new TiposEgresoController(
+  new TiposEgresoService()
+);
