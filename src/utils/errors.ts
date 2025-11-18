@@ -286,3 +286,121 @@ export class InternalServerError extends AppError {
 export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }
+/**
+ * Error lanzado cuando se intenta crear un recurso que ya existe.
+ * YABINNNNNNNNNNNNN MALDONADO
+ * Este error corresponde al código de estado HTTP 409 (Conflict) y debe usarse
+ * cuando se intenta crear un recurso duplicado (ej. tipo de egreso con nombre existente).
+ * 
+ * @extends AppError
+ * 
+ * @example
+ * ```typescript
+ * throw new ConflictError('Ya existe un tipo de egreso con ese nombre');
+ * ```
+ */
+export class ConflictError extends AppError {
+  /**
+   * Crea una nueva instancia de ConflictError.
+   * 
+   * @param {string} message - Descripción del conflicto
+   * 
+   * @example
+   * ```typescript
+   * throw new ConflictError('El recurso ya existe');
+   * throw new ConflictError('Ya existe un tipo de egreso con ese nombre');
+   * ```
+   */
+  constructor(message: string) {
+    super(message, 409);
+  }
+}
+
+/**
+ * Error lanzado cuando se intenta eliminar un recurso que está en uso.
+ * 
+ * Este error corresponde al código de estado HTTP 409 (Conflict) y debe usarse
+ * cuando un recurso no puede ser eliminado porque está siendo referenciado.
+ * 
+ * @extends AppError
+ * 
+ * @example
+ * ```typescript
+ * throw new ResourceInUseError('No se puede eliminar: el tipo de egreso está en uso');
+ * ```
+ */
+export class ResourceInUseError extends AppError {
+  /**
+   * Crea una nueva instancia de ResourceInUseError.
+   * 
+   * @param {string} message - Descripción de por qué el recurso está en uso
+   * 
+   * @example
+   * ```typescript
+   * throw new ResourceInUseError('El tipo de egreso está siendo utilizado en transacciones');
+   * ```
+   */
+  constructor(message: string) {
+    super(message, 409);
+  }
+}
+
+/**
+ * Error lanzado cuando un usuario no tiene permisos para realizar una acción.
+ * 
+ * Este error corresponde al código de estado HTTP 403 (Forbidden) y debe usarse
+ * cuando un usuario autenticado intenta acceder a un recurso sin los permisos necesarios.
+ * 
+ * @extends AppError
+ * 
+ * @example
+ * ```typescript
+ * throw new ForbiddenError('No tienes permiso para modificar tipos por defecto');
+ * ```
+ */
+export class ForbiddenError extends AppError {
+  /**
+   * Crea una nueva instancia de ForbiddenError.
+   * 
+   * @param {string} [message='No tienes permisos para realizar esta acción'] - Descripción del permiso faltante
+   * 
+   * @example
+   * ```typescript
+   * throw new ForbiddenError();
+   * throw new ForbiddenError('Se requiere rol de administrador');
+   * ```
+   */
+  constructor(message: string = "No tienes permisos para realizar esta acción") {
+    super(message, 403);
+  }
+}
+
+/**
+ * Error lanzado cuando falta autenticación o el token es inválido.
+ * 
+ * Este error corresponde al código de estado HTTP 401 (Unauthorized) y debe usarse
+ * cuando un usuario no está autenticado o su token es inválido/expirado.
+ * 
+ * @extends AppError
+ * 
+ * @example
+ * ```typescript
+ * throw new UnauthorizedError('Token JWT inválido o expirado');
+ * ```
+ */
+export class UnauthorizedError extends AppError {
+  /**
+   * Crea una nueva instancia de UnauthorizedError.
+   * 
+   * @param {string} [message='No autorizado'] - Descripción del problema de autenticación
+   * 
+   * @example
+   * ```typescript
+   * throw new UnauthorizedError();
+   * throw new UnauthorizedError('Token JWT expirado');
+   * ```
+   */
+  constructor(message: string = "No autorizado") {
+    super(message, 401);
+  }
+}
