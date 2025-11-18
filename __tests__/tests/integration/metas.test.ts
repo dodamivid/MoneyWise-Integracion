@@ -77,8 +77,8 @@ describe("Metas API Endpoints", () => {
         .send(invalidMetaData)
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
-      expect(response.body).toHaveProperty("statusCode", 400);
+      expect(response.body).toHaveProperty("ok", false);
+      expect(response.body).toHaveProperty("codigo", 400);
     });
 
     it("should return error for fechaFin before fechaInicio", async () => {
@@ -96,7 +96,7 @@ describe("Metas API Endpoints", () => {
         .send(invalidMetaData)
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
 
     it("should return error for missing required fields", async () => {
@@ -112,7 +112,7 @@ describe("Metas API Endpoints", () => {
         .send(invalidMetaData)
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
 
     it("should return error for nombre too long", async () => {
@@ -129,7 +129,7 @@ describe("Metas API Endpoints", () => {
         .send(invalidMetaData)
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
   });
 
@@ -175,8 +175,8 @@ describe("Metas API Endpoints", () => {
         .set("x-api-key", TEST_API_KEY)
         .expect(404);
 
-      expect(response.body).toHaveProperty("status", "error");
-      expect(response.body).toHaveProperty("statusCode", 404);
+      expect(response.body).toHaveProperty("ok", false);
+      expect(response.body).toHaveProperty("codigo", 404);
     });
 
     it("should return error for invalid meta ID format", async () => {
@@ -187,7 +187,7 @@ describe("Metas API Endpoints", () => {
         .set("x-api-key", TEST_API_KEY)
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
   });
 
@@ -297,7 +297,7 @@ describe("Metas API Endpoints", () => {
         .query({ pagina: -1, tamanoPagina: 10 })
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
 
     it("should return error for invalid orden parameter", async () => {
@@ -307,7 +307,7 @@ describe("Metas API Endpoints", () => {
         .query({ orden: "campoInvalido:asc" })
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
   });
 
@@ -411,7 +411,7 @@ describe("Metas API Endpoints", () => {
         .send(updateData)
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
 
     it("should return error for non-existent meta", async () => {
@@ -425,7 +425,7 @@ describe("Metas API Endpoints", () => {
         .send(updateData)
         .expect(404);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
 
     it("should return error for invalid fechaFin", async () => {
@@ -439,7 +439,7 @@ describe("Metas API Endpoints", () => {
         .send(updateData)
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
   });
 
@@ -488,7 +488,7 @@ describe("Metas API Endpoints", () => {
         .send({ usuarioId: 23 })
         .expect(404);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
 
     it("should return error when deleting meta from different user", async () => {
@@ -498,7 +498,7 @@ describe("Metas API Endpoints", () => {
         .send({ usuarioId: 999 }) // Usuario diferente
         .expect(400);
 
-      expect(response.body).toHaveProperty("status", "error");
+      expect(response.body).toHaveProperty("ok", false);
     });
   });
 
