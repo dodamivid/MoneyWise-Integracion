@@ -191,6 +191,124 @@ paths:
           $ref: '#/components/responses/PermisoDenegado'
         '404':
           $ref: '#/components/responses/NoEncontrado'
+
+  /api/v1/dashboard/resumen:
+    get:
+      summary: Resumen de ingresos/egresos para dashboard
+      description: |
+        Devuelve KPIs consolidados: totales y agrupaciones (ingresos por tipo/procedencia, egresos por tipo/destino).
+        Requiere JWT con scope `dashboard:leer`. Admin puede consultar a otros usuarios pasando `usuarioId` (requiere `admin:dashboard`).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Solo admins (requiere `admin:dashboard`)
+        - name: desde
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Fecha inicial (ISO-8601)
+        - name: hasta
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Fecha final (ISO-8601)
+      responses:
+        '200':
+          description: Resumen del dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResumenResponse'
+        '403':
+          $ref: '#/components/responses/DashboardPermisoDenegado'
+        '422':
+          $ref: '#/components/responses/DashboardDatosInvalidos'
+
+  /api/v1/dashboard/balance:
+    get:
+      summary: Balance acumulado a una fecha de corte
+      description: |
+        Devuelve ingresos, egresos y balance acumulados a la fecha de corte.
+        Requiere JWT con scope `dashboard:leer`. Admin puede consultar a otros usuarios pasando `usuarioId` (requiere `admin:dashboard`).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Solo admins (requiere `admin:dashboard`)
+        - name: fechaCorte
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Fecha de corte (ISO-8601). Si se omite, se usa la última registrada en BD.
+      responses:
+        '200':
+          description: Balance acumulado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardBalanceResponse'
+        '403':
+          $ref: '#/components/responses/DashboardPermisoDenegado'
+        '404':
+          $ref: '#/components/responses/DashboardNoEncontrado'
+        '422':
+          $ref: '#/components/responses/DashboardDatosInvalidos'
+
+  /api/v1/dashboard/metas-vs-ahorro:
+    get:
+      summary: Metas vs ahorro en periodo
+      description: |
+        Devuelve avance por meta y un resumen del periodo.
+        Requiere JWT con scope `dashboard:leer`. Admin puede consultar a otros usuarios pasando `usuarioId` (requiere `admin:dashboard`).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuarioId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Solo admins (requiere `admin:dashboard`)
+        - name: desde
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Fecha inicial (ISO-8601)
+        - name: hasta
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Fecha final (ISO-8601)
+      responses:
+        '200':
+          description: Metas y resumen del periodo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetasResponse'
+        '403':
+          $ref: '#/components/responses/DashboardPermisoDenegado'
+        '422':
+          $ref: '#/components/responses/DashboardDatosInvalidos'
     patch:
       summary: Actualiza un egreso
       description: |
@@ -477,6 +595,124 @@ components:
               type: string
               example: "Parámetros inválidos"
 
+    # Dashboard: contrato global status/data
+    DashboardResumenResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            totales:
+              type: object
+              properties:
+                ingresos:
+                  type: number
+                  format: decimal
+                  example: 45000.0
+                egresos:
+                  type: number
+                  format: decimal
+                  example: 32000.0
+                balance:
+                  type: number
+                  format: decimal
+                  example: 13000.0
+            ingresosPorTipo:
+              type: array
+              items:
+                type: object
+                properties:
+                  tipoId: { type: integer, example: 1 }
+                  tipo: { type: string, example: "Salario" }
+                  total: { type: number, format: decimal, example: 30000.0 }
+            egresosPorTipo:
+              type: array
+              items:
+                type: object
+                properties:
+                  tipoId: { type: integer, example: 4 }
+                  tipo: { type: string, example: "Renta" }
+                  total: { type: number, format: decimal, example: 12000.0 }
+            ingresosPorProcedencia:
+              type: array
+              items:
+                type: object
+                properties:
+                  procedenciaId: { type: integer, example: 5 }
+                  procedencia: { type: string, example: "Empresa A" }
+                  total: { type: number, format: decimal, example: 30000.0 }
+            egresosPorDestino:
+              type: array
+              items:
+                type: object
+                properties:
+                  destinoId: { type: integer, example: 9 }
+                  destino: { type: string, example: "Departamento" }
+                  total: { type: number, format: decimal, example: 12000.0 }
+
+    DashboardBalanceResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            fechaCorte: { type: string, format: date-time, example: "2025-03-31T23:59:59Z" }
+            ingresosAcumulados: { type: number, format: decimal, example: 45000.0 }
+            egresosAcumulados: { type: number, format: decimal, example: 32000.0 }
+            balanceAcumulado: { type: number, format: decimal, example: 13000.0 }
+
+    DashboardMetasResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            metas:
+              type: array
+              items:
+                type: object
+                properties:
+                  metaId: { type: integer, example: 7 }
+                  nombre: { type: string, example: "Vacaciones 2026" }
+                  montoObjetivo: { type: number, format: decimal, example: 150000.0 }
+                  ahorroReal: { type: number, format: decimal, example: 35000.0 }
+                  porcentajeAvance: { type: number, format: decimal, example: 23.33 }
+            resumen:
+              type: object
+              properties:
+                totalMetasActivas: { type: integer, example: 3 }
+                ahorroTotalPeriodo: { type: number, format: decimal, example: 12000.0 }
+                diferenciaObjetivo: { type: number, format: decimal, example: -28000.0 }
+
+    # Esquema de error para dashboard (contrato global)
+    DashboardErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: "Parámetros inválidos"
+        statusCode:
+          type: integer
+          example: 422
+        traceId:
+          type: string
+          example: "5f8147d8-8104-436a-b853-b89458d6f29e"
+        details:
+          type: object
+          additionalProperties: true
+
   responses:
     DatosInvalidos:
       description: Datos inválidos (validación)
@@ -497,9 +733,30 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 
+    # Dashboard responses usando contrato global status/error
+    DashboardDatosInvalidos:
+      description: Datos inválidos (validación)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DashboardErrorResponse'
+    DashboardPermisoDenegado:
+      description: Permiso denegado (scope insuficiente)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DashboardErrorResponse'
+    DashboardNoEncontrado:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DashboardErrorResponse'
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
       description: Token JWT del sistema MoneyWise. En dev, usar headers `x-mw-user` y `x-mw-scopes`.
+
