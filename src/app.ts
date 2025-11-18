@@ -12,6 +12,7 @@ import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import catalogosRoutes from "./routes/catalogos.routes";
+import authRoutes from "./routes/auth.routes";
 import { db } from "./config/db";
 import tiposIngresoRoutes from "./routes/tiposIngreso.routes";
 import {
@@ -104,6 +105,12 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 // Catálogos routes mounted under /api/v1/catalogos
 app.use("/api/v1/catalogos", catalogosRoutes);
 
+// Tipos de ingreso (catálogo)
+app.use("/api/v1/tipos-ingreso", tiposIngresoRoutes);
+
+// Auth routes
+app.use("/api/v1/auth", authRoutes);
+
 // Ruta de prueba de error handler (solo en entorno de test)
 if (process.env.NODE_ENV === "test") {
   app.use("/api/v1/test", testRoutes);
@@ -114,8 +121,5 @@ app.use(notFoundHandler);
 
 // Manejador centralizado de errores - DEBE ir al final
 app.use(errorHandler);
-
-// Dentro de tu configuración de rutas:
-app.use('/api/v1/tipos-ingreso', tiposIngresoRoutes);
 
 export default app;

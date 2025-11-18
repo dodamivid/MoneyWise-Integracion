@@ -1,56 +1,40 @@
-import { IsString, IsOptional, IsBoolean, MaxLength, IsInt, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { z } from "zod";
 
-export class CrearTipoIngresoDto {
-  @IsString({ message: 'El nombre debe ser una cadena de texto' })
-  @MaxLength(100, { message: 'El nombre no puede exceder 100 caracteres' })
-  nombre: string;
+export const CrearTipoIngresoSchema = z.object({
+  nombre: z.string().min(1, "El nombre es requerido").max(100, "El nombre no puede exceder 100 caracteres"),
+  descripcion: z.string().max(255, "La descripción no puede exceder 255 caracteres").optional(),
+  activo: z.boolean().optional(),
+});
 
-  @IsOptional()
-  @IsString({ message: 'La descripción debe ser una cadena de texto' })
-  @MaxLength(255, { message: 'La descripción no puede exceder 255 caracteres' })
-  descripcion?: string;
+export type CrearTipoIngresoDTO = z.infer<typeof CrearTipoIngresoSchema>;
 
-  @IsOptional()
-  @IsBoolean({ message: 'El campo activo debe ser un booleano' })
-  activo?: boolean;
-}
+export const ActualizarTipoIngresoSchema = CrearTipoIngresoSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  { message: "Debe proporcionar al menos un campo para actualizar" }
+);
 
-export class ActualizarTipoIngresoDto {
-  @IsOptional()
-  @IsString({ message: 'El nombre debe ser una cadena de texto' })
-  @MaxLength(100, { message: 'El nombre no puede exceder 100 caracteres' })
-  nombre?: string;
+export type ActualizarTipoIngresoDTO = z.infer<typeof ActualizarTipoIngresoSchema>;
 
-  @IsOptional()
-  @IsString({ message: 'La descripción debe ser una cadena de texto' })
-  @MaxLength(255, { message: 'La descripción no puede exceder 255 caracteres' })
-  descripcion?: string;
+export const ListarTiposIngresoSchema = z.object({
+  pagina: z.coerce.number().int().positive().default(1),
+  tamanoPagina: z.coerce.number().int().positive().max(100).default(20),
+  orden: z
+    .string()
+    .default("nombre:asc")
+    .refine(
+      (val) => /^(nombre|creadoEn)(:(asc|desc))?$/.test(val),
+      { message: "Orden invalido" }
+    ),
+  activo: z
+    .union([z.string(), z.boolean()])
+    .optional()
+    .transform((val) => {
+      if (typeof val === "string") {
+        if (val.toLowerCase() === "true") return true;
+        if (val.toLowerCase() === "false") return false;
+      }
+      return val as boolean | undefined;
+    }),
+});
 
-  @IsOptional()
-  @IsBoolean({ message: 'El campo activo debe ser un booleano' })
-  activo?: boolean;
-}
-
-export class ListarTiposIngresoDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'La página debe ser un número entero' })
-  @Min(1, { message: 'La página debe ser mayor a 0' })
-  pagina?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'El tamaño de página debe ser un número entero' })
-  @Min(1, { message: 'El tamaño de página debe ser mayor a 0' })
-  tamanoPagina?: number = 20;
-
-  @IsOptional()
-  @IsString({ message: 'El orden debe ser una cadena de texto' })
-  orden?: string = 'nombre:asc';
-
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  activo?: boolean;
-}
+export type ListarTiposIngresoDTO = z.infer<typeof ListarTiposIngresoSchema>;
