@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/dodamivid/MoneyWise#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "express": "^5.1.0",
     "mysql2": "^3.15.3",
     "pino": "^10.1.0",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/pino": "^7.0.4",
