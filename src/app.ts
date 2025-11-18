@@ -1,9 +1,12 @@
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import path from "path";
 import fs from "fs";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yaml";
 import healthRouter from "./routes/health";
 import usersRouter from "./routes/users.routes";
 import egresosRouter from "./routes/egresos.routes";
+import ingresosRouter from "./routes/ingresos.routes";
 import inversionesRouter from "./routes/inversiones.routes";
 import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
@@ -11,43 +14,48 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import catalogosRoutes from "./routes/catalogos.routes";
 import authRoutes from "./routes/auth.routes";
 import { db } from "./config/db";
+import tiposIngresoRoutes from "./routes/tiposIngreso.routes";
 import {
   traceIdMiddleware,
   errorHandler,
   notFoundHandler,
+  requestLogger,
 } from "./middlewares/error.middleware";
+import { requireApiKey } from "./middlewares/api-key.middleware";
+import { correlationIdMiddleware } from "./middlewares/correlationId.middleware";
+import httpLogger from "./middlewares/logger.middleware";
+import testRoutes from "./routes/test.routes";
 
+// Boot the Express application
 const app = express();
 
-// Middlewares de seguridad y parsing
+// Middleware de traceId - DEBE ir primero para rastrear todas las requests
 app.use(traceIdMiddleware);
+
+// Observabilidad antes de parsear body
+app.use(correlationIdMiddleware);
+app.use(httpLogger);
+
+// Helpful defaults for security and JSON payload parsing
 app.disable("x-powered-by");
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
+app.use(express.json());
+app.use(requestLogger);
 
-// Request logging
-app.use((req: Request, _res: Response, next: NextFunction) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
-  next();
-});
+// Require x-api-key para todas las rutas bajo /api (placeholder)
+app.use("/api", requireApiKey);
 
-// Inicializar BD si está habilitada
+// Inicializa la conexión a BD si está habilitada
 if (db.enabled) {
   db.init().catch((e) => console.error("DB init error:", e.message));
 }
 
-// Root endpoint
+// Simple root banner to confirm the API is reachable
 app.get("/", (_req, res) => {
-  res.json({ message: "MoneyWise API", version: "1.0.0" });
+  res.json({ message: "MoneyWise API" });
 });
 
-// Swagger UI - carga dinámico para no romper si no están instaladas las dependencias
+// Swagger UI (dev/build): leer docs/api/openapi.yaml desde la raíz del proyecto
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const swaggerUi = require("swagger-ui-express");
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const YAML = require("yaml");
-
   const candidates = [
     process.env.OPENAPI_PATH,
     path.join(process.cwd(), "docs", "api", "openapi.yaml"),
@@ -60,26 +68,58 @@ try {
     const file = fs.readFileSync(apiSpecPath, "utf8");
     const spec = YAML.parse(file);
     app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
-    console.log(`✓ Swagger UI disponible en /docs`);
+    console.log(`Swagger UI disponible en /docs (spec: ${apiSpecPath})`);
+  } else {
+    console.warn(
+      "Swagger UI no disponible: no se encontró docs/api/openapi.yaml en la raíz del proyecto"
+    );
   }
-} catch (e) {
-  // Silenciar si swagger no está instalado; no debe romper la app
-  // console.debug("Swagger no disponible:", (e as Error).message);
+} catch (e: any) {
+  console.warn("Swagger UI no disponible:", e?.message || String(e));
 }
 
-// Routes
+// Health check routes mounted under /health
 app.use("/health", healthRouter);
+
+// User routes mounted under /api/users
 app.use("/api/users", usersRouter);
-app.use("/api/v1/auth", authRoutes);
+
+// Egresos routes mounted under /api/v1/egresos
 app.use("/api/v1/egresos", egresosRouter);
+
+// Ingresos routes mounted under /api/v1/ingresos
+app.use("/api/v1/ingresos", ingresosRouter);
+
+// Inversiones routes mounted under /api/v1/inversiones
 app.use("/api/v1/inversiones", inversionesRouter);
+
+// Metas routes mounted under /api/v1/metas
 app.use("/api/v1/metas", metasRouter);
+
+// Version routes mounted under /api/v1/version
 app.use("/api/v1/version", versionRoutes);
+
+// Dashboard routes mounted under /api/v1/dashboard
 app.use("/api/v1/dashboard", dashboardRoutes);
+
+// Catálogos routes mounted under /api/v1/catalogos
 app.use("/api/v1/catalogos", catalogosRoutes);
 
-// Error handlers (orden importante)
+// Tipos de ingreso (catálogo)
+app.use("/api/v1/tipos-ingreso", tiposIngresoRoutes);
+
+// Auth routes
+app.use("/api/v1/auth", authRoutes);
+
+// Ruta de prueba de error handler (solo en entorno de test)
+if (process.env.NODE_ENV === "test") {
+  app.use("/api/v1/test", testRoutes);
+}
+
+// Manejador de rutas no encontradas (404) - DEBE ir después de todas las rutas
 app.use(notFoundHandler);
+
+// Manejador centralizado de errores - DEBE ir al final
 app.use(errorHandler);
 
 export default app;

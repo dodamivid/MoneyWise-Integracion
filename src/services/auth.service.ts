@@ -1,6 +1,6 @@
-import bcrypt from "bcryptjs";
+﻿import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import { authRepository } from "../repositories/auth.repository";
 import { authMailer } from "../emails/auth.mailer";
 import { jwtConfig, bcryptConfig, resetTokenConfig } from "../config/jwt.config";
@@ -11,14 +11,14 @@ import {
 } from "../utils/errors";
 
 /**
- * @fileoverview Service para lógica de negocio de autenticación
- * Maneja hashing de contraseñas, generación de JWT y flujos de recuperación
+ * @fileoverview Service para lÃ³gica de negocio de autenticaciÃ³n
+ * Maneja hashing de contraseÃ±as, generaciÃ³n de JWT y flujos de recuperaciÃ³n
  */
 
-// Tipos personalizados de error para autenticación
+// Tipos personalizados de error para autenticaciÃ³n
 export class CredencialesInvalidasError extends BadRequestError {
   constructor() {
-    super("Correo o contraseña incorrectos");
+    super("Correo o contraseÃ±a incorrectos");
     this.name = "CREDENCIALES_INVALIDAS";
   }
 }
@@ -32,14 +32,14 @@ export class UsuarioInactivoError extends BadRequestError {
 
 export class EmailDuplicadoError extends BadRequestError {
   constructor() {
-    super("El correo ya está registrado");
+    super("El correo ya estÃ¡ registrado");
     this.name = "EMAIL_DUPLICADO";
   }
 }
 
 export class TokenInvalidoError extends BadRequestError {
   constructor() {
-    super("Token de restablecimiento inválido");
+    super("Token de restablecimiento invÃ¡lido");
     this.name = "TOKEN_INVALIDO";
   }
 }
@@ -52,8 +52,8 @@ export class TokenExpiradoError extends BadRequestError {
 }
 
 // Payload del JWT
-interface JWTPayload {
-  sub: number; // usuarioId
+interface JWTPayload extends jwt.JwtPayload {
+  sub: string; // usuarioId como string en el JWT
   nombre: string;
   correo: string;
   scopes: string[];
@@ -82,7 +82,7 @@ export class AuthService {
     scopes: string[];
   }> {
     try {
-      // 1. Generar hash de la contraseña
+      // 1. Generar hash de la contraseÃ±a
       const hash = await bcrypt.hash(contrasena, bcryptConfig.saltRounds);
 
       // 2. Llamar al repository para registrar
@@ -98,7 +98,7 @@ export class AuthService {
       // 3. Enviar correo de bienvenida (no bloquear si falla)
       authMailer.enviarBienvenida(correo, nombre).catch((error) => {
         console.error("Error enviando correo de bienvenida:", error);
-        // TODO: Registrar métrica de error de correo
+        // TODO: Registrar mÃ©trica de error de correo
       });
 
       // 4. Retornar datos del usuario
@@ -145,12 +145,12 @@ export class AuthService {
       throw new CredencialesInvalidasError();
     }
 
-    // 2. Verificar que esté activo
+    // 2. Verificar que estÃ© activo
     if (!usuario.activo) {
       throw new UsuarioInactivoError();
     }
 
-    // 3. Comparar contraseña con hash
+    // 3. Comparar contraseÃ±a con hash
     const passwordValida = await bcrypt.compare(contrasena, usuario.hash);
 
     if (!passwordValida) {
@@ -159,20 +159,20 @@ export class AuthService {
 
     // 4. Generar JWT
     const payload: JWTPayload = {
-      sub: usuario.usuarioId,
+      sub: usuario.usuarioId.toString(),
       nombre: usuario.nombre,
       correo: usuario.correo,
       scopes: usuario.scopes,
     };
 
-    const token = jwt.sign(payload, jwtConfig.secret, {
-      algorithm: jwtConfig.algorithm,
+    const token = jwt.sign(payload, jwtConfig.secret as jwt.Secret, {
+      algorithm: jwtConfig.algorithm as jwt.Algorithm,
       expiresIn: jwtConfig.expiresIn,
       issuer: jwtConfig.issuer,
       audience: jwtConfig.audience,
-    });
+    } as jwt.SignOptions);
 
-    // 5. Calcular tiempo de expiración en segundos
+    // 5. Calcular tiempo de expiraciÃ³n en segundos
     const expiraEn = 24 * 60 * 60; // 24 horas en segundos
 
     return {
@@ -188,15 +188,15 @@ export class AuthService {
   }
 
   /**
-   * Inicia proceso de recuperación de contraseña
-   * Siempre retorna éxito (para evitar enumeración de usuarios)
+   * Inicia proceso de recuperaciÃ³n de contraseÃ±a
+   * Siempre retorna Ã©xito (para evitar enumeraciÃ³n de usuarios)
    */
   async olvidoContrasena(correo: string): Promise<{ enviado: boolean }> {
     try {
-      // 1. Generar token único
-      const token = uuidv4();
+      // 1. Generar token Ãºnico
+      const token = randomUUID();
 
-      // 2. Calcular fecha de expiración (15 minutos)
+      // 2. Calcular fecha de expiraciÃ³n (15 minutos)
       const expira = new Date();
       expira.setMinutes(expira.getMinutes() + resetTokenConfig.expirationMinutes);
 
@@ -213,28 +213,28 @@ export class AuthService {
         
         if (!enviado) {
           console.error("Error enviando correo de restablecimiento");
-          // TODO: Registrar métrica de error
+          // TODO: Registrar mÃ©trica de error
         }
       }
 
-      // Siempre retornar éxito (evitar enumeración)
+      // Siempre retornar Ã©xito (evitar enumeraciÃ³n)
       return { enviado: true };
     } catch (error) {
       console.error("Error en proceso de olvido:", error);
-      // Siempre retornar éxito (evitar enumeración)
+      // Siempre retornar Ã©xito (evitar enumeraciÃ³n)
       return { enviado: true };
     }
   }
 
   /**
-   * Restablece la contraseña usando un token
+   * Restablece la contraseÃ±a usando un token
    */
   async restablecerContrasena(
     token: string,
     contrasenaNueva: string
   ): Promise<{ restablecido: boolean }> {
     try {
-      // 1. Generar hash de la nueva contraseña
+      // 1. Generar hash de la nueva contraseÃ±a
       const hashNuevo = await bcrypt.hash(contrasenaNueva, bcryptConfig.saltRounds);
 
       // 2. Llamar al SP para confirmar restablecimiento
@@ -249,7 +249,7 @@ export class AuthService {
 
       return { restablecido: true };
     } catch (error: any) {
-      // Detectar errores específicos del SP
+      // Detectar errores especÃ­ficos del SP
       if (error.message?.includes("TOKEN_EXPIRADO")) {
         throw new TokenExpiradoError();
       }
@@ -262,22 +262,37 @@ export class AuthService {
 
   /**
    * Verifica un JWT y extrae el payload
-   * (Útil para middleware de autenticación en producción)
+   * (Ãštil para middleware de autenticaciÃ³n en producciÃ³n)
+   */
+  /**
+   * Verifica un JWT y extrae el payload
+   * (util para middleware de autenticacion en produccion)
    */
   verificarToken(token: string): JWTPayload {
     try {
-      const decoded = jwt.verify(token, jwtConfig.secret, {
-        algorithms: [jwtConfig.algorithm as jwt.Algorithm], // ← FIX AQUÍ
-        issuer: jwtConfig.issuer,
-        audience: jwtConfig.audience,
-      }) as JWTPayload;
+      const decoded = jwt.verify(
+        token,
+        jwtConfig.secret as jwt.Secret,
+        {
+          algorithms: [jwtConfig.algorithm as jwt.Algorithm],
+          issuer: jwtConfig.issuer,
+          audience: jwtConfig.audience,
+        }
+      );
 
-      return decoded;
+      if (typeof decoded === "string") {
+        throw new BadRequestError("Token invalido o expirado");
+      }
+
+      return decoded as JWTPayload;
     } catch (error: any) {
-      throw new BadRequestError("Token inválido o expirado");
+      throw new BadRequestError("Token invalido o expirado");
     }
   }
 }
 
 // Exportar instancia singleton
 export const authService = new AuthService();
+
+
+

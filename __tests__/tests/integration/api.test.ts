@@ -11,9 +11,9 @@ describe('General API Behavior', () => {
       request(app).get('/api/nonexistent')
     ).expect(404);
 
-    expect(response.body).toHaveProperty('status', 'error');
-    expect(response.body).toHaveProperty('message', 'Route not found: GET /api/nonexistent');
-    expect(response.body).toHaveProperty('statusCode', 404);
+    expect(response.body).toHaveProperty('ok', false);
+    expect(response.body).toHaveProperty('mensaje', 'Route not found: GET /api/nonexistent');
+    expect(response.body).toHaveProperty('codigo', 404);
     expect(response.body).toHaveProperty('traceId');
   });
 
@@ -22,9 +22,9 @@ describe('General API Behavior', () => {
       .get('/api/nonexistent')
       .expect(401);
 
-    expect(response.body).toHaveProperty('status', 'error');
-    expect(response.body).toHaveProperty('message', 'Missing x-api-key header');
-    expect(response.body).toHaveProperty('statusCode', 401);
+    expect(response.body).toHaveProperty('ok', false);
+    expect(response.body).toHaveProperty('mensaje', 'Missing x-api-key header');
+    expect(response.body).toHaveProperty('codigo', 401);
     expect(response.body).toHaveProperty('traceId');
   });
 
@@ -33,9 +33,9 @@ describe('General API Behavior', () => {
       request(app).get('/api/v1/test/boom')
     ).expect(500);
 
-    expect(response.body).toHaveProperty('status', 'error');
-    expect(response.body).toHaveProperty('statusCode', 500);
-    expect(response.body).toHaveProperty('message');
+    expect(response.body).toHaveProperty('ok', false);
+    expect(response.body).toHaveProperty('codigo', 500);
+    expect(response.body).toHaveProperty('mensaje');
     expect(response.body).toHaveProperty('traceId');
   });
 });
