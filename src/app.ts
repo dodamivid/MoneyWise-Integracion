@@ -13,6 +13,7 @@ import versionRoutes from "./routes/version.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import catalogosRoutes from "./routes/catalogos.routes";
 import { db } from "./config/db";
+import tiposIngresoRoutes from "./routes/tiposIngreso.routes";
 import {
   traceIdMiddleware,
   errorHandler,
@@ -113,5 +114,8 @@ app.use(notFoundHandler);
 
 // Manejador centralizado de errores - DEBE ir al final
 app.use(errorHandler);
+
+// Dentro de tu configuración de rutas:
+app.use('/api/v1/tipos-ingreso', tiposIngresoRoutes);
 
 export default app;
