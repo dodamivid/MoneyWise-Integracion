@@ -30,6 +30,11 @@
 
 import { Router } from "express";
 import { userController } from "../controllers/user.controller";
+import {
+  mockAuth,
+  requireScope,
+  requireUserOwnership,
+} from "../middlewares/auth.middleware";
 
 /**
  * Instancia del enrutador Express para rutas relacionadas con usuarios.
@@ -48,7 +53,7 @@ const router = Router();
  * @summary Obtener perfil de usuario por ID
  * @description Recupera la información completa del perfil de un usuario por su ID numérico.
  *
- * **Autenticación**: JWT obligatorio (a implementar)
+ * **Autenticación**: JWT obligatorio (mock con x-mw-user)
  * **Scopes requeridos**: `usuarios:leer`
  * **Reglas**: Si :id no coincide con `sub` del JWT y el usuario no tiene `admin:usuarios`,
  * responder con PERMISO_DENEGADO (403).
@@ -64,7 +69,8 @@ const router = Router();
  * @example
  * // Petición
  * GET /api/v1/usuarios/1
- * Authorization: Bearer <jwt_token>
+ * x-mw-user: 1
+ * x-mw-scopes: usuarios:leer
  *
  * // Respuesta Exitosa (200)
  * {
@@ -89,7 +95,13 @@ const router = Router();
  *   "codigo": 404
  * }
  */
-router.get("/:id", userController.obtenerPerfil);
+router.get(
+  "/:id",
+  mockAuth,
+  requireScope("usuarios:leer"),
+  requireUserOwnership,
+  userController.obtenerPerfil
+);
 
 /**
  * @route PUT /api/v1/usuarios/:id
@@ -98,7 +110,7 @@ router.get("/:id", userController.obtenerPerfil);
  * @description Actualiza los campos de perfil de un usuario existente.
  * Solo se pueden actualizar: nombre, apellidoP, apellidoM, fechaN.
  *
- * **Autenticación**: JWT obligatorio (a implementar)
+ * **Autenticación**: JWT obligatorio (mock con x-mw-user)
  * **Scopes requeridos**: `usuarios:escribir`
  * **Reglas**: Si :id no coincide con `sub` del JWT y el usuario no tiene `admin:usuarios`,
  * responder con PERMISO_DENEGADO (403).
@@ -116,7 +128,8 @@ router.get("/:id", userController.obtenerPerfil);
  * @example
  * // Petición
  * PUT /api/v1/usuarios/1
- * Authorization: Bearer <jwt_token>
+ * x-mw-user: 1
+ * x-mw-scopes: usuarios:escribir
  * Content-Type: application/json
  * {
  *   "nombre": "Juan Carlos",
@@ -141,7 +154,13 @@ router.get("/:id", userController.obtenerPerfil);
  *   "codigo": 422
  * }
  */
-router.put("/:id", userController.actualizarPerfil);
+router.put(
+  "/:id",
+  mockAuth,
+  requireScope("usuarios:escribir"),
+  requireUserOwnership,
+  userController.actualizarPerfil
+);
 
 /**
  * @route PATCH /api/v1/usuarios/:id/contrasena
@@ -150,7 +169,7 @@ router.put("/:id", userController.actualizarPerfil);
  * @description Cambia la contraseña de un usuario validando la contraseña actual.
  * La nueva contraseña debe cumplir la política de seguridad.
  *
- * **Autenticación**: JWT obligatorio (a implementar)
+ * **Autenticación**: JWT obligatorio (mock con x-mw-user)
  * **Scopes requeridos**: `usuarios:escribir`
  * **Reglas**: Si :id no coincide con `sub` del JWT, responder con PERMISO_DENEGADO (403).
  * Los administradores NO pueden cambiar contraseñas de otros usuarios sin la contraseña actual.
@@ -169,7 +188,8 @@ router.put("/:id", userController.actualizarPerfil);
  * @example
  * // Petición
  * PATCH /api/v1/usuarios/1/contrasena
- * Authorization: Bearer <jwt_token>
+ * x-mw-user: 1
+ * x-mw-scopes: usuarios:escribir
  * Content-Type: application/json
  * {
  *   "contrasenaActual": "OldPass123!",
@@ -198,7 +218,13 @@ router.put("/:id", userController.actualizarPerfil);
  *   "codigo": 422
  * }
  */
-router.patch("/:id/contrasena", userController.cambiarContrasena);
+router.patch(
+  "/:id/contrasena",
+  mockAuth,
+  requireScope("usuarios:escribir"),
+  requireUserOwnership,
+  userController.cambiarContrasena
+);
 
 /**
  * Exportar el enrutador configurado.

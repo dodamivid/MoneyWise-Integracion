@@ -21,7 +21,7 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  // Si no vienen scopes en header, añadimos los scopes de inversiones e ingresos para pruebas locales
+  // Si no vienen scopes en header, añadimos los scopes de inversiones, ingresos y usuarios para pruebas locales
   if (!req.header("x-mw-scopes")) {
     [
       "inversiones:leer",
@@ -30,6 +30,9 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
       "ingresos:leer",
       "ingresos:escribir",
       "admin:ingresos",
+      "usuarios:leer",
+      "usuarios:escribir",
+      "admin:usuarios",
     ].forEach((scope) => {
       if (!scopes.includes(scope)) {
         scopes.push(scope);
@@ -105,4 +108,50 @@ export function requireInversionesScopeByMethod() {
 
     next();
   };
+}
+
+/**
+ * Middleware para verificar permisos de propiedad en recursos de usuario.
+ *
+ * Valida que:
+ * 1. El usuario autenticado está accediendo a su propio recurso (userId === :id), O
+ * 2. El usuario tiene el scope admin:usuarios
+ *
+ * Si ninguna condición se cumple, retorna 403 PERMISO_DENEGADO.
+ *
+ * @example
+ * ```typescript
+ * // En las rutas
+ * router.get('/:id', mockAuth, requireUserOwnership, userController.obtenerPerfil);
+ * ```
+ */
+export function requireUserOwnership(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const auth = res.locals.auth as
+    | { userId: string; scopes: string[] }
+    | undefined;
+
+  const requestedUserId = req.params.id;
+  const authenticatedUserId = auth?.userId;
+  const hasAdminScope = auth?.scopes?.includes("admin:usuarios");
+
+  // Permitir si es el mismo usuario o tiene scope de admin
+  if (authenticatedUserId === requestedUserId || hasAdminScope) {
+    return next();
+  }
+
+  // Denegar acceso
+  return res.status(403).json({
+    ok: false,
+    mensaje: "No tienes permiso para acceder a este recurso",
+    codigo: 403,
+    detalles: {
+      razon: hasAdminScope
+        ? "ID no coincide"
+        : "Requiere admin:usuarios para acceder a otros usuarios",
+    },
+  });
 }
