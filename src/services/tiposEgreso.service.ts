@@ -1,4 +1,4 @@
-import { TiposEgresoRepository } from "../repositories/tiposEgreso.repository";
+import { tiposEgresoRepository } from "../repositories/tiposEgreso.repository";
 import {
   ListarTiposEgresoResponse,
   CrearTipoEgresoResponse,
@@ -20,7 +20,7 @@ import {
  */
 
 export class TiposEgresoService {
-  constructor(private readonly repository: TiposEgresoRepository) {}
+  constructor(private readonly repository = tiposEgresoRepository) {}
 
   /**
    * Listar tipos de egreso con paginación

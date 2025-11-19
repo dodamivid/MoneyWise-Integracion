@@ -1,328 +1,155 @@
-/**
- * Controller para Catálogos - Procedencias de Ingreso
- * Maneja las peticiones HTTP y respuestas
- * Fecha: 2025-10-31
- * Archivo: src/controllers/catalogosProcedencia.controller.ts
- */
+import { NextFunction, Request, Response } from "express";
+import { CatalogosProcedenciaService } from "../services/catalogosProcedencia.service";
+import {
+  ActualizarProcedenciaBodySchema,
+  CrearProcedenciaBodySchema,
+  ListarProcedenciasQuerySchema,
+  ProcedenciaIdParamSchema,
+} from "../dtos/catalogosProcedencia.dto";
 
-import { Request, Response, NextFunction } from 'express';
-import { CatalogosProcedenciaService } from '../services/catalogosProcedencia.service';
+type AuthContext = { userId: string; scopes: string[] };
 
-/**
- * Controller para gestionar los endpoints de Procedencias
- */
 export class CatalogosProcedenciaController {
-  private service: CatalogosProcedenciaService;
+  constructor(private readonly service = new CatalogosProcedenciaService()) {}
 
-  constructor() {
-    this.service = new CatalogosProcedenciaService();
-  }
-
-  /**
-   * GET /api/v1/catalogos/procedencias
-   * Lista todas las procedencias del usuario con filtros y paginación
-   */
   listarProcedencias = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
-      // Obtener usuario del JWT (viene del middleware de autenticación)
-      const usuarioId = (req as any).usuario?.usuarioId || (req as any).usuario?.id;
+      const auth = res.locals.auth as AuthContext;
+      const validated = ListarProcedenciasQuerySchema.safeParse(req.query);
 
-      if (!usuarioId) {
-        res.status(401).json({
+      if (!validated.success) {
+        res.status(422).json({
           ok: false,
           error: {
-            codigo: 'NO_AUTORIZADO',
-            mensaje: 'Token de autenticación requerido',
+            codigo: "DATOS_INVALIDOS",
+            mensaje: validated.error.issues.map((i) => i.message).join(", "),
           },
         });
         return;
       }
 
-      // Validar scopes (permisos)
-      const scopes = (req as any).usuario?.scopes || [];
-      const tienePermiso =
-        scopes.includes('catalogos:leer') || scopes.includes('admin:catalogos');
-
-      if (!tienePermiso) {
-        res.status(403).json({
-          ok: false,
-          error: {
-            codigo: 'PERMISO_DENEGADO',
-            mensaje: 'No tienes permisos para leer catálogos',
-          },
-        });
-        return;
-      }
-
-      // Obtener query params
-      const { buscar, pagina, tamanoPagina, orden } = req.query;
-
-      // Llamar al service
+      const { buscar, pagina, tamanoPagina, orden } = validated.data;
       const resultado = await this.service.listarProcedencias(
-        usuarioId,
-        buscar as string,
-        pagina ? parseInt(pagina as string) : undefined,
-        tamanoPagina ? parseInt(tamanoPagina as string) : undefined,
-        orden as string
+        auth.userId,
+        buscar,
+        pagina,
+        tamanoPagina,
+        orden
       );
 
       res.status(200).json(resultado);
-    } catch (error: any) {
-      // Manejo de errores con status code
-      if (error.status) {
-        res.status(error.status).json({
-          ok: false,
-          error: {
-            codigo: error.codigo,
-            mensaje: error.mensaje,
-          },
-        });
-        return;
-      }
-      // Pasar al middleware de manejo de errores global
+    } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * POST /api/v1/catalogos/procedencias
-   * Crea una nueva procedencia
-   */
   crearProcedencia = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
-      const usuarioId = (req as any).usuario?.usuarioId || (req as any).usuario?.id;
+      const auth = res.locals.auth as AuthContext;
+      const validated = CrearProcedenciaBodySchema.safeParse(req.body);
 
-      if (!usuarioId) {
-        res.status(401).json({
-          ok: false,
-          error: {
-            codigo: 'NO_AUTORIZADO',
-            mensaje: 'Token de autenticación requerido',
-          },
-        });
-        return;
-      }
-
-      // Validar scopes
-      const scopes = (req as any).usuario?.scopes || [];
-      const tienePermiso =
-        scopes.includes('catalogos:escribir') ||
-        scopes.includes('admin:catalogos');
-
-      if (!tienePermiso) {
-        res.status(403).json({
-          ok: false,
-          error: {
-            codigo: 'PERMISO_DENEGADO',
-            mensaje: 'No tienes permisos para crear catálogos',
-          },
-        });
-        return;
-      }
-
-      // Validar body
-      const { nombre } = req.body;
-
-      if (!nombre) {
+      if (!validated.success) {
         res.status(422).json({
           ok: false,
           error: {
-            codigo: 'DATOS_INVALIDOS',
-            mensaje: 'El campo nombre es requerido',
+            codigo: "DATOS_INVALIDOS",
+            mensaje: validated.error.issues.map((i) => i.message).join(", "),
           },
         });
         return;
       }
 
-      // Llamar al service
-      const resultado = await this.service.crearProcedencia(usuarioId, nombre);
+      const resultado = await this.service.crearProcedencia(
+        auth.userId,
+        validated.data.nombre
+      );
 
       res.status(201).json(resultado);
-    } catch (error: any) {
-      if (error.status) {
-        res.status(error.status).json({
-          ok: false,
-          error: {
-            codigo: error.codigo,
-            mensaje: error.mensaje,
-          },
-        });
-        return;
-      }
+    } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * PUT /api/v1/catalogos/procedencias/:id
-   * Actualiza una procedencia existente
-   */
   actualizarProcedencia = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
-      const usuarioId = (req as any).usuario?.usuarioId || (req as any).usuario?.id;
+      const auth = res.locals.auth as AuthContext;
+      const params = ProcedenciaIdParamSchema.safeParse(req.params);
+      const body = ActualizarProcedenciaBodySchema.safeParse(req.body);
 
-      if (!usuarioId) {
-        res.status(401).json({
-          ok: false,
-          error: {
-            codigo: 'NO_AUTORIZADO',
-            mensaje: 'Token de autenticación requerido',
-          },
-        });
-        return;
-      }
-
-      // Validar scopes
-      const scopes = (req as any).usuario?.scopes || [];
-      const esAdmin = scopes.includes('admin:catalogos');
-      const tienePermiso = scopes.includes('catalogos:escribir') || esAdmin;
-
-      if (!tienePermiso) {
-        res.status(403).json({
-          ok: false,
-          error: {
-            codigo: 'PERMISO_DENEGADO',
-            mensaje: 'No tienes permisos para actualizar catálogos',
-          },
-        });
-        return;
-      }
-
-      // Validar params y body
-      const procedenciaId = parseInt(req.params.id);
-      const { nombre } = req.body;
-
-      if (isNaN(procedenciaId)) {
+      if (!params.success || !body.success) {
+        const issues = [
+          ...(params.success ? [] : params.error.issues),
+          ...(body.success ? [] : body.error.issues),
+        ];
         res.status(422).json({
           ok: false,
           error: {
-            codigo: 'DATOS_INVALIDOS',
-            mensaje: 'ID de procedencia inválido',
+            codigo: "DATOS_INVALIDOS",
+            mensaje: issues.map((i) => i.message).join(", "),
           },
         });
         return;
       }
 
-      if (!nombre) {
-        res.status(422).json({
-          ok: false,
-          error: {
-            codigo: 'DATOS_INVALIDOS',
-            mensaje: 'El campo nombre es requerido',
-          },
-        });
-        return;
-      }
-
-      // Llamar al service
+      const esAdmin = auth.scopes?.includes("admin:catalogos") ?? false;
       const resultado = await this.service.actualizarProcedencia(
-        procedenciaId,
-        usuarioId,
-        nombre,
+        params.data.id,
+        auth.userId,
+        body.data.nombre,
         esAdmin
       );
 
       res.status(200).json(resultado);
-    } catch (error: any) {
-      if (error.status) {
-        res.status(error.status).json({
-          ok: false,
-          error: {
-            codigo: error.codigo,
-            mensaje: error.mensaje,
-          },
-        });
-        return;
-      }
+    } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * DELETE /api/v1/catalogos/procedencias/:id
-   * Elimina una procedencia (soft delete)
-   */
   eliminarProcedencia = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> => {
+  ) => {
     try {
-      const usuarioId = (req as any).usuario?.usuarioId || (req as any).usuario?.id;
+      const auth = res.locals.auth as AuthContext;
+      const params = ProcedenciaIdParamSchema.safeParse(req.params);
 
-      if (!usuarioId) {
-        res.status(401).json({
-          ok: false,
-          error: {
-            codigo: 'NO_AUTORIZADO',
-            mensaje: 'Token de autenticación requerido',
-          },
-        });
-        return;
-      }
-
-      // Validar scopes
-      const scopes = (req as any).usuario?.scopes || [];
-      const esAdmin = scopes.includes('admin:catalogos');
-      const tienePermiso = scopes.includes('catalogos:escribir') || esAdmin;
-
-      if (!tienePermiso) {
-        res.status(403).json({
-          ok: false,
-          error: {
-            codigo: 'PERMISO_DENEGADO',
-            mensaje: 'No tienes permisos para eliminar catálogos',
-          },
-        });
-        return;
-      }
-
-      // Validar params
-      const procedenciaId = parseInt(req.params.id);
-
-      if (isNaN(procedenciaId)) {
+      if (!params.success) {
         res.status(422).json({
           ok: false,
           error: {
-            codigo: 'DATOS_INVALIDOS',
-            mensaje: 'ID de procedencia inválido',
+            codigo: "DATOS_INVALIDOS",
+            mensaje: params.error.issues.map((i) => i.message).join(", "),
           },
         });
         return;
       }
 
-      // Llamar al service
+      const esAdmin = auth.scopes?.includes("admin:catalogos") ?? false;
       const resultado = await this.service.eliminarProcedencia(
-        procedenciaId,
-        usuarioId,
+        params.data.id,
+        auth.userId,
         esAdmin
       );
 
       res.status(200).json(resultado);
-    } catch (error: any) {
-      if (error.status) {
-        res.status(error.status).json({
-          ok: false,
-          error: {
-            codigo: error.codigo,
-            mensaje: error.mensaje,
-          },
-        });
-        return;
-      }
+    } catch (error) {
       next(error);
     }
   };
 }
+
+export const catalogosProcedenciaController =
+  new CatalogosProcedenciaController();

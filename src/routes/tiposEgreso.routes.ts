@@ -1,35 +1,35 @@
 import { Router } from "express";
-import { catalogosProcedenciaController } from "../controllers/catalogosProcedencia.controller";
+import { tiposEgresoController } from "../controllers/tiposEgreso.controller";
 import { mockAuth, requireScope } from "../middlewares/auth.middleware";
 
 const router = Router();
 
 router.get(
-  "/procedencias",
+  "/tipos-egreso",
   mockAuth,
   requireScope("catalogos:leer"),
-  catalogosProcedenciaController.listarProcedencias
+  tiposEgresoController.listarTiposEgreso
 );
 
 router.post(
-  "/procedencias",
+  "/tipos-egreso",
   mockAuth,
   requireScope("catalogos:escribir"),
-  catalogosProcedenciaController.crearProcedencia
+  tiposEgresoController.crearTipoEgreso
 );
 
 router.put(
-  "/procedencias/:id",
+  "/tipos-egreso/:id",
   mockAuth,
   requireScope("catalogos:escribir"),
-  catalogosProcedenciaController.actualizarProcedencia
+  tiposEgresoController.actualizarTipoEgreso
 );
 
 router.delete(
-  "/procedencias/:id",
+  "/tipos-egreso/:id",
   mockAuth,
   requireScope("catalogos:escribir"),
-  catalogosProcedenciaController.eliminarProcedencia
+  tiposEgresoController.eliminarTipoEgreso
 );
 
 export default router;

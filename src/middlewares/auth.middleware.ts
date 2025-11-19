@@ -14,7 +14,7 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
     process.env.MOCK_DEFAULT_SCOPES ??
     (process.env.NODE_ENV === "test"
       ? ""
-      : "egresos:leer,egresos:escribir,admin:egresos");
+      : "egresos:leer,egresos:escribir,admin:egresos,catalogos:leer,catalogos:escribir,admin:catalogos");
   const scopeHeader = req.header("x-mw-scopes") || defaultScopes;
   const scopes = scopeHeader
     .split(",")
@@ -33,6 +33,9 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
       "usuarios:leer",
       "usuarios:escribir",
       "admin:usuarios",
+      "catalogos:leer",
+      "catalogos:escribir",
+      "admin:catalogos",
     ].forEach((scope) => {
       if (!scopes.includes(scope)) {
         scopes.push(scope);
