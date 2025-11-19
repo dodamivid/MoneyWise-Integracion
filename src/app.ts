@@ -12,6 +12,7 @@ import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import catalogosRoutes from "./routes/catalogos.routes";
+import catalogosProcedenciaRoutes from "./routes/catalogosProcedencia.routes";
 import tiposEgresoRoutes from "./routes/tiposEgreso.routes";
 import authRoutes from "./routes/auth.routes";
 import { db } from "./config/db";
@@ -105,6 +106,7 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Catálogos routes mounted under /api/v1/catalogos
 app.use("/api/v1/catalogos", catalogosRoutes);
+app.use("/api/v1/catalogos", catalogosProcedenciaRoutes);
 app.use("/api/v1/catalogos", tiposEgresoRoutes);
 
 // Tipos de ingreso (catálogo)
