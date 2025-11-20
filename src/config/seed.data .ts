@@ -1,117 +1,83 @@
-/**
- * @fileoverview Datos semilla para pruebas de la API de Money Wise.
- * 
- * Este archivo proporciona usuarios de ejemplo que pueden usarse para poblar
- * la base de datos en memoria con fines de prueba.
- * 
- * @module config/seed.data
- * @category Config
- * 
- * @author Equipo de Integración Money Wise
- * @version 1.0.0
+﻿/**
+ * Datos semilla para pruebas de la API.
  */
 
 import { CreateUserInput } from "../models/user.model";
 
-/**
- * Usuarios de ejemplo para pruebas y desarrollo.
- * 
- * Estos usuarios pueden insertarse en la base de datos para probar
- * diversos escenarios y endpoints.
- * 
- * @constant
- * @type {CreateUserInput[]}
- */
 export const sampleUsers: CreateUserInput[] = [
   {
-    email: "john.doe@example.com",
-    password: "Password123",
-    firstName: "John",
-    lastName: "Doe",
-    isActive: true,
+    correo: "john.doe@example.com",
+    contrasena: "Password123!",
+    nombre: "John",
+    apellidoP: "Doe",
+    apellidoM: "Smith",
+    fechaN: "1990-01-01",
+    activo: true,
   },
   {
-    email: "jane.smith@example.com",
-    password: "SecurePass456",
-    firstName: "Jane",
-    lastName: "Smith",
-    isActive: true,
+    correo: "jane.smith@example.com",
+    contrasena: "SecurePass456!",
+    nombre: "Jane",
+    apellidoP: "Smith",
+    apellidoM: "Johnson",
+    fechaN: "1992-02-02",
+    activo: true,
   },
   {
-    email: "bob.johnson@example.com",
-    password: "BobPass789",
-    firstName: "Bob",
-    lastName: "Johnson",
-    isActive: false,
+    correo: "bob.johnson@example.com",
+    contrasena: "BobPass789!",
+    nombre: "Bob",
+    apellidoP: "Johnson",
+    apellidoM: "Williams",
+    fechaN: "1988-03-03",
+    activo: false,
   },
   {
-    email: "alice.williams@example.com",
-    password: "AlicePass012",
-    firstName: "Alice",
-    lastName: "Williams",
-    isActive: true,
+    correo: "alice.williams@example.com",
+    contrasena: "AlicePass012!",
+    nombre: "Alice",
+    apellidoP: "Williams",
+    apellidoM: "Brown",
+    fechaN: "1994-04-04",
+    activo: true,
   },
   {
-    email: "charlie.brown@example.com",
-    password: "CharliePass345",
-    firstName: "Charlie",
-    lastName: "Brown",
-    isActive: true,
+    correo: "charlie.brown@example.com",
+    contrasena: "CharliePass345!",
+    nombre: "Charlie",
+    apellidoP: "Brown",
+    apellidoM: "Davis",
+    fechaN: "1996-05-05",
+    activo: true,
   },
 ];
 
-/**
- * Función para sembrar la base de datos con usuarios de ejemplo.
- * 
- * Esta función puede llamarse para poblar el repositorio
- * con datos de prueba para desarrollo y testing.
- * 
- * @async
- * @param {UserRepository} repository - El repositorio de usuarios a sembrar
- * @returns {Promise<void>}
- * 
- * @example
- * ```typescript
- * import { userRepository } from './repositories/user.repository';
- * import { seedDatabase } from './config/seed.data';
- * 
- * // Sembrar la base de datos
- * await seedDatabase(userRepository);
- * console.log('Base de datos sembrada con usuarios de ejemplo');
- * ```
- */
 export async function seedDatabase(repository: any): Promise<void> {
   console.log("Sembrando base de datos con usuarios de ejemplo...");
 
   for (const userData of sampleUsers) {
     try {
       await repository.create(userData);
-      console.log(`✓ Usuario creado: ${userData.email}`);
+      console.log(`Usuario creado: ${userData.correo}`);
     } catch (error: any) {
-      console.log(`✗ El usuario ya existe: ${userData.email}`);
+      console.log(`El usuario ya existe: ${userData.correo}`);
     }
   }
 
-  console.log("¡Sembrado de base de datos completado!");
+  console.log("Sembrado de base de datos completado");
 }
 
-/**
- * Credenciales de usuarios de prueba para testing manual.
- * 
- * Usa estas credenciales para probar la funcionalidad de inicio de sesión
- * u otras características relacionadas con la autenticación.
- */
 export const testCredentials = {
   admin: {
-    email: "john.doe@example.com",
-    password: "Password123",
+    correo: "john.doe@example.com",
+    contrasena: "Password123!",
   },
   regularUser: {
-    email: "jane.smith@example.com",
-    password: "SecurePass456",
+    correo: "jane.smith@example.com",
+    contrasena: "SecurePass456!",
   },
   inactiveUser: {
-    email: "bob.johnson@example.com",
-    password: "BobPass789",
+    correo: "bob.johnson@example.com",
+    contrasena: "BobPass789!",
   },
 };

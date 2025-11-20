@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const tiposEgreso_controller_1 = require("../controllers/tiposEgreso.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const router = (0, express_1.Router)();
+router.get("/tipos-egreso", auth_middleware_1.mockAuth, (0, auth_middleware_1.requireScope)("catalogos:leer"), tiposEgreso_controller_1.tiposEgresoController.listarTiposEgreso);
+router.post("/tipos-egreso", auth_middleware_1.mockAuth, (0, auth_middleware_1.requireScope)("catalogos:escribir"), tiposEgreso_controller_1.tiposEgresoController.crearTipoEgreso);
+router.put("/tipos-egreso/:id", auth_middleware_1.mockAuth, (0, auth_middleware_1.requireScope)("catalogos:escribir"), tiposEgreso_controller_1.tiposEgresoController.actualizarTipoEgreso);
+router.delete("/tipos-egreso/:id", auth_middleware_1.mockAuth, (0, auth_middleware_1.requireScope)("catalogos:escribir"), tiposEgreso_controller_1.tiposEgresoController.eliminarTipoEgreso);
+exports.default = router;
