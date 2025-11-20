@@ -27,6 +27,9 @@
  * @author Equipo de Integración Money Wise
  * @version 1.0.0
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.traceIdMiddleware = traceIdMiddleware;
 exports.errorHandler = errorHandler;
@@ -36,6 +39,7 @@ exports.requestLogger = requestLogger;
 const crypto_1 = require("crypto");
 const errors_1 = require("../utils/errors");
 const user_dto_1 = require("../dtos/user.dto");
+const logger_1 = __importDefault(require("../utils/logger"));
 /**
  * Middleware para generar y adjuntar un traceId único a cada request.
  *
@@ -267,17 +271,28 @@ function asyncHandler(fn) {
  * ```
  */
 function requestLogger(req, res, next) {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] ${req.method} ${req.path}`, {
-        query: req.query,
-        body: req.method !== "GET" ? req.body : undefined,
-        ip: req.ip,
+    const traceId = req.traceId || "unknown";
+    const startTime = process.hrtime.bigint();
+    const method = req.method;
+    const path = req.originalUrl || req.path;
+    const requestLog = logger_1.default.child({
+        traceId,
+        method,
+        path,
     });
-    // Registrar respuesta cuando se envíe
-    const originalSend = res.json;
-    res.json = function (data) {
-        console.log(`[${timestamp}] Respuesta ${res.statusCode} para ${req.method} ${req.path}`);
-        return originalSend.call(this, data);
-    };
+    requestLog.info({
+        query: req.query,
+        body: method === "GET" ? undefined : req.body,
+        ip: req.ip,
+    }, "Incoming request");
+    res.once("finish", () => {
+        const durationNs = process.hrtime.bigint() - startTime;
+        const durationMs = Number(durationNs) / 1000000;
+        requestLog.info({
+            statusCode: res.statusCode,
+            headers: res.getHeaders(),
+            durationMs,
+        }, "Request completed");
+    });
     next();
 }
