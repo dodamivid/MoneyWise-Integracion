@@ -1,0 +1,617 @@
+{
+  "info": {
+    "_postman_id": "moneywise-usuarios-metas-v1",
+    "name": "MoneyWise API - Usuarios y Metas v1",
+    "description": "Colección de endpoints para probar la API de Usuarios y Metas de MoneyWise",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Obtener Perfil de Usuario",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "usuarios:leer",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "usuarios", "1"]
+            },
+            "description": "Obtiene el perfil completo de un usuario por su ID.\n\n**Requiere:**\n- Header `x-api-key`\n- Header `x-mw-user` (mismo ID que en URL o con admin:usuarios)\n- Scope `usuarios:leer`"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "usuarios:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan Carlos\",\n  \"apellidoP\": \"Pérez\",\n  \"apellidoM\": \"López\",\n  \"fechaN\": \"1995-05-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "usuarios", "1"]
+            },
+            "description": "Actualiza el perfil de un usuario (nombre, apellidos, fecha de nacimiento).\n\n**Validaciones:**\n- Nombres/apellidos: solo letras y espacios\n- fechaN: usuario debe tener al menos 16 años\n- Capitalización automática de nombres"
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar Contraseña",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "usuarios:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contrasenaActual\": \"Password123!\",\n  \"contrasenaNueva\": \"NewPassword456@\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/1/contrasena",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "usuarios", "1", "contrasena"]
+            },
+            "description": "Cambia la contraseña de un usuario.\n\n**Validaciones de contraseña:**\n- Mínimo 8 caracteres\n- Al menos 1 mayúscula\n- Al menos 1 minúscula\n- Al menos 1 número\n- Al menos 1 símbolo especial"
+          },
+          "response": []
+        },
+        {
+          "name": "Error - Usuario No Existe",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "9999",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "usuarios:leer",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/9999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "usuarios", "9999"]
+            },
+            "description": "Ejemplo de error 404 cuando el usuario no existe."
+          },
+          "response": []
+        },
+        {
+          "name": "Error - Sin Permisos (Ownership)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text",
+                "description": "Usuario 1 intentando acceder a usuario 2"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "usuarios:leer",
+                "type": "text",
+                "description": "Sin scope admin:usuarios"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/usuarios/2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "usuarios", "2"]
+            },
+            "description": "Ejemplo de error 403 cuando intentas acceder a datos de otro usuario sin permisos de administrador."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints de la API de Usuarios v1"
+    },
+    {
+      "name": "Metas",
+      "item": [
+        {
+          "name": "Listar Metas del Usuario",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:leer",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas?pagina=1&tamanoPagina=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas"],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "description": "Número de página (default: 1)"
+                },
+                {
+                  "key": "tamanoPagina",
+                  "value": "10",
+                  "description": "Items por página (default: 10, max: 100)"
+                },
+                {
+                  "key": "orden",
+                  "value": "desc",
+                  "description": "Orden: asc o desc (default: desc)",
+                  "disabled": true
+                },
+                {
+                  "key": "activa",
+                  "value": "true",
+                  "description": "Filtrar por estado activo/inactivo",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista todas las metas del usuario autenticado con paginación."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Meta por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:leer",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas", "1"]
+            },
+            "description": "Obtiene los detalles de una meta específica por su ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear Nueva Meta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Fondo de Emergencia\",\n  \"montoObjetivo\": 50000,\n  \"fechaInicio\": \"2024-02-01\",\n  \"fechaFin\": \"2024-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas"]
+            },
+            "description": "Crea una nueva meta de ahorro.\n\n**Campos requeridos:**\n- nombre (string, max 100 caracteres)\n- montoObjetivo (number > 0)\n- fechaInicio (date YYYY-MM-DD)\n- fechaFin (date YYYY-MM-DD, debe ser >= fechaInicio)"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Meta - Ahorro Real",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ahorroReal\": 7500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas", "1"]
+            },
+            "description": "Actualiza el ahorro real de una meta.\n\n**Nota:** El ahorro real no puede superar el monto objetivo sin permisos de administrador."
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Meta - Nombre y Fecha",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Vacaciones Europa 2024\",\n  \"fechaFin\": \"2024-11-30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas", "1"]
+            },
+            "description": "Actualiza el nombre y la fecha de fin de una meta."
+          },
+          "response": []
+        },
+        {
+          "name": "Desactivar Meta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activa\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas", "1"]
+            },
+            "description": "Marca una meta como inactiva sin eliminarla."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Meta",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:escribir",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas", "1"]
+            },
+            "description": "Elimina permanentemente una meta.\n\n**Importante:** Solo puedes eliminar metas que te pertenecen."
+          },
+          "response": []
+        },
+        {
+          "name": "Error - Meta No Existe",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:leer",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas/9999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas", "9999"]
+            },
+            "description": "Ejemplo de error 404 cuando la meta no existe."
+          },
+          "response": []
+        },
+        {
+          "name": "Error - Monto Negativo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Meta Inválida\",\n  \"montoObjetivo\": -1000,\n  \"fechaInicio\": \"2024-01-01\",\n  \"fechaFin\": \"2024-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas"]
+            },
+            "description": "Ejemplo de error 400 por monto objetivo negativo."
+          },
+          "response": []
+        },
+        {
+          "name": "Error - Fecha Fin Antes de Inicio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "test-x-api-key",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-user",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-mw-scopes",
+                "value": "metas:escribir",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Fechas Inválidas\",\n  \"montoObjetivo\": 10000,\n  \"fechaInicio\": \"2024-12-31\",\n  \"fechaFin\": \"2024-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/metas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "metas"]
+            },
+            "description": "Ejemplo de error 400 cuando fechaFin es antes de fechaInicio."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints de la API de Metas v1"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
