@@ -16,7 +16,7 @@ interface SPUsuarioRegistrarResult {
   apellidoM: string;
   correo: string;
   creadoEn: string;
-  scopesPorDefecto: string; // JSON string o CSV
+  scopesPorDefecto: any; // JSON column, puede venir como string/obj/array
 }
 
 interface SPAuthAccesoResult {
@@ -25,7 +25,7 @@ interface SPAuthAccesoResult {
   nombre: string;
   correo: string;
   activo: 0 | 1;
-  scopes: string; // JSON string o CSV
+  scopes: any; // JSON column, puede venir como string/obj/array
 }
 
 interface SPAuthOlvidoResult {
@@ -70,16 +70,8 @@ export class AuthRepository {
 
     const row = rows[0];
 
-    // Parsear scopes (puede venir como JSON o CSV)
-    let scopes: string[] = [];
-    try {
-      scopes = JSON.parse(row.scopesPorDefecto);
-    } catch {
-      // Si no es JSON, asumir CSV
-      scopes = row.scopesPorDefecto
-        ? row.scopesPorDefecto.split(",").map((s) => s.trim())
-        : [];
-    }
+    // Parsear scopes (JSON column en MySQL 9, CSV o string)
+    const scopes = this.parseScopes(row.scopesPorDefecto);
 
     return {
       usuarioId: row.usuarioId,
@@ -118,14 +110,7 @@ export class AuthRepository {
     const row = rows[0];
 
     // Parsear scopes
-    let scopes: string[] = [];
-    try {
-      scopes = JSON.parse(row.scopes);
-    } catch {
-      scopes = row.scopes
-        ? row.scopes.split(",").map((s) => s.trim())
-        : [];
-    }
+    const scopes = this.parseScopes(row.scopes);
 
     return {
       usuarioId: row.usuarioId,
@@ -183,6 +168,47 @@ export class AuthRepository {
     }
 
     return rows[0].restablecido === 1;
+  }
+
+  /**
+   * Normaliza scopes desde MySQL (puede venir como JSON, array, objeto o CSV).
+   */
+  private parseScopes(raw: unknown): string[] {
+    // Si ya es arreglo
+    if (Array.isArray(raw)) {
+      return raw.map((s) => String(s).trim()).filter(Boolean);
+    }
+
+    // Si es objeto (JSON column puede mapear a objeto)
+    if (raw && typeof raw === "object") {
+      try {
+        const parsed = JSON.parse(JSON.stringify(raw));
+        if (Array.isArray(parsed)) {
+          return parsed.map((s) => String(s).trim()).filter(Boolean);
+        }
+      } catch {
+        // continuar al fallback
+      }
+    }
+
+    // Si es string, intentar JSON.parse y luego CSV
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((s) => String(s).trim()).filter(Boolean);
+        }
+      } catch {
+        // no es JSON, continuar
+      }
+      return raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
+    // Fallback vacío
+    return [];
   }
 }
 
