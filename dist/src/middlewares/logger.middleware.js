@@ -6,20 +6,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //logger.middleware.ts
 const pino_1 = __importDefault(require("pino"));
 const pino_http_1 = __importDefault(require("pino-http"));
-// Detecta entorno de Jest (CI y pruebas locales)
+// Detecta entorno para decidir transporte
 const isJest = process.env.JEST_WORKER_ID !== undefined;
-const logger = (0, pino_1.default)({
-    level: process.env.LOG_LEVEL || "info",
-    // En JEST / CI → NO usar transport (pino-pretty truena)
-    ...(isJest
-        ? {}
-        : {
-            transport: {
-                target: "pino-pretty",
-                options: { colorize: true },
-            },
-        }),
-});
+const isProd = (process.env.NODE_ENV || "").toLowerCase() === "production";
+const enablePretty = !isProd && !isJest;
+const logger = (0, pino_1.default)(enablePretty
+    ? {
+        level: process.env.LOG_LEVEL || "info",
+        transport: {
+            // Solo en local/dev; en Render (prod) evitamos pino-pretty
+            target: "pino-pretty",
+            options: { colorize: true },
+        },
+    }
+    : {
+        level: process.env.LOG_LEVEL || "info",
+    });
 const httpLogger = (0, pino_http_1.default)({
     logger,
     customProps: (req, res) => ({
