@@ -8,6 +8,7 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = require("crypto");
 const auth_repository_1 = require("../repositories/auth.repository");
+const user_repository_1 = require("../repositories/user.repository");
 const auth_mailer_1 = require("../emails/auth.mailer");
 const jwt_config_1 = require("../config/jwt.config");
 const errors_1 = require("../utils/errors");
@@ -61,6 +62,24 @@ class AuthService {
             const hash = await bcrypt_1.default.hash(contrasena, jwt_config_1.bcryptConfig.saltRounds);
             // 2. Llamar al repository para registrar
             const usuario = await auth_repository_1.authRepository.registrarUsuario(nombre, apellidoP, apellidoM, correo, fechaN, hash);
+            // 2b. Sincronizar repositorio en memoria usado por /api/users
+            try {
+                await user_repository_1.userRepository.upsert({
+                    usuarioId: usuario.usuarioId,
+                    correo,
+                    contrasena: hash,
+                    nombre,
+                    apellidoP,
+                    apellidoM,
+                    fechaN,
+                    activo: true,
+                    creadoEn: usuario.creadoEn ?? new Date().toISOString(),
+                    actualizadoEn: new Date().toISOString(),
+                });
+            }
+            catch (syncError) {
+                console.warn("No se pudo sincronizar usuario en memoria:", syncError);
+            }
             // 3. Enviar correo de bienvenida (no bloquear si falla)
             auth_mailer_1.authMailer.enviarBienvenida(correo, nombre).catch((error) => {
                 console.error("Error enviando correo de bienvenida:", error);

@@ -2,6 +2,7 @@
 import jwt from "jsonwebtoken";
 import { randomUUID } from "crypto";
 import { authRepository } from "../repositories/auth.repository";
+import { userRepository } from "../repositories/user.repository";
 import { authMailer } from "../emails/auth.mailer";
 import { jwtConfig, bcryptConfig, resetTokenConfig } from "../config/jwt.config";
 import {
@@ -94,6 +95,24 @@ export class AuthService {
         fechaN,
         hash
       );
+
+      // 2b. Sincronizar repositorio en memoria usado por /api/users
+      try {
+        await userRepository.upsert({
+          usuarioId: usuario.usuarioId,
+          correo,
+          contrasena: hash,
+          nombre,
+          apellidoP,
+          apellidoM,
+          fechaN,
+          activo: true,
+          creadoEn: usuario.creadoEn ?? new Date().toISOString(),
+          actualizadoEn: new Date().toISOString(),
+        });
+      } catch (syncError) {
+        console.warn("No se pudo sincronizar usuario en memoria:", syncError);
+      }
 
       // 3. Enviar correo de bienvenida (no bloquear si falla)
       authMailer.enviarBienvenida(correo, nombre).catch((error) => {

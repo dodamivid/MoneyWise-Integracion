@@ -108,6 +108,17 @@ export class UserRepository {
     return user ?? null;
   }
 
+  /**
+   * Inserta o actualiza un usuario (usado para sincronizar registros creados vía auth).
+   */
+  async upsert(user: User): Promise<void> {
+    this.users.set(user.usuarioId, user);
+    // Mantener nextId por encima del máximo ID visto
+    if (user.usuarioId >= this.nextId) {
+      this.nextId = user.usuarioId + 1;
+    }
+  }
+
 
   /**
    * Actualiza la información de un usuario existente.
