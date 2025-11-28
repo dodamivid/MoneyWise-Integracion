@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_List as "Listar inversiones\nGET /api/v1/inversiones\nHeaders: x-api-key + JWT + scopes inversiones:leer"
+  usecase UC_Create as "Crear inversion\nPOST /api/v1/inversiones\nHeaders: x-api-key + JWT + scopes inversiones:escribir"
+  usecase UC_Update as "Actualizar inversion\nPATCH /api/v1/inversiones/{id}\nHeaders: x-api-key + JWT + scopes inversiones:escribir"
+  usecase UC_Delete as "Eliminar inversion\nDELETE /api/v1/inversiones/{id}\nHeaders: x-api-key + JWT + scopes inversiones:escribir"
+}
+
+Usuario --> UC_List
+Usuario --> UC_Create
+Usuario --> UC_Update
+Usuario --> UC_Delete
+
+note right of UC_Create
+  Valida DTOs y llama SPs de inversiones en MySQL
+end note
+@enduml

@@ -1,0 +1,25 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_Ingresos as "Gestionar ingresos\nGET|POST|PATCH|DELETE /api/v1/ingresos\n(x-api-key + JWT + scopes ingresos:leer/escribir)"
+  usecase UC_Egresos as "Gestionar egresos\nGET|POST|PATCH|DELETE /api/v1/egresos\n(x-api-key + JWT + scopes egresos:leer/escribir)"
+  usecase UC_Inversiones as "Gestionar inversiones\nGET|POST|PATCH|DELETE /api/v1/inversiones\n(x-api-key + JWT + scopes inversiones:leer/escribir)"
+  usecase UC_Metas as "Gestionar metas\nGET|POST|PATCH|DELETE /api/v1/metas\n(x-api-key + JWT + scopes metas:leer/escribir)"
+  usecase UC_Dashboard as "Ver dashboard\nGET /api/v1/dashboard/{resumen|balance|metas-vs-ahorro}\n(x-api-key + JWT + scope dashboard:leer)"
+  usecase UC_Catalogos as "Consultar catálogos\nGET /api/v1/catalogos ...\n(x-api-key + JWT + scope catalogos:leer)"
+}
+
+Usuario --> UC_Ingresos
+Usuario --> UC_Egresos
+Usuario --> UC_Inversiones
+Usuario --> UC_Metas
+Usuario --> UC_Dashboard
+Usuario --> UC_Catalogos
+
+note right of UC_Ingresos
+  Usa x-mw-user/x-mw-scopes
+  para simular permisos en dev
+end note
+@enduml

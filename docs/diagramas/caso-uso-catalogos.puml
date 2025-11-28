@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_Catalogos as "Catalogos\nGET /api/v1/catalogos\nHeaders: x-api-key + JWT + scope catalogos:leer"
+  usecase UC_TiposIngreso as "Tipos ingreso\nGET /api/v1/tipos-ingreso\nHeaders: x-api-key + JWT + scope catalogos:leer"
+  usecase UC_Destinos as "Destinos\nGET /api/v1/catalogos/destinos\nHeaders: x-api-key + JWT + scope catalogos:leer"
+  usecase UC_Frecuencias as "Frecuencias\nGET /api/v1/catalogos/frecuencias\nHeaders: x-api-key + JWT + scope catalogos:leer"
+  usecase UC_Procedencias as "Procedencias\nGET /api/v1/catalogos/procedencias\nHeaders: x-api-key + JWT + scope catalogos:leer"
+  usecase UC_TiposEgreso as "Tipos egreso\nGET /api/v1/catalogos/tipos-egreso\nHeaders: x-api-key + JWT + scope catalogos:leer"
+}
+
+Usuario --> UC_Catalogos
+Usuario --> UC_TiposIngreso
+Usuario --> UC_Destinos
+Usuario --> UC_Frecuencias
+Usuario --> UC_Procedencias
+Usuario --> UC_TiposEgreso
+@enduml

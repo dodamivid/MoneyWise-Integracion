@@ -1,0 +1,18 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_GetPerfil as "Ver perfil\nGET /api/users/{id}\nHeaders: x-api-key + JWT + scope usuarios:leer"
+  usecase UC_UpdatePerfil as "Actualizar perfil\nPUT /api/users/{id}\nHeaders: x-api-key + JWT + scope usuarios:escribir"
+  usecase UC_ChangePwd as "Cambiar contrasena\nPATCH /api/users/{id}/contrasena\nHeaders: x-api-key + JWT + scope usuarios:escribir"
+}
+
+Usuario --> UC_GetPerfil
+Usuario --> UC_UpdatePerfil
+Usuario --> UC_ChangePwd
+
+note right of UC_UpdatePerfil
+  Opera tabla usuarios en MySQL
+end note
+@enduml

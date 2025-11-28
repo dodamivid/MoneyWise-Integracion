@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_List as "Listar metas\nGET /api/v1/metas\nHeaders: x-api-key + JWT + scopes metas:leer"
+  usecase UC_Create as "Crear meta\nPOST /api/v1/metas\nHeaders: x-api-key + JWT + scopes metas:escribir"
+  usecase UC_Update as "Actualizar meta\nPATCH /api/v1/metas/{id}\nHeaders: x-api-key + JWT + scopes metas:escribir"
+  usecase UC_Delete as "Eliminar meta (soft)\nDELETE /api/v1/metas/{id}\nHeaders: x-api-key + JWT + scopes metas:escribir"
+}
+
+Usuario --> UC_List
+Usuario --> UC_Create
+Usuario --> UC_Update
+Usuario --> UC_Delete
+
+note right of UC_Delete
+  Soft delete para conservar historicos de dashboard
+end note
+@enduml

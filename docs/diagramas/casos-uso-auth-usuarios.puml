@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_Registro as "Registrarse\nPOST /api/v1/auth/registro\n(x-api-key)"
+  usecase UC_Login as "Iniciar sesión\nPOST /api/v1/auth/acceso\n(x-api-key)"
+  usecase UC_Olvido as "Recuperar contraseña\nPOST /api/v1/auth/olvido\n(x-api-key)"
+  usecase UC_Restablecer as "Restablecer contraseña\nPOST /api/v1/auth/restablecer\n(x-api-key)"
+  usecase UC_Perfil as "Ver perfil\nGET /api/users/{id}\n(x-api-key + JWT + scope usuarios:leer)"
+  usecase UC_UpdatePerfil as "Actualizar perfil\nPUT /api/users/{id}\n(x-api-key + JWT + scope usuarios:escribir)"
+  usecase UC_CambiarPwd as "Cambiar contraseña\nPATCH /api/users/{id}/contrasena\n(x-api-key + JWT + scope usuarios:escribir)"
+}
+
+Usuario --> UC_Registro
+Usuario --> UC_Login
+Usuario --> UC_Olvido
+Usuario --> UC_Restablecer
+Usuario --> UC_Perfil
+Usuario --> UC_UpdatePerfil
+Usuario --> UC_CambiarPwd
+
+note right of UC_Login
+  Devuelve JWT + scopes
+  para consumir recursos protegidos
+end note
+@enduml
