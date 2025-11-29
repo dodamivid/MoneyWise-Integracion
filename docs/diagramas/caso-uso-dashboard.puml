@@ -1,0 +1,18 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_Resumen as "Ver resumen\nGET /api/v1/dashboard/resumen\nHeaders: x-api-key + JWT + scope dashboard:leer"
+  usecase UC_Balance as "Ver balance\nGET /api/v1/dashboard/balance\nHeaders: x-api-key + JWT + scope dashboard:leer"
+  usecase UC_Metas as "Metas vs ahorro\nGET /api/v1/dashboard/metas-vs-ahorro\nHeaders: x-api-key + JWT + scope dashboard:leer"
+}
+
+Usuario --> UC_Resumen
+Usuario --> UC_Balance
+Usuario --> UC_Metas
+
+note right of UC_Resumen
+  Lee agregados de ingresos/egresos/metas en MySQL
+end note
+@enduml

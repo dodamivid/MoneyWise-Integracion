@@ -12,7 +12,11 @@ import metasRouter from "./routes/metas.routes";
 import versionRoutes from "./routes/version.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import catalogosRoutes from "./routes/catalogos.routes";
+import catalogosProcedenciaRoutes from "./routes/catalogosProcedencia.routes";
+import tiposEgresoRoutes from "./routes/tiposEgreso.routes";
+import authRoutes from "./routes/auth.routes";
 import { db } from "./config/db";
+import tiposIngresoRoutes from "./routes/tiposIngreso.routes";
 import {
   traceIdMiddleware,
   errorHandler,
@@ -102,6 +106,14 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Catálogos routes mounted under /api/v1/catalogos
 app.use("/api/v1/catalogos", catalogosRoutes);
+app.use("/api/v1/catalogos", catalogosProcedenciaRoutes);
+app.use("/api/v1/catalogos", tiposEgresoRoutes);
+
+// Tipos de ingreso (catálogo)
+app.use("/api/v1/tipos-ingreso", tiposIngresoRoutes);
+
+// Auth routes
+app.use("/api/v1/auth", authRoutes);
 
 // Ruta de prueba de error handler (solo en entorno de test)
 if (process.env.NODE_ENV === "test") {

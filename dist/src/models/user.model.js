@@ -10,6 +10,8 @@
  * contiene todos los campos necesarios para autenticación, información de perfil y
  * gestión de cuenta.
  *
+ * **NOTA**: Este modelo usa nomenclatura en español según especificación API v1.
+ *
  * @module models/user.model
  * @category Models
  *
@@ -19,33 +21,57 @@
  *
  * // Validar datos de usuario
  * const userData: CreateUserInput = {
- *   email: 'user@example.com',
- *   password: 'SecurePass123!',
- *   firstName: 'John',
- *   lastName: 'Doe'
+ *   correo: 'user@example.com',
+ *   contrasena: 'SecurePass123!',
+ *   nombre: 'Juan',
+ *   apellidoP: 'Pérez',
+ *   apellidoM: 'López',
+ *   fechaN: '1995-05-20'
  * };
  *
  * const validatedData = UserSchema.parse(userData);
  * ```
  *
  * @author Equipo de Integración Money Wise
- * @version 1.0.0
+ * @version 2.0.0
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserIdSchema = exports.UpdateUserSchema = exports.CreateUserSchema = exports.UserSchema = void 0;
+exports.ChangePasswordSchema = exports.UserIdSchema = exports.UpdateUserSchema = exports.CreateUserSchema = exports.UserSchema = void 0;
 const zod_1 = require("zod");
+/**
+ * Función helper para capitalizar la primera letra de cada palabra.
+ * Normaliza el texto eliminando espacios extra y capitalizando correctamente.
+ *
+ * @param {string} text - El texto a capitalizar
+ * @returns {string} El texto capitalizado
+ *
+ * @example
+ * ```typescript
+ * capitalize("juan pérez") // "Juan Pérez"
+ * capitalize("  maría  lópez  ") // "María López"
+ * ```
+ */
+function capitalize(text) {
+    return text
+        .trim()
+        .split(/\s+/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+}
 /**
  * Esquema Zod para validar datos de usuario.
  *
  * Este esquema define las reglas de validación para todos los campos de usuario:
- * - **id**: Identificador único (formato UUID v4)
- * - **email**: Debe ser una dirección de correo electrónico válida
- * - **password**: Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número
- * - **firstName**: 2-50 caracteres, solo letras y espacios
- * - **lastName**: 2-50 caracteres, solo letras y espacios
- * - **isActive**: Bandera booleana para el estado de la cuenta
- * - **createdAt**: Cadena de fecha ISO 8601
- * - **updatedAt**: Cadena de fecha ISO 8601
+ * - **usuarioId**: Identificador único (número entero)
+ * - **correo**: Debe ser una dirección de correo electrónico válida
+ * - **contrasena**: Mínimo 8 caracteres, mayúscula, minúscula, número y símbolo
+ * - **nombre**: 2-80 caracteres, solo letras y espacios
+ * - **apellidoP**: 2-80 caracteres, solo letras y espacios (apellido paterno)
+ * - **apellidoM**: 2-80 caracteres, solo letras y espacios (apellido materno)
+ * - **fechaN**: Fecha de nacimiento (formato YYYY-MM-DD), usuario debe tener mínimo 16 años
+ * - **activo**: Bandera booleana para el estado de la cuenta
+ * - **creadoEn**: Cadena de fecha ISO 8601
+ * - **actualizadoEn**: Cadena de fecha ISO 8601
  *
  * @constant
  * @type {z.ZodObject}
@@ -54,41 +80,36 @@ const zod_1 = require("zod");
  * ```typescript
  * // Objeto de usuario válido
  * const user = UserSchema.parse({
- *   id: '550e8400-e29b-41d4-a716-446655440000',
- *   email: 'john.doe@example.com',
- *   password: 'SecurePass123',
- *   firstName: 'John',
- *   lastName: 'Doe',
- *   isActive: true,
- *   createdAt: '2024-01-01T00:00:00.000Z',
- *   updatedAt: '2024-01-01T00:00:00.000Z'
+ *   usuarioId: 1,
+ *   correo: 'juan.perez@example.com',
+ *   contrasena: 'SecurePass123!',
+ *   nombre: 'Juan',
+ *   apellidoP: 'Pérez',
+ *   apellidoM: 'López',
+ *   fechaN: '1995-05-20',
+ *   activo: true,
+ *   creadoEn: '2024-01-01T00:00:00.000Z',
+ *   actualizadoEn: '2024-01-01T00:00:00.000Z'
  * });
- *
- * // Lanzará ZodError si la validación falla
- * try {
- *   UserSchema.parse({ email: 'invalid-email' });
- * } catch (error) {
- *   console.error(error.errors);
- * }
  * ```
  */
 exports.UserSchema = zod_1.z.object({
     /**
      * Identificador único para el usuario.
-     * Debe ser una cadena UUID v4 válida.
+     * Debe ser un número entero positivo.
      *
-     * @example '550e8400-e29b-41d4-a716-446655440000'
+     * @example 1
      */
-    id: zod_1.z.string().uuid({
-        message: "El ID de usuario debe ser un UUID válido",
+    usuarioId: zod_1.z.number().int().positive({
+        message: "El ID de usuario debe ser un número entero positivo",
     }),
     /**
      * Dirección de correo electrónico del usuario.
      * Debe ser un formato de correo válido y se almacenará en minúsculas.
      *
-     * @example 'user@example.com'
+     * @example 'usuario@example.com'
      */
-    email: zod_1.z
+    correo: zod_1.z
         .string({
         message: "El correo electrónico es requerido",
     })
@@ -98,15 +119,16 @@ exports.UserSchema = zod_1.z.object({
         .toLowerCase()
         .trim(),
     /**
-     * Contraseña del usuario.
+     * Contraseña del usuario (almacenada como hash bcrypt).
      * Debe tener al menos 8 caracteres y contener:
      * - Al menos una letra mayúscula
      * - Al menos una letra minúscula
      * - Al menos un número
+     * - Al menos un símbolo especial
      *
-     * @example 'SecurePass123'
+     * @example 'SecurePass123!'
      */
-    password: zod_1.z
+    contrasena: zod_1.z
         .string({
         message: "La contraseña es requerida",
     })
@@ -121,64 +143,123 @@ exports.UserSchema = zod_1.z.object({
     })
         .regex(/[0-9]/, {
         message: "La contraseña debe contener al menos un número",
+    })
+        .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, {
+        message: "La contraseña debe contener al menos un símbolo especial",
     }),
     /**
      * Nombre del usuario.
-     * Debe tener entre 2 y 50 caracteres y contener solo letras y espacios.
-     * Los espacios al inicio y al final serán eliminados.
+     * Debe tener entre 2 y 80 caracteres y contener solo letras y espacios.
+     * Se normaliza automáticamente (trim y capitalización).
      *
-     * @example 'John'
+     * @example 'Juan'
      */
-    firstName: zod_1.z
+    nombre: zod_1.z
         .string({
         message: "El nombre es requerido",
     })
         .min(2, {
         message: "El nombre debe tener al menos 2 caracteres",
     })
-        .max(50, {
-        message: "El nombre no debe exceder 50 caracteres",
+        .max(80, {
+        message: "El nombre no debe exceder 80 caracteres",
     })
         .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
         message: "El nombre debe contener solo letras y espacios",
     })
-        .trim(),
+        .trim()
+        .transform(capitalize),
     /**
-     * Apellido del usuario.
-     * Debe tener entre 2 y 50 caracteres y contener solo letras y espacios.
-     * Los espacios al inicio y al final serán eliminados.
+     * Apellido paterno del usuario.
+     * Debe tener entre 2 y 80 caracteres y contener solo letras y espacios.
+     * Se normaliza automáticamente (trim y capitalización).
      *
-     * @example 'Doe'
+     * @example 'Pérez'
      */
-    lastName: zod_1.z
+    apellidoP: zod_1.z
         .string({
-        message: "El apellido es requerido",
+        message: "El apellido paterno es requerido",
     })
         .min(2, {
-        message: "El apellido debe tener al menos 2 caracteres",
+        message: "El apellido paterno debe tener al menos 2 caracteres",
     })
-        .max(50, {
-        message: "El apellido no debe exceder 50 caracteres",
+        .max(80, {
+        message: "El apellido paterno no debe exceder 80 caracteres",
     })
         .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
-        message: "El apellido debe contener solo letras y espacios",
+        message: "El apellido paterno debe contener solo letras y espacios",
     })
-        .trim(),
+        .trim()
+        .transform(capitalize),
+    /**
+     * Apellido materno del usuario.
+     * Debe tener entre 2 y 80 caracteres y contener solo letras y espacios.
+     * Se normaliza automáticamente (trim y capitalización).
+     *
+     * @example 'López'
+     */
+    apellidoM: zod_1.z
+        .string({
+        message: "El apellido materno es requerido",
+    })
+        .min(2, {
+        message: "El apellido materno debe tener al menos 2 caracteres",
+    })
+        .max(80, {
+        message: "El apellido materno no debe exceder 80 caracteres",
+    })
+        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, {
+        message: "El apellido materno debe contener solo letras y espacios",
+    })
+        .trim()
+        .transform(capitalize),
+    /**
+     * Fecha de nacimiento del usuario (formato YYYY-MM-DD).
+     * No puede ser futura y el usuario debe tener al menos 16 años.
+     *
+     * @example '1995-05-20'
+     */
+    fechaN: zod_1.z
+        .string({
+        message: "La fecha de nacimiento es requerida",
+    })
+        .regex(/^\d{4}-\d{2}-\d{2}$/, {
+        message: "La fecha de nacimiento debe tener formato YYYY-MM-DD",
+    })
+        .refine((date) => {
+        const birthDate = new Date(date);
+        const today = new Date();
+        return birthDate < today;
+    }, {
+        message: "La fecha de nacimiento no puede ser futura",
+    })
+        .refine((date) => {
+        const birthDate = new Date(date);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        const dayDiff = today.getDate() - birthDate.getDate();
+        // Ajustar edad si aún no ha cumplido años este año
+        const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+        return actualAge >= 16;
+    }, {
+        message: "El usuario debe tener al menos 16 años",
+    }),
     /**
      * Bandera que indica si la cuenta de usuario está activa.
      * Las cuentas inactivas no pueden iniciar sesión ni realizar operaciones.
      *
      * @default true
      */
-    isActive: zod_1.z.boolean().default(true),
+    activo: zod_1.z.boolean().default(true),
     /**
      * Marca de tiempo cuando se creó la cuenta de usuario.
      * Se almacena como cadena de fecha ISO 8601.
      *
      * @example '2024-01-01T00:00:00.000Z'
      */
-    createdAt: zod_1.z.string().datetime({
-        message: "Formato de fecha y hora inválido para createdAt",
+    creadoEn: zod_1.z.string().datetime({
+        message: "Formato de fecha y hora inválido para creadoEn",
     }),
     /**
      * Marca de tiempo cuando se actualizó la cuenta de usuario por última vez.
@@ -186,14 +267,14 @@ exports.UserSchema = zod_1.z.object({
      *
      * @example '2024-01-01T12:30:00.000Z'
      */
-    updatedAt: zod_1.z.string().datetime({
-        message: "Formato de fecha y hora inválido para updatedAt",
+    actualizadoEn: zod_1.z.string().datetime({
+        message: "Formato de fecha y hora inválido para actualizadoEn",
     }),
 });
 /**
  * Esquema para crear un nuevo usuario.
  *
- * Este esquema omite campos generados por el sistema (id, createdAt, updatedAt)
+ * Este esquema omite campos generados por el sistema (usuarioId, creadoEn, actualizadoEn)
  * que serán asignados automáticamente al crear un nuevo usuario.
  *
  * @constant
@@ -202,61 +283,125 @@ exports.UserSchema = zod_1.z.object({
  * @example
  * ```typescript
  * const newUser: CreateUserInput = {
- *   email: 'new.user@example.com',
- *   password: 'SecurePass123',
- *   firstName: 'Jane',
- *   lastName: 'Smith'
+ *   correo: 'nuevo.usuario@example.com',
+ *   contrasena: 'SecurePass123!',
+ *   nombre: 'Juan',
+ *   apellidoP: 'Pérez',
+ *   apellidoM: 'López',
+ *   fechaN: '1995-05-20'
  * };
  *
  * const validated = CreateUserSchema.parse(newUser);
  * ```
  */
 exports.CreateUserSchema = exports.UserSchema.omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
+    usuarioId: true,
+    creadoEn: true,
+    actualizadoEn: true,
 });
 /**
- * Esquema para actualizar un usuario existente.
+ * Esquema para actualizar el perfil de un usuario existente.
  *
- * Todos los campos son opcionales para permitir actualizaciones parciales.
- * Los campos del sistema (id, createdAt) no pueden ser actualizados.
+ * Según la especificación, solo se pueden actualizar: nombre, apellidoP, apellidoM, fechaN.
+ * Los campos del sistema (usuarioId, creadoEn, actualizadoEn) no pueden ser actualizados.
+ * La contraseña y correo tampoco se actualizan por este endpoint.
+ * Al menos un campo debe venir en la actualización.
  *
  * @constant
  * @type {z.ZodObject}
  *
  * @example
  * ```typescript
- * // Actualizar solo el correo
+ * // Actualizar solo el nombre
  * const updateData: UpdateUserInput = {
- *   email: 'newemail@example.com'
+ *   nombre: 'Juan Carlos'
  * };
  *
  * // Actualizar múltiples campos
  * const updateData: UpdateUserInput = {
- *   firstName: 'Jane',
- *   lastName: 'Smith',
- *   isActive: false
+ *   nombre: 'Juan',
+ *   apellidoP: 'Pérez',
+ *   apellidoM: 'López',
+ *   fechaN: '1995-06-15'
  * };
  * ```
  */
-exports.UpdateUserSchema = exports.UserSchema.omit({
-    id: true,
-    createdAt: true,
+exports.UpdateUserSchema = exports.UserSchema.pick({
+    nombre: true,
+    apellidoP: true,
+    apellidoM: true,
+    fechaN: true,
 }).partial();
 /**
  * Esquema para validación de ID de usuario.
  *
  * Se usa para validar IDs de usuario en parámetros de ruta.
+ * Los IDs ahora son números enteros.
  *
  * @constant
- * @type {z.ZodString}
+ * @type {z.ZodNumber}
  *
  * @example
  * ```typescript
- * const userId = UserIdSchema.parse(req.params.id);
+ * const userId = UserIdSchema.parse(parseInt(req.params.id));
  * ```
  */
-exports.UserIdSchema = zod_1.z.string().uuid({
-    message: "Formato de ID de usuario inválido. Debe ser un UUID válido.",
+exports.UserIdSchema = zod_1.z.number().int().positive({
+    message: "Formato de ID de usuario inválido. Debe ser un número entero positivo.",
+});
+/**
+ * Esquema para cambio de contraseña.
+ *
+ * Valida los datos necesarios para cambiar la contraseña de un usuario.
+ * Ambos campos son obligatorios y la nueva contraseña debe ser diferente de la actual.
+ *
+ * @constant
+ * @type {z.ZodObject}
+ *
+ * @example
+ * ```typescript
+ * const changePasswordData: ChangePasswordInput = {
+ *   contrasenaActual: 'OldPass123!',
+ *   contrasenaNueva: 'NewPass456!'
+ * };
+ *
+ * const validated = ChangePasswordSchema.parse(changePasswordData);
+ * ```
+ */
+exports.ChangePasswordSchema = zod_1.z
+    .object({
+    /**
+     * Contraseña actual del usuario.
+     * Debe ser validada contra el hash almacenado en la base de datos.
+     */
+    contrasenaActual: zod_1.z.string({
+        message: "La contraseña actual es requerida",
+    }),
+    /**
+     * Nueva contraseña que reemplazará a la actual.
+     * Debe cumplir con la política de contraseñas.
+     */
+    contrasenaNueva: zod_1.z
+        .string({
+        message: "La contraseña nueva es requerida",
+    })
+        .min(8, {
+        message: "La contraseña debe tener al menos 8 caracteres",
+    })
+        .regex(/[A-Z]/, {
+        message: "La contraseña debe contener al menos una letra mayúscula",
+    })
+        .regex(/[a-z]/, {
+        message: "La contraseña debe contener al menos una letra minúscula",
+    })
+        .regex(/[0-9]/, {
+        message: "La contraseña debe contener al menos un número",
+    })
+        .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, {
+        message: "La contraseña debe contener al menos un símbolo especial",
+    }),
+})
+    .refine((data) => data.contrasenaActual !== data.contrasenaNueva, {
+    message: "La contraseña nueva debe ser diferente de la actual",
+    path: ["contrasenaNueva"],
 });

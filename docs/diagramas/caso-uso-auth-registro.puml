@@ -1,0 +1,15 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_Registro as "Registrarse\nPOST /api/v1/auth/registro\nBody: nombre, apellidos, correo, fechaN, contrasena\nHeaders: x-api-key"
+}
+
+Usuario --> UC_Registro
+
+note right of UC_Registro
+  Valida DTO (Zod), ejecuta SP sp_usuarios_registrar
+  Inserta en MySQL (Railway) y regresa usuarioId + scopes
+end note
+@enduml

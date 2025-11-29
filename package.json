@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --project tsconfig.json src/index.ts",
+    "build": "tsc",
+    "start": "node dist/src/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -31,7 +33,10 @@
   "homepage": "https://github.com/dodamivid/MoneyWise#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.15.3",
     "pino": "^10.1.0",
     "pino-http": "^11.0.0",
@@ -44,6 +49,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/pino": "^7.0.4",
     "@types/pino-http": "^5.8.4",
     "@types/supertest": "^6.0.3",

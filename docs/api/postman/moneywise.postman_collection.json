@@ -1,0 +1,736 @@
+{
+  "info": {
+    "_postman_id": "b8c4e4a8-17c1-4d4d-8f6a-collection-moneywise",
+    "name": "MoneyWise API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Coleccion de integracion para MoneyWise API. Incluye headers de x-api-key y ejemplos minimos para pruebas locales."
+  },
+  "item": [
+    {
+      "name": "Environment",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Version",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/version",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "version"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Registro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana\",\n  \"apellidoP\": \"Perez\",\n  \"apellidoM\": \"Lopez\",\n  \"correo\": \"ana@example.com\",\n  \"fechaN\": \"1998-05-10\",\n  \"contrasena\": \"ClaveSegura1!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/registro",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "registro"]
+            }
+          }
+        },
+        {
+          "name": "Acceso",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"ana@example.com\",\n  \"contrasena\": \"ClaveSegura1!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/acceso",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "acceso"]
+            }
+          }
+        },
+        {
+          "name": "Olvido",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"ana@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/olvido",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "olvido"]
+            }
+          }
+        },
+        {
+          "name": "Restablecer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"contrasenaNueva\": \"ClaveNueva1!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/restablecer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "restablecer"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Obtener perfil",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "usuarios:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usuarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "usuarios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "usuarios:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana\",\n  \"apellidoP\": \"Perez\",\n  \"apellidoM\": \"Lopez\",\n  \"fechaN\": \"1998-05-10\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usuarios/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "usuarios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Cambiar contraseña",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "usuarios:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contrasenaActual\": \"ClaveSegura1!\",\n  \"contrasenaNueva\": \"ClaveNueva1!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usuarios/1/contrasena",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "usuarios", "1", "contrasena"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Egresos",
+      "item": [
+        {
+          "name": "Listar egresos",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "egresos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/egresos?pagina=1&tamanoPagina=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "egresos"],
+              "query": [
+                { "key": "pagina", "value": "1" },
+                { "key": "tamanoPagina", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear egreso",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "egresos:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoId\": 1,\n  \"destinoId\": 1,\n  \"monto\": 1250.5,\n  \"descripcion\": \"Renta mensual\",\n  \"fechaInicio\": \"2025-01-01T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/egresos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "egresos"]
+            }
+          }
+        },
+        {
+          "name": "Obtener egreso",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "egresos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/egresos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "egresos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar egreso",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "egresos:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Renta actualizada\",\n  \"monto\": 1300\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/egresos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "egresos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar egreso",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "egresos:escribir" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/egresos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "egresos", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ingresos",
+      "item": [
+        {
+          "name": "Listar ingresos",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "ingresos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ingresos?pagina=1&tamanoPagina=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ingresos"],
+              "query": [
+                { "key": "pagina", "value": "1" },
+                { "key": "tamanoPagina", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear ingreso",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "ingresos:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoId\": 1,\n  \"procedenciaId\": 1,\n  \"monto\": 5000.0,\n  \"descripcion\": \"Salario\",\n  \"fechaInicio\": \"2025-01-01T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ingresos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ingresos"]
+            }
+          }
+        },
+        {
+          "name": "Obtener ingreso",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "ingresos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ingresos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ingresos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar ingreso",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "ingresos:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Salario actualizado\",\n  \"monto\": 5200.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ingresos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ingresos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar ingreso",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "ingresos:escribir" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ingresos/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ingresos", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inversiones",
+      "item": [
+        {
+          "name": "Listar inversiones",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "inversiones:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inversiones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inversiones"]
+            }
+          }
+        },
+        {
+          "name": "Crear inversion",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "inversiones:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoId\": 1,\n  \"monto\": 2000,\n  \"fechaInicio\": \"2025-01-01T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inversiones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inversiones"]
+            }
+          }
+        },
+        {
+          "name": "Obtener inversion",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "inversiones:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inversiones/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inversiones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar inversion",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "inversiones:escribir" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monto\": 2200\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inversiones/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inversiones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar inversion",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "inversiones:escribir" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inversiones/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inversiones", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Metas",
+      "item": [
+        {
+          "name": "Listar metas",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "metas:leer,admin:usuarios" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metas?pagina=1&tamanoPagina=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metas"],
+              "query": [
+                { "key": "pagina", "value": "1" },
+                { "key": "tamanoPagina", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear meta",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "metas:escribir,admin:usuarios" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"nombre\": \"Vacaciones 2026\",\n  \"montoObjetivo\": 150000,\n  \"fechaInicio\": \"2025-01-01T00:00:00Z\",\n  \"fechaFin\": \"2026-12-31T23:59:59Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metas"]
+            }
+          }
+        },
+        {
+          "name": "Obtener meta",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "metas:leer,admin:usuarios" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar meta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "metas:escribir,admin:usuarios" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ahorroReal\": 50000,\n  \"activa\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar meta (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "metas:escribir,admin:usuarios" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metas", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Resumen",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "dashboard:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/resumen",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "resumen"]
+            }
+          }
+        },
+        {
+          "name": "Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "dashboard:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "balance"]
+            }
+          }
+        },
+        {
+          "name": "Metas vs ahorro",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "dashboard:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/metas-vs-ahorro",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "metas-vs-ahorro"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogos",
+      "item": [
+        {
+          "name": "Destinos - listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "catalogos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/destinos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "destinos"]
+            }
+          }
+        },
+        {
+          "name": "Destinos - crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "catalogos:escribir" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Renta\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/destinos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "destinos"]
+            }
+          }
+        },
+        {
+          "name": "Frecuencias - listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "catalogos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/frecuencias",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "frecuencias"]
+            }
+          }
+        },
+        {
+          "name": "Procedencias - listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "catalogos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/procedencias",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "procedencias"]
+            }
+          }
+        },
+        {
+          "name": "Tipos egreso - listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "catalogos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/tipos-egreso",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "tipos-egreso"]
+            }
+          }
+        },
+        {
+          "name": "Tipos ingreso - listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "catalogos:leer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tipos-ingreso",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tipos-ingreso"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "apiKey", "value": "test-x-api-key" }
+  ]
+}

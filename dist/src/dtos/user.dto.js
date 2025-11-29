@@ -7,140 +7,162 @@
  * el modelo de datos interno del contrato de la API.
  *
  * Características clave:
- * - Estructura de respuesta consistente en todos los endpoints
+ * - Estructura de respuesta consistente en todos los endpoints según spec API v1
+ * - Formato de respuesta: `{ ok: true, data: {...} }`
  * - Exclusión de datos sensibles (las contraseñas nunca se incluyen)
  * - Creación de respuestas con seguridad de tipos
- * - Respuestas de error estandarizadas
+ * - Nomenclatura en español
  *
  * @module dtos/user.dto
  * @category DTOs
  *
  * @example
  * ```typescript
- * import { UserResponseDTO, createUserResponse } from './dtos/user.dto';
+ * import { PerfilUsuarioResponseDTO, createPerfilUsuarioResponse } from './dtos/user.dto';
  *
  * const user = await userService.findById(id);
- * const response = createUserResponse(user);
+ * const response = createPerfilUsuarioResponse(user);
  * res.json(response);
  * ```
  *
  * @author Equipo de Integración Money Wise
- * @version 1.0.0
+ * @version 2.0.0
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toUserData = toUserData;
-exports.createUserResponse = createUserResponse;
-exports.createUsersResponse = createUsersResponse;
+exports.toPerfilUsuarioData = toPerfilUsuarioData;
+exports.createPerfilUsuarioResponse = createPerfilUsuarioResponse;
+exports.createActualizarPerfilResponse = createActualizarPerfilResponse;
+exports.createCambiarContrasenaResponse = createCambiarContrasenaResponse;
 exports.createErrorResponse = createErrorResponse;
 /**
- * Convierte un modelo User a DTO UserData.
+ * Convierte un modelo User a DTO PerfilUsuarioData.
  *
  * Esta función elimina información sensible (contraseña) del objeto de usuario
  * antes de enviarlo al cliente. Crea una separación limpia entre
  * el modelo de datos interno y la respuesta de la API.
  *
- * @function toUserData
+ * @function toPerfilUsuarioData
  * @param {User} user - El objeto del modelo de usuario
- * @returns {UserData} Datos de usuario seguros para respuestas de la API
+ * @returns {PerfilUsuarioData} Datos de usuario seguros para respuestas de la API
  *
  * @example
  * ```typescript
  * const user: User = {
- *   id: '550e8400-e29b-41d4-a716-446655440000',
- *   email: 'john.doe@example.com',
- *   password: 'hashedPassword123',  // Será eliminado
- *   firstName: 'John',
- *   lastName: 'Doe',
- *   isActive: true,
- *   createdAt: '2024-01-01T00:00:00.000Z',
- *   updatedAt: '2024-01-01T00:00:00.000Z'
+ *   usuarioId: 1,
+ *   correo: 'juan.perez@example.com',
+ *   contrasena: '$2b$10$hashedPassword...',  // Será eliminado
+ *   nombre: 'Juan',
+ *   apellidoP: 'Pérez',
+ *   apellidoM: 'López',
+ *   fechaN: '1995-05-20',
+ *   activo: true,
+ *   creadoEn: '2024-01-01T00:00:00.000Z',
+ *   actualizadoEn: '2024-01-01T00:00:00.000Z'
  * };
  *
- * const userData = toUserData(user);
- * // userData NO contendrá el campo password
+ * const userData = toPerfilUsuarioData(user);
+ * // userData NO contendrá el campo contrasena
  * ```
  */
-function toUserData(user) {
-    // Desestructurar para excluir password de la respuesta
-    const { password, ...userData } = user;
+function toPerfilUsuarioData(user) {
+    // Desestructurar para excluir contrasena de la respuesta
+    const { contrasena, ...userData } = user;
     return userData;
 }
 /**
- * Crea una respuesta de éxito estandarizada para un único usuario.
+ * Crea una respuesta de perfil de usuario.
  *
- * Esta función envuelve los datos de usuario en el formato de respuesta estándar de la API,
- * asegurando consistencia en todos los endpoints que retornan datos de usuario.
+ * Esta función envuelve los datos de usuario en el formato de respuesta estándar de la API.
  *
- * @function createUserResponse
+ * @function createPerfilUsuarioResponse
  * @param {User} user - El objeto del modelo de usuario
- * @param {string} [message] - Mensaje de éxito opcional
- * @returns {UserResponseDTO} Respuesta de API formateada
+ * @returns {PerfilUsuarioResponseDTO} Respuesta de API formateada
  *
  * @example
  * ```typescript
  * const user = await userService.findById(userId);
- * const response = createUserResponse(user, 'Usuario recuperado exitosamente');
+ * const response = createPerfilUsuarioResponse(user);
  * res.status(200).json(response);
  * // Respuesta:
  * // {
- * //   status: "success",
- * //   data: { id, email, firstName, lastName, isActive, createdAt, updatedAt },
- * //   message: "Usuario recuperado exitosamente"
+ * //   ok: true,
+ * //   data: { usuarioId, nombre, apellidoP, apellidoM, correo, fechaN, ... }
  * // }
  * ```
  */
-function createUserResponse(user, message) {
+function createPerfilUsuarioResponse(user) {
     return {
-        status: "success",
-        data: toUserData(user),
-        ...(message && { message }),
+        ok: true,
+        data: toPerfilUsuarioData(user),
     };
 }
 /**
- * Crea una respuesta de éxito estandarizada para múltiples usuarios.
+ * Crea una respuesta para actualización de perfil.
  *
- * Esta función envuelve un arreglo de datos de usuario en el formato de respuesta estándar de la API,
- * con metadatos opcionales para paginación.
- *
- * @function createUsersResponse
- * @param {User[]} users - Arreglo de objetos del modelo de usuario
- * @param {Object} [meta] - Metadatos opcionales para paginación
- * @param {number} [meta.total] - Número total de usuarios
- * @param {number} [meta.page] - Número de página actual
- * @param {number} [meta.limit] - Elementos por página
- * @param {string} [message] - Mensaje de éxito opcional
- * @returns {UsersResponseDTO} Respuesta de API formateada con lista de usuarios
+ * @function createActualizarPerfilResponse
+ * @param {string} actualizadoEn - Timestamp de la actualización
+ * @returns {ActualizarPerfilResponseDTO} Respuesta de API formateada
  *
  * @example
  * ```typescript
- * const users = await userService.findAll();
- * const response = createUsersResponse(users, {
- *   total: 100,
- *   page: 1,
- *   limit: 10
- * }, 'Usuarios recuperados exitosamente');
- *
+ * const response = createActualizarPerfilResponse(new Date().toISOString());
  * res.status(200).json(response);
+ * // Respuesta:
+ * // {
+ * //   ok: true,
+ * //   data: {
+ * //     actualizado: true,
+ * //     actualizadoEn: '2024-01-01T12:30:00.000Z'
+ * //   }
+ * // }
  * ```
  */
-function createUsersResponse(users, meta, message) {
+function createActualizarPerfilResponse(actualizadoEn) {
     return {
-        status: "success",
-        data: users.map(toUserData),
-        ...(meta && { meta }),
-        ...(message && { message }),
+        ok: true,
+        data: {
+            actualizado: true,
+            actualizadoEn,
+        },
+    };
+}
+/**
+ * Crea una respuesta para cambio de contraseña.
+ *
+ * @function createCambiarContrasenaResponse
+ * @returns {CambiarContrasenaResponseDTO} Respuesta de API formateada
+ *
+ * @example
+ * ```typescript
+ * const response = createCambiarContrasenaResponse();
+ * res.status(200).json(response);
+ * // Respuesta:
+ * // {
+ * //   ok: true,
+ * //   data: {
+ * //     cambiado: true
+ * //   }
+ * // }
+ * ```
+ */
+function createCambiarContrasenaResponse() {
+    return {
+        ok: true,
+        data: {
+            cambiado: true,
+        },
     };
 }
 /**
  * Crea una respuesta de error estandarizada.
  *
  * Esta función crea respuestas de error consistentes que pueden enviarse a los clientes.
- * Asegura que todos los errores sigan el mismo formato.
+ * Asegura que todos los errores sigan el mismo formato según spec API v1.
  *
  * @function createErrorResponse
- * @param {string} message - Mensaje de error
- * @param {number} [statusCode] - Código de estado HTTP
- * @param {Object} [details] - Detalles adicionales del error
+ * @param {string} mensaje - Mensaje de error
+ * @param {number} [codigo] - Código de estado HTTP
+ * @param {Object} [detalles] - Detalles adicionales del error
  * @returns {ErrorResponseDTO} Respuesta de error formateada
  *
  * @example
@@ -151,22 +173,22 @@ function createUsersResponse(users, meta, message) {
  *
  * // Error con detalles y traceId
  * const validationError = createErrorResponse(
- *   'Validación fallida',
- *   400,
- *   { field: 'email', reason: 'Formato inválido', traceId: 'abc123' }
+ *   'Datos inválidos',
+ *   422,
+ *   { campo: 'fechaN', razon: 'Usuario debe tener al menos 16 años', traceId: 'abc123' }
  * );
- * res.status(400).json(validationError);
+ * res.status(422).json(validationError);
  * ```
  */
-function createErrorResponse(message, statusCode, details) {
-    // Extraer traceId de details si existe, para ponerlo en nivel raíz
-    const traceId = details?.traceId;
-    const { traceId: _removed, ...remainingDetails } = details || {};
+function createErrorResponse(mensaje, codigo, detalles) {
+    // Extraer traceId de detalles si existe, para ponerlo en nivel raíz
+    const traceId = detalles?.traceId;
+    const { traceId: _removed, ...remainingDetalles } = detalles || {};
     return {
-        status: "error",
-        message,
-        ...(statusCode && { statusCode }),
+        ok: false,
+        mensaje,
+        ...(codigo && { codigo }),
         ...(traceId && { traceId }),
-        ...(Object.keys(remainingDetails).length > 0 && { details: remainingDetails }),
+        ...(Object.keys(remainingDetalles).length > 0 && { detalles: remainingDetalles }),
     };
 }

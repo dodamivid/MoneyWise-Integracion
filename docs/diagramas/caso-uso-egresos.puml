@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+actor Usuario
+
+rectangle "API MoneyWise" {
+  usecase UC_List as "Listar egresos\nGET /api/v1/egresos\nHeaders: x-api-key + JWT + scopes egresos:leer"
+  usecase UC_Create as "Crear egreso\nPOST /api/v1/egresos\nHeaders: x-api-key + JWT + scopes egresos:escribir"
+  usecase UC_Update as "Actualizar egreso\nPATCH /api/v1/egresos/{id}\nHeaders: x-api-key + JWT + scopes egresos:escribir"
+  usecase UC_Delete as "Eliminar egreso\nDELETE /api/v1/egresos/{id}\nHeaders: x-api-key + JWT + scopes egresos:escribir"
+}
+
+Usuario --> UC_List
+Usuario --> UC_Create
+Usuario --> UC_Update
+Usuario --> UC_Delete
+
+note right of UC_Create
+  Valida DTOs y llama SPs de egresos en MySQL
+end note
+@enduml

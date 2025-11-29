@@ -1,0 +1,50 @@
+@startuml
+title Componentes MoneyWise API
+
+actor Cliente
+
+node "Express App\nsrc/app.ts" {
+  [Router /api] --> [Middleware x-api-key]
+  [Middleware x-api-key] --> [Trace/Correlation/Logger]
+  [Trace/Correlation/Logger] --> [Auth Mock/Scopes]
+  [Auth Mock/Scopes] --> [Controladores]
+}
+
+package "Controladores" {
+  [AuthCtrl] --> [AuthService]
+  [UsersCtrl] --> [UserService]
+  [EgresosCtrl] --> [EgresosService]
+  [IngresosCtrl] --> [IngresosService]
+  [InversionesCtrl] --> [InversionesService]
+  [MetasCtrl] --> [MetasService]
+  [DashboardCtrl] --> [DashboardService]
+  [CatalogosCtrl] --> [CatalogosService]
+  [TiposIngresoCtrl] --> [TiposIngresoService]
+  [TiposEgresoCtrl] --> [TiposEgresoService]
+  [CatalogosProcedenciaCtrl] --> [CatalogosProcedenciaService]
+}
+
+package "Servicios" {
+  [AuthService] --> [AuthRepo]
+  [UserService] --> [UserRepo]
+  [EgresosService] --> [EgresosRepo]
+  [IngresosService] --> [IngresosRepo]
+  [InversionesService] --> [InversionesRepo]
+  [MetasService] --> [MetasRepo]
+  [DashboardService] --> [DashboardRepo]
+  [CatalogosService] --> [CatalogosRepo]
+  [TiposIngresoService] --> [TiposIngresoRepo]
+  [TiposEgresoService] --> [TiposEgresoRepo]
+  [CatalogosProcedenciaService] --> [CatalogosProcedenciaRepo]
+}
+
+database "MySQL\n(db.ts / SP*)" as DB
+[Repos*] ..> DB
+Cliente --> [Router /api]
+
+note bottom of DB
+Si DB_ENABLED=false se usa fallback en memoria
+para pruebas locales de integración.
+end note
+
+@enduml

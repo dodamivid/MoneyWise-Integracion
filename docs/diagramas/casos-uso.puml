@@ -1,0 +1,30 @@
+@startuml
+title Casos de uso UML - MoneyWise API
+
+actor "Usuario Autenticado" as UA
+actor "Administrador" as AD
+
+UA --> (Autenticarse / renovar token)
+UA --> (Consultar perfil usuario)
+UA --> (Actualizar perfil / contraseña)
+UA --> (Gestionar ingresos CRUD)
+UA --> (Gestionar egresos CRUD)
+UA --> (Gestionar inversiones CRUD)
+UA --> (Gestionar metas CRUD)
+UA --> (Consultar dashboard)
+UA --> (Consultar catálogos)
+UA --> (Consultar versión y health)
+
+AD --> (Administrar usuarios)
+AD --> (Administrar catálogos)
+AD --> (Administrar recursos de terceros)
+
+(Consultar dashboard) --> (Metas vs ahorro)
+
+note bottom of (Autenticarse / renovar token)
+Headers base en /api/*:
+ - x-api-key obligatorio
+ - x-mw-user / x-mw-scopes para mockAuth
+end note
+
+@enduml
