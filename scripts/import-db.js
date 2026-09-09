@@ -1,6 +1,5 @@
 /**
  * Importa el schema SQL completo en MySQL usando mysql2.
- * Reemplaza el default inválido para TEXT en MySQL 9 (scopes) por JSON.
  * Requiere variables de entorno: DB_HOST, DB_PORT, DB_USER, DB_PASS.
  */
 const fs = require('fs');
@@ -13,13 +12,12 @@ async function main() {
     throw new Error('Faltan variables DB_HOST, DB_PORT, DB_USER o DB_PASS');
   }
 
-  // Lee y normaliza el SQL, eliminando el uso de DELIMITER y ajustando el default de scopes.
+  // Lee y normaliza el SQL, eliminando el uso de DELIMITER.
   const sqlPath = path.join(__dirname, '..', 'db', 'moneywise_schema.sql');
   let sql = fs.readFileSync(sqlPath, 'utf8').replace(/\r\n/g, '\n');
   sql = sql.replace(/DELIMITER \$\$/g, '');
   sql = sql.replace(/DELIMITER ;/g, '');
   sql = sql.replace(/\$\$/g, ';');
-  sql = sql.replace(/scopes TEXT NOT NULL DEFAULT '\[\]'/, 'scopes JSON NOT NULL');
 
   const conn = await mysql.createConnection({
     host: DB_HOST,
