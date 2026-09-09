@@ -678,6 +678,61 @@
           }
         },
         {
+          "name": "Frecuencias - crear (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "admin:catalogos" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Cada 2 meses\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/frecuencias",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "frecuencias"]
+            },
+            "description": "Frecuencias es un catálogo global inmutable: la escritura exige el scope admin:catalogos (issue #68). Con catalogos:escribir responde 403."
+          }
+        },
+        {
+          "name": "Frecuencias - actualizar (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "admin:catalogos" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Cada 3 meses\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/frecuencias/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "frecuencias", ":id"],
+              "variable": [{ "key": "id", "value": "9" }]
+            }
+          }
+        },
+        {
+          "name": "Frecuencias - eliminar (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-mw-user", "value": "1" },
+              { "key": "x-mw-scopes", "value": "admin:catalogos" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalogos/frecuencias/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "catalogos", "frecuencias", ":id"],
+              "variable": [{ "key": "id", "value": "9" }]
+            }
+          }
+        },
+        {
           "name": "Procedencias - listar",
           "request": {
             "method": "GET",

@@ -13,7 +13,14 @@ import {
 import { ValidationError } from "../utils/errors";
 
 /**
- * @fileoverview Controller para endpoints de catálogos (Destinos y Frecuencias)
+ * @fileoverview Controller para endpoints de catálogos (Destinos y Frecuencias).
+ *
+ * Modelo de catálogos (ver docs/api/catalogos.md):
+ * - Destinos: catálogo por usuario (global con `usuario_id = NULL` o propio del
+ *   usuario). Lectura con `catalogos:leer`, escritura con `catalogos:escribir`.
+ * - Frecuencias: catálogo GLOBAL e inmutable para usuarios finales (enum de
+ *   calendario). Lectura con `catalogos:leer`; la escritura la restringe la ruta
+ *   al scope `admin:catalogos` (ver src/routes/catalogos.routes.ts, issue #68).
  */
 
 export class CatalogosController {
@@ -182,19 +189,9 @@ export class CatalogosController {
       }
 
       const { nombre } = bodyValidation.data;
-      const auth = res.locals.auth as { userId: string; scopes: string[] };
 
-      // Verificar scope admin
-      if (!auth.scopes.includes("admin:catalogos")) {
-        return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: "Se requiere scope admin:catalogos",
-          },
-        });
-      }
-
+      // La ruta ya restringe la escritura de frecuencias al scope
+      // `admin:catalogos` (catálogo global inmutable, ver issue #68).
       const resultado = await catalogosService.crearFrecuencia(nombre);
 
       res.status(201).json({ ok: true, data: resultado });
@@ -226,19 +223,9 @@ export class CatalogosController {
       }
 
       const { nombre } = bodyValidation.data;
-      const auth = res.locals.auth as { userId: string; scopes: string[] };
 
-      // Verificar scope admin
-      if (!auth.scopes.includes("admin:catalogos")) {
-        return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: "Se requiere scope admin:catalogos",
-          },
-        });
-      }
-
+      // La ruta ya restringe la escritura de frecuencias al scope
+      // `admin:catalogos` (catálogo global inmutable, ver issue #68).
       await catalogosService.actualizarFrecuencia(frecuenciaId, nombre);
 
       res.status(200).json({ ok: true, data: { actualizado: true } });
@@ -259,19 +246,9 @@ export class CatalogosController {
       }
 
       const { id: frecuenciaId } = paramValidation.data;
-      const auth = res.locals.auth as { userId: string; scopes: string[] };
 
-      // Verificar scope admin
-      if (!auth.scopes.includes("admin:catalogos")) {
-        return res.status(403).json({
-          ok: false,
-          error: {
-            codigo: "PERMISO_DENEGADO",
-            mensaje: "Se requiere scope admin:catalogos",
-          },
-        });
-      }
-
+      // La ruta ya restringe la escritura de frecuencias al scope
+      // `admin:catalogos` (catálogo global inmutable, ver issue #68).
       await catalogosService.eliminarFrecuencia(frecuenciaId);
 
       res.status(200).json({ ok: true, data: { eliminado: true } });

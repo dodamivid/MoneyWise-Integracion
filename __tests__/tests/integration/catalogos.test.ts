@@ -53,6 +53,37 @@ describe("API Catálogos - Frecuencias y Destinos", () => {
         .set(headers)
         .expect(404);
     });
+
+    it("escritura de frecuencias requiere scope admin:catalogos (issue #68)", async () => {
+      const noAdmin = {
+        ...headers,
+        "x-mw-scopes": "catalogos:leer,catalogos:escribir",
+      };
+
+      // La lectura sigue permitida sin admin
+      await request(app)
+        .get("/api/v1/catalogos/frecuencias")
+        .set(noAdmin)
+        .expect(200);
+
+      // POST/PUT/DELETE quedan bloqueados con 403
+      await request(app)
+        .post("/api/v1/catalogos/frecuencias")
+        .set(noAdmin)
+        .send({ nombre: "Frecuencia no autorizada" })
+        .expect(403);
+
+      await request(app)
+        .put("/api/v1/catalogos/frecuencias/1")
+        .set(noAdmin)
+        .send({ nombre: "Renombrada sin permiso" })
+        .expect(403);
+
+      await request(app)
+        .delete("/api/v1/catalogos/frecuencias/1")
+        .set(noAdmin)
+        .expect(403);
+    });
   });
 
   describe("Destinos", () => {
