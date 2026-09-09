@@ -1,3 +1,10 @@
+-- ============================================================================
+-- ESQUEMA LEGADO - NO USAR
+-- Reemplazado por db/moneywise_schema.sql, la unica fuente autoritativa
+-- del esquema (ver README_DEPLOY.md). Se conserva aqui solo como referencia
+-- historica del dump original previo a la normalizacion (ver tickets/BD_ticket.md).
+-- ============================================================================
+
 CREATE DATABASE  IF NOT EXISTS `ingswbd` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
 USE `ingswbd`;
 -- MySQL dump 10.13  Distrib 8.0.22, for Win64 (x86_64)

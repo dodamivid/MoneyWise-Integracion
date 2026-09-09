@@ -38,7 +38,7 @@ APP_URL=https://moneywise-integracion-production.up.railway.app
 ```
 
 ## 4. Base de datos
-- Script: `db/moneywise_schema.sql` (incluye tablas, seeds y SPs).
+- **Fuente autoritativa del esquema**: `db/moneywise_schema.sql` (incluye tablas, seeds y SPs). Es el único script de esquema soportado; cualquier otro dump en el repo (p. ej. `docs/historico/`) es legado y no debe importarse.
 - Ya está importado en la instancia MySQL de Railway con DB `moneywise`.
 - Si alguien necesita recrear la DB:
   ```
