@@ -45,6 +45,11 @@ Auth (simulada en dev):
 Notas:
 - Para MySQL agrega `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` y `DB_ENABLED=true`.
 
+## Base de datos (esquema)
+
+- **Fuente de verdad**: `db/moneywise_schema.sql`. Es el único esquema válido del repo; lo consumen `scripts/import-db.js`, los stored procedures y la API.
+- No importes ningún otro dump del repo. `docs/historico/` contiene volcados legados (tablas en singular, typos como `prosedencia`, tabla `recompensas` fuera de alcance) que **no** deben usarse. Ver `docs/historico/README.md`.
+
 ## QuÃ© entregaremos para la tarea
 - Repositorio en GitHub (este).
 - Un Proyecto de GitHub vinculado al repo.
