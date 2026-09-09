@@ -43,6 +43,12 @@ router.delete(
 // ============================================
 // FRECUENCIAS
 // ============================================
+// A diferencia de destinos/procedencias/tipos, `frecuencias` es un catálogo
+// GLOBAL e inmutable para usuarios finales: es un enum de calendario cerrado
+// (Diario, Semanal, Quincenal, ...) sin columna `usuario_id`. Cualquier alta,
+// edición o baja afecta a todos los usuarios, por lo que la escritura queda
+// reservada al scope `admin:catalogos`. La lectura sigue siendo `catalogos:leer`.
+// Ver docs/api/catalogos.md e issue #68.
 
 router.get(
   "/frecuencias",
@@ -54,21 +60,21 @@ router.get(
 router.post(
   "/frecuencias",
   mockAuth,
-  requireScope("catalogos:escribir"),
+  requireScope("admin:catalogos"),
   catalogosController.crearFrecuencia.bind(catalogosController)
 );
 
 router.put(
   "/frecuencias/:id",
   mockAuth,
-  requireScope("catalogos:escribir"),
+  requireScope("admin:catalogos"),
   catalogosController.actualizarFrecuencia.bind(catalogosController)
 );
 
 router.delete(
   "/frecuencias/:id",
   mockAuth,
-  requireScope("catalogos:escribir"),
+  requireScope("admin:catalogos"),
   catalogosController.eliminarFrecuencia.bind(catalogosController)
 );
 

@@ -110,6 +110,12 @@ CREATE TABLE procedencias (
     ON DELETE CASCADE
 );
 
+-- `frecuencias` es un catálogo GLOBAL por diseño (issue #68): a diferencia de
+-- tipos_ingreso / tipos_egreso / destinos / procedencias, NO lleva `usuario_id`.
+-- Es un enum de calendario cerrado y compartido por todos los usuarios; no se
+-- espera que un usuario final cree "su propia" frecuencia. La escritura
+-- (sp_frecuencias_crear/actualizar/eliminar) queda reservada a administración:
+-- la capa API exige el scope `admin:catalogos` para POST/PUT/DELETE.
 CREATE TABLE frecuencias (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(60) NOT NULL,
@@ -1335,6 +1341,10 @@ END$$
 
 -- ============================================================================
 -- Catálogos: Frecuencias (global)
+-- A diferencia de sp_destinos_* / sp_procedencias_*, estos procedimientos NO
+-- reciben `pUsuarioId` ni aplican reglas de propiedad: `frecuencias` es un
+-- catálogo global único (ver comentario en la tabla e issue #68). El control de
+-- acceso a la escritura vive en la capa API (scope `admin:catalogos`).
 -- ============================================================================
 
 DROP PROCEDURE IF EXISTS sp_frecuencias_listar$$
