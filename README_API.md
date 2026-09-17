@@ -28,7 +28,7 @@ Header requerido en todas las peticiones a `/api`: `x-api-key: <pide el valor re
 
 ## Catálogos y otros
 - `GET /api/v1/catalogos` (incluye procedencias y tipos egreso)
-- `GET /api/v1/tipos-ingreso`
+- `GET /api/v1/catalogos/tipos-ingreso` (antes vivía en `/api/v1/tipos-ingreso`, sin auth — movido en #77)
 - `GET /api/v1/dashboard`
 - `GET /api/v1/version`
 

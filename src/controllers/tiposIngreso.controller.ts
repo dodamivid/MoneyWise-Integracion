@@ -1,186 +1,149 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { TiposIngresoService } from "../services/tiposIngreso.service";
 import {
-  CrearTipoIngresoSchema,
-  ActualizarTipoIngresoSchema,
-  ListarTiposIngresoSchema,
+  ListarTiposIngresoQuerySchema,
+  CrearTipoIngresoBodySchema,
+  ActualizarTipoIngresoBodySchema,
+  TipoIngresoIdParamSchema,
 } from "../dtos/tiposIngreso.dto";
 
+/**
+ * @fileoverview Controller para Tipos de Ingreso.
+ * Issue #77: rediseñado siguiendo el patrón de tiposEgreso.controller.ts
+ * (mismo formato de respuesta, mismos códigos de error, auth vía
+ * mockAuth/requireScope en las rutas).
+ */
 export class TiposIngresoController {
-  private service: TiposIngresoService;
+  constructor(private readonly service: TiposIngresoService) {}
 
-  constructor() {
-    this.service = new TiposIngresoService();
-  }
-
-  listar = async (req: Request, res: Response): Promise<void> => {
-    const parsed = ListarTiposIngresoSchema.safeParse(req.query);
-    if (!parsed.success) {
-      res.status(422).json({
-        ok: false,
-        error: {
-          codigo: "DATOS_INVALIDOS",
-          mensaje: "Datos de entrada invalidos",
-          detalles: parsed.error.issues.map((i) => i.message),
-        },
-      });
-      return;
-    }
-
+  listarTiposIngreso = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
-      const { pagina, tamanoPagina, orden, activo } = parsed.data;
-      const resultado = await this.service.listar(pagina, tamanoPagina, orden, activo);
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const validated = ListarTiposIngresoQuerySchema.safeParse(req.query);
+      if (!validated.success) {
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: validated.error.issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
+      }
 
-      res.status(200).json({
-        ok: true,
-        ...resultado,
-      });
-    } catch (error: any) {
-      this.manejarError(error, res);
-    }
-  };
-
-  obtenerPorId = async (req: Request, res: Response): Promise<void> => {
-    const tipoIngresoId = Number(req.params.id);
-    if (!Number.isInteger(tipoIngresoId) || tipoIngresoId <= 0) {
-      res.status(422).json({
-        ok: false,
-        error: {
-          codigo: "DATOS_INVALIDOS",
-          mensaje: "ID invalido",
-        },
-      });
-      return;
-    }
-
-    try {
-      const tipoIngreso = await this.service.obtenerPorId(tipoIngresoId);
-
-      res.status(200).json({
-        ok: true,
-        data: tipoIngreso,
-      });
-    } catch (error: any) {
-      this.manejarError(error, res);
-    }
-  };
-
-  crear = async (req: Request, res: Response): Promise<void> => {
-    const parsed = CrearTipoIngresoSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(422).json({
-        ok: false,
-        error: {
-          codigo: "DATOS_INVALIDOS",
-          mensaje: "Datos de entrada invalidos",
-          detalles: parsed.error.issues.map((i) => i.message),
-        },
-      });
-      return;
-    }
-
-    try {
-      const { nombre, descripcion, activo } = parsed.data;
-      const resultado = await this.service.crear(nombre, descripcion, activo);
-      res.status(201).json({ ok: true, data: resultado });
-    } catch (error: any) {
-      this.manejarError(error, res);
-    }
-  };
-
-  actualizar = async (req: Request, res: Response): Promise<void> => {
-    const tipoIngresoId = Number(req.params.id);
-    if (!Number.isInteger(tipoIngresoId) || tipoIngresoId <= 0) {
-      res.status(422).json({
-        ok: false,
-        error: {
-          codigo: "DATOS_INVALIDOS",
-          mensaje: "ID invalido",
-        },
-      });
-      return;
-    }
-
-    const parsed = ActualizarTipoIngresoSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(422).json({
-        ok: false,
-        error: {
-          codigo: "DATOS_INVALIDOS",
-          mensaje: "Datos de entrada invalidos",
-          detalles: parsed.error.issues.map((i) => i.message),
-        },
-      });
-      return;
-    }
-
-    try {
-      const { nombre, descripcion, activo } = parsed.data;
-      const resultado = await this.service.actualizar(
-        tipoIngresoId,
-        nombre,
-        descripcion,
-        activo
+      const { buscar, pagina, tamanoPagina, orden } = validated.data;
+      const resultado = await this.service.listarTiposIngreso(
+        auth.userId,
+        buscar,
+        pagina,
+        tamanoPagina,
+        orden
       );
-
-      res.status(200).json({ ok: true, data: resultado });
-    } catch (error: any) {
-      this.manejarError(error, res);
+      res.status(200).json(resultado);
+    } catch (error) {
+      next(error);
     }
   };
 
-  eliminar = async (req: Request, res: Response): Promise<void> => {
-    const tipoIngresoId = Number(req.params.id);
-    if (!Number.isInteger(tipoIngresoId) || tipoIngresoId <= 0) {
-      res.status(422).json({
-        ok: false,
-        error: {
-          codigo: "DATOS_INVALIDOS",
-          mensaje: "ID invalido",
-        },
-      });
-      return;
-    }
-
+  crearTipoIngreso = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
-      const resultado = await this.service.eliminar(tipoIngresoId);
-      res.status(200).json({ ok: true, data: resultado });
-    } catch (error: any) {
-      this.manejarError(error, res);
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const validated = CrearTipoIngresoBodySchema.safeParse(req.body);
+      if (!validated.success) {
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: validated.error.issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
+      }
+
+      const resultado = await this.service.crearTipoIngreso(
+        auth.userId,
+        validated.data.nombre
+      );
+      res.status(201).json(resultado);
+    } catch (error) {
+      next(error);
     }
   };
 
-  private manejarError(error: any, res: Response) {
-    if (error instanceof Error && error.message === "NO_ENCONTRADO") {
-      res.status(404).json({
-        ok: false,
-        error: {
-          codigo: "NO_ENCONTRADO",
-          mensaje: "Recurso no encontrado",
-        },
-      });
-      return;
-    }
+  actualizarTipoIngreso = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const params = TipoIngresoIdParamSchema.safeParse(req.params);
+      const body = ActualizarTipoIngresoBodySchema.safeParse(req.body);
 
-    if (error instanceof Error && error.message.startsWith("DATOS_INVALIDOS")) {
-      res.status(400).json({
-        ok: false,
-        error: {
-          codigo: "DATOS_INVALIDOS",
-          mensaje: error.message,
-        },
-      });
-      return;
-    }
+      if (!params.success || !body.success) {
+        const issues = [
+          ...(params.success ? [] : params.error.issues),
+          ...(body.success ? [] : body.error.issues),
+        ];
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
+      }
 
-    res.status(500).json({
-      ok: false,
-      error: {
-        codigo: "ERROR_INTERNO",
-        mensaje: "Ocurrio un error inesperado",
-      },
-    });
-  }
+      const resultado = await this.service.actualizarTipoIngreso(
+        params.data.id,
+        auth.userId,
+        body.data.nombre
+      );
+      res.status(200).json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  eliminarTipoIngreso = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const auth = res.locals.auth as { userId: string; scopes: string[] };
+      const params = TipoIngresoIdParamSchema.safeParse(req.params);
+      if (!params.success) {
+        res.status(422).json({
+          ok: false,
+          error: {
+            codigo: "DATOS_INVALIDOS",
+            mensaje: params.error.issues.map((i) => i.message).join(", "),
+          },
+        });
+        return;
+      }
+
+      const resultado = await this.service.eliminarTipoIngreso(
+        params.data.id,
+        auth.userId
+      );
+      res.status(200).json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
-export const tiposIngresoController = new TiposIngresoController();
+export const tiposIngresoController = new TiposIngresoController(
+  new TiposIngresoService()
+);

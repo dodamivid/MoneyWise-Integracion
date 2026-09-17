@@ -1,32 +1,102 @@
-export interface TipoIngreso {
-  tipoIngresoId: number;
-  nombre: string;
-  descripcion?: string;
-  activo: boolean;
-  creadoEn: string;
-  actualizadoEn: string;
-}
+import { db } from "../config/db";
+import { TipoIngresoDTO } from "../dtos/tiposIngreso.dto";
 
+/**
+ * Repository para Tipos de Ingreso.
+ *
+ * Issue #77: rediseñado para alinear con la tabla real (`usuario_id`/
+ * `es_por_defecto`) y conectado a `sp_tiposIngreso_*` cuando `DB_ENABLED`/
+ * `USE_DB` está activo; si no, cae al almacenamiento en memoria de abajo
+ * (tests / dev sin base de datos). Sigue el mismo patrón que
+ * `tiposEgreso.repository.ts`.
+ */
 export class TiposIngresoRepository {
-  private tipos: TipoIngreso[] = [];
+  private tipos: TipoIngresoDTO[] = [];
 
   constructor() {
     const now = new Date().toISOString();
     this.tipos = [
-      { tipoIngresoId: 1, nombre: "Salario", activo: true, creadoEn: now, actualizadoEn: now },
-      { tipoIngresoId: 2, nombre: "Comisiones", activo: true, creadoEn: now, actualizadoEn: now },
+      {
+        tipoIngresoId: 1,
+        usuarioId: null,
+        nombre: "Efectivo",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        tipoIngresoId: 2,
+        usuarioId: null,
+        nombre: "Transferencia",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
+      {
+        tipoIngresoId: 3,
+        usuarioId: null,
+        nombre: "Cheque",
+        esPorDefecto: true,
+        creadoEn: now,
+        actualizadoEn: now,
+      },
     ];
   }
 
-  async listar(
-    pagina: number = 1,
-    tamanoPagina: number = 20,
-    orden: string = "nombre:asc",
-    activo?: boolean
-  ): Promise<{ data: TipoIngreso[]; total: number }> {
-    let filtrados = this.tipos;
-    if (activo !== undefined) {
-      filtrados = filtrados.filter((t) => t.activo === activo);
+  async listarTiposIngreso(
+    usuarioId: string,
+    buscar: string | null,
+    pagina: number,
+    tamanoPagina: number,
+    orden: string
+  ): Promise<{ datos: TipoIngresoDTO[]; total: number }> {
+    if (db.enabled && db.pool) {
+      const resultSets = await db.call("sp_tiposIngreso_listar", [
+        usuarioId,
+        buscar ?? "",
+        pagina,
+        tamanoPagina,
+        orden,
+      ]);
+
+      const rows = (resultSets[0] as any[]) ?? [];
+
+      // El SP trae los datos + el total en un solo UNION ALL: la última fila
+      // es la de COUNT(*) y no debe mapearse como un registro real (#75).
+      let total = 0;
+      let dataRows = rows;
+      const lastRow = rows[rows.length - 1];
+      if (
+        lastRow &&
+        lastRow.totalRegistros !== null &&
+        lastRow.totalRegistros !== undefined
+      ) {
+        total = Number(lastRow.totalRegistros) || 0;
+        dataRows = rows.slice(0, -1);
+      }
+
+      const datos = dataRows.map((row) => ({
+        tipoIngresoId: Number(row.tipoIngresoId),
+        usuarioId: row.usuarioId?.toString() ?? null,
+        nombre: row.nombre,
+        esPorDefecto: Boolean(row.esPorDefecto),
+        creadoEn: row.creadoEn,
+        actualizadoEn: row.actualizadoEn,
+      }));
+
+      return { datos, total };
+    }
+
+    const disponibles = this.tipos.filter(
+      (t) => t.usuarioId === null || t.usuarioId === usuarioId
+    );
+
+    let filtrados = disponibles;
+    if (buscar) {
+      const term = buscar.toLowerCase();
+      filtrados = filtrados.filter((t) =>
+        t.nombre.toLowerCase().includes(term)
+      );
     }
 
     const [campo, direccion] = orden.split(":");
@@ -41,52 +111,102 @@ export class TiposIngresoRepository {
 
     const total = filtrados.length;
     const inicio = (pagina - 1) * tamanoPagina;
-    const data = filtrados.slice(inicio, inicio + tamanoPagina);
-    return { data, total };
+    const datos = filtrados.slice(inicio, inicio + tamanoPagina);
+
+    return { datos, total };
   }
 
-  async obtenerPorId(tipoIngresoId: number): Promise<TipoIngreso | null> {
-    return this.tipos.find((t) => t.tipoIngresoId === tipoIngresoId) ?? null;
-  }
+  async crearTipoIngreso(
+    usuarioId: string,
+    nombre: string
+  ): Promise<{ tipoIngresoId: number; nombre: string }> {
+    if (db.enabled && db.pool) {
+      const resultSets = await db.call("sp_tiposIngreso_crear", [
+        usuarioId,
+        nombre,
+      ]);
+      const rows = (resultSets[0] as any[]) ?? [];
+      if (!rows.length) {
+        throw new Error("Error al crear tipo de ingreso");
+      }
+      return {
+        tipoIngresoId: Number(rows[0].tipoIngresoId),
+        nombre: rows[0].nombre,
+      };
+    }
 
-  async crear(
-    nombre: string,
-    descripcion?: string,
-    activo: boolean = true
-  ): Promise<{ tipoIngresoId: number }> {
-    const tipoIngresoId = Math.max(...this.tipos.map((t) => t.tipoIngresoId), 0) + 1;
+    const existe = this.tipos.find(
+      (t) => t.nombre.toLowerCase() === nombre.toLowerCase()
+    );
+    if (existe) {
+      throw new Error("DUPLICADO:Ya existe un tipo de ingreso con este nombre");
+    }
+
+    const tipoIngresoId =
+      Math.max(...this.tipos.map((t) => t.tipoIngresoId), 0) + 1;
     const now = new Date().toISOString();
     this.tipos.push({
       tipoIngresoId,
+      usuarioId,
       nombre,
-      descripcion,
-      activo,
+      esPorDefecto: false,
       creadoEn: now,
       actualizadoEn: now,
     });
-    return { tipoIngresoId };
+    return { tipoIngresoId, nombre };
   }
 
-  async actualizar(
+  async actualizarTipoIngreso(
     tipoIngresoId: number,
-    nombre?: string,
-    descripcion?: string,
-    activo?: boolean
-  ): Promise<{ actualizado: boolean }> {
+    usuarioId: string,
+    nombre: string
+  ): Promise<boolean> {
+    if (db.enabled && db.pool) {
+      const resultSets = await db.call("sp_tiposIngreso_actualizar", [
+        tipoIngresoId,
+        usuarioId,
+        nombre,
+      ]);
+      const rows = (resultSets[0] as any[]) ?? [];
+      return rows.length > 0 ? Boolean(rows[0].actualizado) : false;
+    }
+
     const tipo = this.tipos.find((t) => t.tipoIngresoId === tipoIngresoId);
-    if (!tipo) return { actualizado: false };
-    if (nombre) tipo.nombre = nombre;
-    if (descripcion !== undefined) tipo.descripcion = descripcion;
-    if (activo !== undefined) tipo.activo = activo;
+    if (!tipo) return false;
+    if (tipo.esPorDefecto && tipo.usuarioId === null && usuarioId !== "admin") {
+      throw new Error(
+        "PERMISO_DENEGADO:No tienes permiso para modificar este tipo de ingreso"
+      );
+    }
+    tipo.nombre = nombre;
     tipo.actualizadoEn = new Date().toISOString();
-    return { actualizado: true };
+    return true;
   }
 
-  async eliminar(tipoIngresoId: number): Promise<{ eliminado: boolean }> {
+  async eliminarTipoIngreso(
+    tipoIngresoId: number,
+    usuarioId: string
+  ): Promise<boolean> {
+    if (db.enabled && db.pool) {
+      const resultSets = await db.call("sp_tiposIngreso_eliminar", [
+        tipoIngresoId,
+        usuarioId,
+      ]);
+      const rows = (resultSets[0] as any[]) ?? [];
+      return rows.length > 0 ? Boolean(rows[0].eliminado) : false;
+    }
+
+    const tipo = this.tipos.find((t) => t.tipoIngresoId === tipoIngresoId);
+    if (!tipo) return false;
+    if (tipo.esPorDefecto && tipo.usuarioId === null && usuarioId !== "admin") {
+      throw new Error(
+        "PERMISO_DENEGADO:No puedes eliminar tipos de ingreso por defecto"
+      );
+    }
     const len = this.tipos.length;
     this.tipos = this.tipos.filter((t) => t.tipoIngresoId !== tipoIngresoId);
-    return { eliminado: this.tipos.length < len };
+    return this.tipos.length < len;
   }
 }
 
-export default new TiposIngresoRepository();
+export const tiposIngresoRepository = new TiposIngresoRepository();

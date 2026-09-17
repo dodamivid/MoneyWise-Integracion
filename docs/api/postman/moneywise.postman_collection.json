@@ -774,9 +774,9 @@
               { "key": "x-mw-scopes", "value": "catalogos:leer" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/tipos-ingreso",
+              "raw": "{{baseUrl}}/api/v1/catalogos/tipos-ingreso",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "tipos-ingreso"]
+              "path": ["api", "v1", "catalogos", "tipos-ingreso"]
             }
           }
         }

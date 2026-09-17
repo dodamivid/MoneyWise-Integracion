@@ -1,40 +1,149 @@
 import { z } from "zod";
 
-export const CrearTipoIngresoSchema = z.object({
-  nombre: z.string().min(1, "El nombre es requerido").max(100, "El nombre no puede exceder 100 caracteres"),
-  descripcion: z.string().max(255, "La descripción no puede exceder 255 caracteres").optional(),
-  activo: z.boolean().optional(),
-});
+/**
+ * @fileoverview DTOs para el módulo de Tipos de Ingreso
+ * Issue #77: rediseñado para alinear el modelo con la tabla real
+ * (`usuario_id`/`es_por_defecto`, sin `descripcion`/`activo` que nunca
+ * existieron en el schema) y con el patrón de los demás catálogos
+ * (destinos, procedencias, tipos_egreso).
+ */
 
-export type CrearTipoIngresoDTO = z.infer<typeof CrearTipoIngresoSchema>;
+// ============================================
+// TIPOS DE INGRESO - SCHEMAS DE VALIDACIÓN
+// ============================================
 
-export const ActualizarTipoIngresoSchema = CrearTipoIngresoSchema.partial().refine(
-  (data) => Object.keys(data).length > 0,
-  { message: "Debe proporcionar al menos un campo para actualizar" }
-);
-
-export type ActualizarTipoIngresoDTO = z.infer<typeof ActualizarTipoIngresoSchema>;
-
-export const ListarTiposIngresoSchema = z.object({
-  pagina: z.coerce.number().int().positive().default(1),
-  tamanoPagina: z.coerce.number().int().positive().max(100).default(20),
+/**
+ * Schema para listar tipos de ingreso (GET)
+ */
+export const ListarTiposIngresoQuerySchema = z.object({
+  buscar: z.string().max(60).optional(),
+  pagina: z
+    .string()
+    .optional()
+    .default("1")
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val > 0, { message: "La página debe ser mayor a 0" }),
+  tamanoPagina: z
+    .string()
+    .optional()
+    .default("20")
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val > 0 && val <= 100, {
+      message: "El tamaño de página debe estar entre 1 y 100",
+    }),
   orden: z
     .string()
+    .optional()
     .default("nombre:asc")
     .refine(
-      (val) => /^(nombre|creadoEn)(:(asc|desc))?$/.test(val),
-      { message: "Orden invalido" }
-    ),
-  activo: z
-    .union([z.string(), z.boolean()])
-    .optional()
-    .transform((val) => {
-      if (typeof val === "string") {
-        if (val.toLowerCase() === "true") return true;
-        if (val.toLowerCase() === "false") return false;
+      (val) => {
+        const regex = /^(nombre|creadoEn|actualizadoEn)(:(asc|desc))?$/;
+        return regex.test(val);
+      },
+      {
+        message:
+          "Orden inválido. Use: nombre|creadoEn|actualizadoEn seguido opcionalmente de :asc o :desc",
       }
-      return val as boolean | undefined;
+    ),
+});
+
+export type ListarTiposIngresoQuery = z.infer<
+  typeof ListarTiposIngresoQuerySchema
+>;
+
+/**
+ * Schema para crear tipo de ingreso (POST)
+ */
+export const CrearTipoIngresoBodySchema = z.object({
+  nombre: z
+    .string()
+    .min(3, "El nombre debe tener al menos 3 caracteres")
+    .max(60, "El nombre no puede exceder 60 caracteres")
+    .transform((val) => val.trim()),
+});
+
+export type CrearTipoIngresoBody = z.infer<typeof CrearTipoIngresoBodySchema>;
+
+/**
+ * Schema para actualizar tipo de ingreso (PUT)
+ */
+export const ActualizarTipoIngresoBodySchema = CrearTipoIngresoBodySchema;
+export type ActualizarTipoIngresoBody = z.infer<
+  typeof ActualizarTipoIngresoBodySchema
+>;
+
+/**
+ * Schema para parámetros de ruta con ID (tipos de ingreso)
+ */
+export const TipoIngresoIdParamSchema = z.object({
+  id: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => !isNaN(val) && val > 0, {
+      message: "El ID debe ser un número entero positivo",
     }),
 });
 
-export type ListarTiposIngresoDTO = z.infer<typeof ListarTiposIngresoSchema>;
+export type TipoIngresoIdParam = z.infer<typeof TipoIngresoIdParamSchema>;
+
+// ============================================
+// TIPOS DE INGRESO - TIPOS DE RESPUESTA
+// ============================================
+
+/**
+ * DTO de Tipo de Ingreso
+ */
+export interface TipoIngresoDTO {
+  tipoIngresoId: number;
+  usuarioId: string | null;
+  nombre: string;
+  esPorDefecto: boolean;
+  creadoEn: string;
+  actualizadoEn: string;
+}
+
+/**
+ * Respuesta al listar tipos de ingreso
+ */
+export interface ListarTiposIngresoResponse {
+  ok: boolean;
+  data: TipoIngresoDTO[];
+  meta: {
+    paginacion: {
+      pagina: number;
+      tamanoPagina: number;
+      total: number;
+    };
+  };
+}
+
+/**
+ * Respuesta al crear tipo de ingreso
+ */
+export interface CrearTipoIngresoResponse {
+  ok: boolean;
+  data: {
+    tipoIngresoId: number;
+    nombre: string;
+  };
+}
+
+/**
+ * Respuesta al actualizar tipo de ingreso
+ */
+export interface ActualizarTipoIngresoResponse {
+  ok: boolean;
+  data: {
+    actualizado: boolean;
+  };
+}
+
+/**
+ * Respuesta al eliminar tipo de ingreso
+ */
+export interface EliminarTipoIngresoResponse {
+  ok: boolean;
+  data: {
+    eliminado: boolean;
+  };
+}
