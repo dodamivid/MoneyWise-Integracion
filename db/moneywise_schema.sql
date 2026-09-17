@@ -244,7 +244,13 @@ VALUES
   (NULL, 'Renta', 1),
   (NULL, 'Servicios', 1),
   (NULL, 'Transporte', 1),
-  (NULL, 'Alimentación', 1)
+  (NULL, 'Alimentación', 1),
+  (NULL, 'Salud', 1),
+  (NULL, 'Educación', 1),
+  (NULL, 'Entretenimiento', 1),
+  (NULL, 'Ropa', 1),
+  (NULL, 'Mascotas', 1),
+  (NULL, 'Impuestos', 1)
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 INSERT INTO procedencias (usuario_id, nombre, es_por_defecto)
