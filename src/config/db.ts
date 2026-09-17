@@ -39,8 +39,17 @@ export const db = {
     // `` `CALL ${sp}` `` a secas), los valores de `params` se descartan en
     // silencio y MySQL recibe la llamada sin argumentos, lo que rompe
     // cualquier stored procedure con parámetros `IN` obligatorios.
+    //
+    // Defensivo (regresión detectada al arreglar #73): algunos callers ya
+    // traían un workaround propio y pasaban el nombre CON paréntesis/
+    // placeholders incluidos (ej. "sp_x(?, ?)"), lo que con el fix de arriba
+    // duplicaba los paréntesis (`CALL sp_x(?, ?)(?, ?)`, sintaxis inválida) y
+    // rompió login/registro/dashboard en producción. Se normaliza tomando
+    // solo el nombre antes del primer `(`, sin importar qué convención use
+    // el caller.
+    const spName = sp.split("(")[0].trim();
     const placeholders = params.map(() => "?").join(", ");
-    const sql = placeholders ? `CALL ${sp}(${placeholders})` : `CALL ${sp}()`;
+    const sql = placeholders ? `CALL ${spName}(${placeholders})` : `CALL ${spName}()`;
     const [rows] = await this.pool.query(sql, params);
 
     // mysql2 devuelve arrays anidados para múltiples result sets

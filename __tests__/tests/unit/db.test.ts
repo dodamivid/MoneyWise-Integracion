@@ -50,4 +50,23 @@ describe("db.call()", () => {
       "DB pool no inicializado"
     );
   });
+
+  it("normaliza si el caller ya pasó el nombre con paréntesis/placeholders incluidos (regresión que rompió login/registro/dashboard)", async () => {
+    const query = jest.fn().mockResolvedValue([[{ ok: 1 }], []]);
+    db.pool = { query } as any;
+
+    await db.call("sp_usuarios_registrar(?, ?, ?, ?, ?, ?)", [
+      "Ana",
+      "Perez",
+      "Lopez",
+      "ana@example.com",
+      "2000-01-01",
+      "hash",
+    ]);
+
+    expect(query).toHaveBeenCalledWith(
+      "CALL sp_usuarios_registrar(?, ?, ?, ?, ?, ?)",
+      ["Ana", "Perez", "Lopez", "ana@example.com", "2000-01-01", "hash"]
+    );
+  });
 });
