@@ -277,6 +277,17 @@ ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 -- es un error de sintaxis real (1064), no una sutileza de estilo. Cualquier
 -- SP nuevo que siga este patron debe envolver ese primer SELECT en
 -- `(SELECT ... ORDER BY ... LIMIT ? OFFSET ?)` antes del `UNION ALL`.
+--
+-- CONVENCION (bug encontrado en revision post-#71): en los SPs `_crear` de
+-- catalogos por-usuario (destinos, procedencias, tipos_egreso, tipos_ingreso),
+-- `es_por_defecto` SIEMPRE debe insertarse como `0` -- estos SPs los llama la
+-- API con el usuario autenticado real, nunca para sembrar catalogos globales
+-- (eso son los INSERT sueltos al inicio del archivo, con `es_por_defecto = 1`
+-- explicito). El patron `IFNULL(pUsuarioId, 0)` que tenian estas 4 SPs es
+-- incorrecto: cuando pUsuarioId no es NULL (el caso normal), guarda el propio
+-- id del usuario en `es_por_defecto` (ej. 2), que al leerlo como boolean en
+-- la API (`Boolean(esPorDefecto)`) da `true` -- el usuario quedaba sin poder
+-- editar/eliminar sus propios catalogos, confundidos con "por defecto".
 -- ============================================================================
 
 DELIMITER $$
@@ -618,7 +629,7 @@ BEGIN
   END IF;
 
   INSERT INTO tipos_ingreso (usuario_id, nombre, es_por_defecto)
-  VALUES (pUsuarioId, vNombre, IFNULL(pUsuarioId, 0));
+  VALUES (pUsuarioId, vNombre, 0);
 
   SELECT
     LAST_INSERT_ID() AS tipoIngresoId,
@@ -825,7 +836,7 @@ BEGIN
   END IF;
 
   INSERT INTO tipos_egreso (usuario_id, nombre, es_por_defecto)
-  VALUES (pUsuarioId, vNombre, IFNULL(pUsuarioId, 0));
+  VALUES (pUsuarioId, vNombre, 0);
 
   SELECT
     LAST_INSERT_ID() AS tipoEgresoId,
@@ -1032,7 +1043,7 @@ BEGIN
   END IF;
 
   INSERT INTO destinos (usuario_id, nombre, es_por_defecto)
-  VALUES (pUsuarioId, vNombre, IFNULL(pUsuarioId, 0));
+  VALUES (pUsuarioId, vNombre, 0);
 
   SELECT LAST_INSERT_ID() AS destinoId, vNombre AS nombre;
 END$$
@@ -1239,7 +1250,7 @@ BEGIN
   END IF;
 
   INSERT INTO procedencias (usuario_id, nombre, es_por_defecto)
-  VALUES (pUsuarioId, vNombre, IFNULL(pUsuarioId, 0));
+  VALUES (pUsuarioId, vNombre, 0);
 
   SELECT LAST_INSERT_ID() AS procedenciaId, vNombre AS nombre;
 END$$
