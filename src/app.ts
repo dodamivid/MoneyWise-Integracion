@@ -108,9 +108,9 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/catalogos", catalogosRoutes);
 app.use("/api/v1/catalogos", catalogosProcedenciaRoutes);
 app.use("/api/v1/catalogos", tiposEgresoRoutes);
-
-// Tipos de ingreso (catálogo)
-app.use("/api/v1/tipos-ingreso", tiposIngresoRoutes);
+// Issue #77: tipos-ingreso ahora vive bajo /catalogos, igual que sus
+// hermanos (antes estaba en /api/v1/tipos-ingreso sin auth aplicada).
+app.use("/api/v1/catalogos", tiposIngresoRoutes);
 
 // Auth routes
 app.use("/api/v1/auth", authRoutes);

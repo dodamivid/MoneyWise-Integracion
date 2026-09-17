@@ -22,7 +22,7 @@ Este README resume cómo dejamos la API en Railway y qué necesitan  para consum
   - `PUT /api/users/:id`
   - `PATCH /api/users/:id/contrasena`
 - Catálogos y otros:
-  - `GET /api/v1/catalogos`, `GET /api/v1/tipos-ingreso`
+  - `GET /api/v1/catalogos`, `GET /api/v1/catalogos/tipos-ingreso`
   - `GET/POST/PATCH/DELETE /api/v1/ingresos`, `/api/v1/egresos`, `/api/v1/inversiones`, `/api/v1/metas`
   - `GET /api/v1/dashboard`, `GET /api/v1/version`
 

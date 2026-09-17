@@ -1,44 +1,41 @@
-import { Router } from 'express';
-import { TiposIngresoController } from '../controllers/tiposIngreso.controller';
-// Importa tus middlewares de autenticación si los tienes
-// import { authMiddleware } from '../middlewares/auth.middleware';
+import { Router } from "express";
+import { tiposIngresoController } from "../controllers/tiposIngreso.controller";
+import { mockAuth, requireScope } from "../middlewares/auth.middleware";
 
+/**
+ * @fileoverview Rutas para catálogo de Tipos de Ingreso.
+ * Issue #77: movidas de `/api/v1/tipos-ingreso` (sin auth) a
+ * `/api/v1/catalogos/tipos-ingreso`, con mockAuth + requireScope igual que
+ * el resto de los catálogos (destinos, procedencias, tipos-egreso).
+ */
 const router = Router();
-const controller = new TiposIngresoController();
 
-/**
- * @route   GET /api/v1/tipos-ingreso
- * @desc    Listar tipos de ingreso con paginación
- * @access  Private (requiere JWT)
- */
-router.get('/', controller.listar);
+router.get(
+  "/tipos-ingreso",
+  mockAuth,
+  requireScope("catalogos:leer"),
+  tiposIngresoController.listarTiposIngreso
+);
 
-/**
- * @route   GET /api/v1/tipos-ingreso/:id
- * @desc    Obtener un tipo de ingreso por ID
- * @access  Private (requiere JWT)
- */
-router.get('/:id', controller.obtenerPorId);
+router.post(
+  "/tipos-ingreso",
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  tiposIngresoController.crearTipoIngreso
+);
 
-/**
- * @route   POST /api/v1/tipos-ingreso
- * @desc    Crear nuevo tipo de ingreso
- * @access  Private (requiere JWT + scope)
- */
-router.post('/', controller.crear);
+router.put(
+  "/tipos-ingreso/:id",
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  tiposIngresoController.actualizarTipoIngreso
+);
 
-/**
- * @route   PATCH /api/v1/tipos-ingreso/:id
- * @desc    Actualizar tipo de ingreso
- * @access  Private (requiere JWT + scope)
- */
-router.patch('/:id', controller.actualizar);
-
-/**
- * @route   DELETE /api/v1/tipos-ingreso/:id
- * @desc    Eliminar tipo de ingreso (lógico)
- * @access  Private (requiere JWT + scope)
- */
-router.delete('/:id', controller.eliminar);
+router.delete(
+  "/tipos-ingreso/:id",
+  mockAuth,
+  requireScope("catalogos:escribir"),
+  tiposIngresoController.eliminarTipoIngreso
+);
 
 export default router;
