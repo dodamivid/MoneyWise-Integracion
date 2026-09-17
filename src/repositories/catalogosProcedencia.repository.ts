@@ -51,7 +51,19 @@ export class CatalogosProcedenciaRepository {
       ]);
 
       const rows = (resultSets[0] as any[]) ?? [];
-      const procedencias = rows.map((row) => ({
+
+      // El SP trae los datos + el total en un solo UNION ALL: la última fila
+      // es la de COUNT(*) (todas sus demás columnas vienen NULL) y no debe
+      // mapearse como un registro real (issue #75).
+      let total = 0;
+      let dataRows = rows;
+      const lastRow = rows[rows.length - 1];
+      if (lastRow && lastRow.totalRegistros !== null && lastRow.totalRegistros !== undefined) {
+        total = Number(lastRow.totalRegistros) || 0;
+        dataRows = rows.slice(0, -1);
+      }
+
+      const procedencias = dataRows.map((row) => ({
         procedenciaId: Number(row.procedenciaId),
         usuarioId: row.usuarioId?.toString() ?? null,
         nombre: row.nombre,
@@ -60,7 +72,6 @@ export class CatalogosProcedenciaRepository {
         actualizadoEn: row.actualizadoEn,
       }));
 
-      const total = rows[0]?.totalRegistros ?? rows.length;
       return { procedencias, total };
     }
 

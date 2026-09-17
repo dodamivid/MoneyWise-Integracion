@@ -269,6 +269,14 @@ ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 -- ============================================================================
 -- Stored Procedures
 -- (Las definiciones comienzan después de establecer DELIMITER)
+--
+-- CONVENCION (issue #75): los SPs `_listar` traen paginacion + total en un
+-- solo query usando `UNION ALL` (primer SELECT con los datos + ORDER BY/LIMIT,
+-- segundo SELECT con COUNT(*)). MySQL exige que el SELECT con ORDER BY/LIMIT
+-- vaya entre parentesis cuando no es el ultimo del UNION -- sin los parentesis
+-- es un error de sintaxis real (1064), no una sutileza de estilo. Cualquier
+-- SP nuevo que siga este patron debe envolver ese primer SELECT en
+-- `(SELECT ... ORDER BY ... LIMIT ? OFFSET ?)` antes del `UNION ALL`.
 -- ============================================================================
 
 DELIMITER $$
@@ -559,7 +567,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_ti := CONCAT(
-    'SELECT id AS tipoIngresoId,
+    '(SELECT id AS tipoIngresoId,
             usuario_id AS usuarioId,
             nombre,
             es_por_defecto AS esPorDefecto,
@@ -571,7 +579,7 @@ BEGIN
        AND (usuario_id = ? OR usuario_id IS NULL)
        AND (? IS NULL OR nombre LIKE ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL, NULL, NULL, NULL, NULL, NULL, COUNT(*) AS totalRegistros
      FROM tipos_ingreso
@@ -766,7 +774,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_te := CONCAT(
-    'SELECT id AS tipoEgresoId,
+    '(SELECT id AS tipoEgresoId,
             usuario_id AS usuarioId,
             nombre,
             es_por_defecto AS esPorDefecto,
@@ -778,7 +786,7 @@ BEGIN
        AND (usuario_id = ? OR usuario_id IS NULL)
        AND (? IS NULL OR nombre LIKE ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL, NULL, NULL, NULL, NULL, NULL, COUNT(*) AS totalRegistros
      FROM tipos_egreso
@@ -973,7 +981,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_destinos := CONCAT(
-    'SELECT id AS destinoId,
+    '(SELECT id AS destinoId,
             usuario_id AS usuarioId,
             nombre,
             es_por_defecto AS esPorDefecto,
@@ -985,7 +993,7 @@ BEGIN
        AND (usuario_id = ? OR usuario_id IS NULL)
        AND (? IS NULL OR nombre LIKE ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL, NULL, NULL, NULL, NULL, NULL, COUNT(*) AS totalRegistros
      FROM destinos
@@ -1180,7 +1188,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_proc := CONCAT(
-    'SELECT id AS procedenciaId,
+    '(SELECT id AS procedenciaId,
             usuario_id AS usuarioId,
             nombre,
             es_por_defecto AS esPorDefecto,
@@ -1192,7 +1200,7 @@ BEGIN
        AND (usuario_id = ? OR usuario_id IS NULL)
        AND (? IS NULL OR nombre LIKE ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL, NULL, NULL, NULL, NULL, NULL, COUNT(*) AS totalRegistros
      FROM procedencias
@@ -1385,7 +1393,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_freq := CONCAT(
-    'SELECT id AS frecuenciaId,
+    '(SELECT id AS frecuenciaId,
             nombre,
             creado_en AS creadoEn,
             actualizado_en AS actualizadoEn,
@@ -1394,7 +1402,7 @@ BEGIN
      WHERE (eliminado_en IS NULL)
        AND (? IS NULL OR nombre LIKE ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL, NULL, NULL, NULL, COUNT(*) AS totalRegistros
      FROM frecuencias
@@ -1548,7 +1556,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_ing_list := CONCAT(
-    'SELECT id AS ingresoId,
+    '(SELECT id AS ingresoId,
             usuario_id AS usuarioId,
             tipo_id AS tipoId,
             procedencia_id AS procedenciaId,
@@ -1569,7 +1577,7 @@ BEGIN
        AND (? IS NULL OR monto >= ?)
        AND (? IS NULL OR monto <= ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,COUNT(*) AS totalRegistros
      FROM ingresos
@@ -1815,7 +1823,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_egr_list := CONCAT(
-    'SELECT id AS egresoId,
+    '(SELECT id AS egresoId,
             usuario_id AS usuarioId,
             tipo_id AS tipoId,
             destino_id AS destinoId,
@@ -1836,7 +1844,7 @@ BEGIN
        AND (? IS NULL OR monto >= ?)
        AND (? IS NULL OR monto <= ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,COUNT(*) AS totalRegistros
      FROM egresos
@@ -2075,7 +2083,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_inv_list := CONCAT(
-    'SELECT id AS inversionId,
+    '(SELECT id AS inversionId,
             usuario_id AS usuarioId,
             destino_id AS destinoId,
             monto,
@@ -2092,7 +2100,7 @@ BEGIN
        AND (? IS NULL OR fecha_inicio >= ?)
        AND (? IS NULL OR COALESCE(fecha_fin, fecha_inicio) <= ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,COUNT(*) AS totalRegistros
      FROM inversiones
@@ -2311,7 +2319,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_metas := CONCAT(
-    'SELECT id AS metaId,
+    '(SELECT id AS metaId,
             usuario_id AS usuarioId,
             nombre,
             monto_objetivo AS montoObjetivo,
@@ -2330,7 +2338,7 @@ BEGIN
        AND (? IS NULL OR COALESCE(fecha_fin, fecha_inicio) <= ?)
        AND (? IS NULL OR activa = ?)
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,COUNT(*) AS totalRegistros
      FROM metas
@@ -2510,7 +2518,7 @@ BEGIN
   SET @vOffset := vOffset;
 
   SET @sql_fc := CONCAT(
-    'SELECT id AS fechaCorteId,
+    '(SELECT id AS fechaCorteId,
             usuario_id AS usuarioId,
             fecha_corte AS fechaCorte,
             creado_en AS creadoEn,
@@ -2518,7 +2526,7 @@ BEGIN
      FROM fechas_corte_ahorro
      WHERE usuario_id = ?
      ORDER BY ', vOrdenCol, ' ', vOrdenDir,
-    ' LIMIT ? OFFSET ?
+    ' LIMIT ? OFFSET ?)
      UNION ALL
      SELECT NULL,NULL,NULL,NULL,COUNT(*) AS totalRegistros
      FROM fechas_corte_ahorro
