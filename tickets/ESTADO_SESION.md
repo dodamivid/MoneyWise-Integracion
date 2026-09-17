@@ -1,7 +1,7 @@
 # Estado de sesión — MoneyWise Integración
 
-**Generado:** 2026-09-17
-**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-17 (issue #87 + barrido de endpoints)
+**Generado:** 2026-09-17 (actualizado el mismo día tras retomar y cerrar #89)
+**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-17 (issue #87 + barrido de endpoints + issue #89)
 **Método:** este documento se armó cruzando `git log --oneline -30`, `git status`, `git diff HEAD`, `gh issue list`, y lectura directa de código — no solo memoria de la conversación. Donde algo viene solo de memoria (no verificado en esta pasada), se marca explícitamente como **[memoria, no re-verificado]**.
 
 ---
@@ -82,11 +82,13 @@
 - Los 25 tests de integración existentes de `metas.test.ts` siguen pasando sin cambios (corren contra el fallback en memoria). Nuevo `__tests__/tests/unit/metas-db.test.ts`.
 - PR #90, mergeado. **Verificado en git log**: commit `c6f534b`.
 
-### #89 — metas sin auth — ⚠️ CERRADO PERO NO RESUELTO
+### #89 — metas sin auth — ✅ RESUELTO (esta vez sí, verificado en vivo)
 - Se abrió como seguimiento de #77 (mismo patrón: `metas.routes.ts` sin `mockAuth`/`requireScope`), deliberadamente **fuera de alcance** de #87 para no mezclar un cambio de auth con el de persistencia.
-- **`gh issue view 89` muestra `state: CLOSED`, `stateReason: COMPLETED`, cerrado 2026-09-17 13:19 UTC.**
-- **Pero no hay ningún commit que lo mencione** (`git log --all --grep="#89"` no devuelve nada) **y `src/routes/metas.routes.ts` sigue sin ningún `mockAuth`/`requireScope` aplicado** (verificado con grep en esta misma sesión).
-- **Conclusión: el issue se cerró sin que el problema se haya arreglado.** No fue Claude quien lo cerró. Probablemente se cerró manualmente por error desde GitHub. **Recomendación: reabrirlo**, o si se decide que no es prioridad, dejarlo así pero con un comentario explicando por qué se cierra sin fix.
+- Se había cerrado en GitHub (`stateReason: COMPLETED`) sin ningún commit real — confirmado con `git log --all --grep="#89"` (vacío) y grep en `metas.routes.ts` (sin `mockAuth`/`requireScope`) al retomar la sesión. Se **reabrió** con `gh issue reopen 89` antes de tocar código.
+- Fix: `router.use(mockAuth)` + `requireScope("metas:leer"/"metas:escribir")` en `metas.routes.ts`, mismo patrón que `ingresos`/`egresos`/`inversiones`/`catalogos`. Se agregaron los scopes `metas:leer`/`metas:escribir`/`admin:metas` a la lista de scopes por defecto de `mockAuth` (`auth.middleware.ts`). Se actualizaron los 25 tests de integración existentes para mandar `x-mw-user`/`x-mw-scopes` (antes pasaban sin auth porque no había middleware que la exigiera) y se agregaron 2 tests nuevos de 403.
+- PR #92, mergeado (commit `791f87f`).
+- **Verificado en vivo contra Railway tras el deploy** (no solo Jest): `GET /metas` sin `metas:leer` → 403; con el scope → 200; `POST /metas` sin `metas:escribir` → 403; `POST /metas` con el scope → 201 y persistencia real confirmada con `GET /metas/:id`; `DELETE` con `usuarioId` equivocado en el body → 400 (el ownership check de `DELETE` se preservó); `DELETE` con el `usuarioId` correcto → 200. Usuario de prueba real creado vía `/auth/registro` (`usuarioId: 2`) y la meta de prueba se limpió al final (soft-delete).
+- **Lo que sigue sin resolver a propósito** (era mejora opcional del issue, no su defecto principal): `POST`/`GET` siguen confiando en el `usuarioId` que manda el cliente en vez de derivarlo de una identidad verificada; `PATCH` sigue sin validar dueño (`DELETE` sí). Es el mismo patrón que el resto de la API — no hay JWT real conectado a `mockAuth` todavía.
 
 ### #91 — `dashboard/balance` es función muerta (abierto, no bloquea #65)
 - Encontrado durante el barrido final de endpoints: `GET /api/v1/dashboard/balance` siempre da `404 NO_ENCONTRADO:No hay fechas de corte registradas` porque depende de la tabla `fechas_corte_ahorro`, y **no existe ningún endpoint** para crear/listar fechas de corte — ni rutas, ni controller, ni service, ni repository.
@@ -143,7 +145,7 @@
 | `GET/POST/PATCH/DELETE /api/v1/ingresos` | ✅ PROBADO EN VIVO | CRUD completo, incluye 404 en doble DELETE |
 | `GET/POST/PATCH/DELETE /api/v1/egresos` | ✅ PROBADO EN VIVO | CRUD completo |
 | `GET/POST/PATCH/DELETE /api/v1/inversiones` | ✅ PROBADO EN VIVO | CRUD completo incluyendo GET por id |
-| `GET/POST/PATCH/DELETE /api/v1/metas` | ✅ PROBADO EN VIVO | CRUD completo, `ahorro_real`/`eliminado_en` confirmados por `SELECT` directo |
+| `GET/POST/PATCH/DELETE /api/v1/metas` | ✅ PROBADO EN VIVO | CRUD completo, `ahorro_real`/`eliminado_en` confirmados por `SELECT` directo. Auth (`mockAuth`/`requireScope`) agregada y verificada en vivo el mismo día (#89, PR #92): 403 sin scope, 201/200 con scope, ownership de `DELETE` preservado |
 | `GET /api/v1/dashboard/resumen` | ✅ PROBADO EN VIVO | Reflejó totales reales (ingresos/egresos/balance) |
 | `GET /api/v1/dashboard/metas-vs-ahorro` | ✅ PROBADO EN VIVO | 200, respuesta correcta (vacía porque no había metas activas en ese momento) |
 | `GET /api/v1/dashboard/balance` | ❌ **FALLA (esperado/función muerta)** | `404 NO_ENCONTRADO:No hay fechas de corte registradas` — no existe forma de registrar una fecha de corte por API. Ver issue #91 |
@@ -178,7 +180,7 @@
 
 | Item | Estado | Detalle |
 |---|---|---|
-| #89 — metas sin auth | **Cerrado sin resolver** (ver sección 1) | Recomendación: reabrir |
+| #89 — metas sin auth | **Resuelto** (PR #92, verificado en vivo) | Auth agregada; queda pendiente (no bloqueante, era opcional) cerrar el gap de ownership en `PATCH` y dejar de confiar en el `usuarioId` del body |
 | #91 — dashboard/balance función muerta | Abierto | Falta módulo `fechasCorte.*` completo. Spec ya existe en `tickets/API_fechas_corte.md` |
 | Encoding roto en mensajes de error | No hay issue abierto | "invÃ¡lido" en vez de "inválido", visto en `restablecer`. Cosmético |
 | Corrimiento de ~6h en fechas leídas | No hay issue abierto, **[memoria, no re-verificado]** | Posible tema de timezone de sesión MySQL |
@@ -195,16 +197,17 @@
 - Los 4 tipos de movimiento (ingresos/egresos/inversiones/metas) persisten de verdad, con fechas correctas.
 - Los catálogos que los movimientos referencian (tipos, destinos, procedencias) persisten y tienen datos seed reales.
 
-**Recomendación antes de arrancar #65**: decidir qué hacer con el #89 reabierto/cerrado-sin-resolver — no es bloqueante para #65 en sí, pero como #65 va a crear datos de prueba masivos vía `metas`, conviene saber que ese endpoint sigue sin ninguna protección de auth real (cualquiera puede crear/leer/borrar metas de cualquier usuario con solo mandar el `usuarioId` que quiera en el body).
+**#89 ya no es un pendiente** — se arregló y se verificó en vivo el mismo día (PR #92). `metas` ahora exige `mockAuth`/`requireScope` igual que el resto de módulos; el seed de #65 debe mandar `x-mw-user`/`x-mw-scopes: metas:leer,metas:escribir` (y los scopes equivalentes de ingresos/egresos/inversiones) en cada request, igual que ya hace el resto de la API.
 
 ---
 
 ## 7. Siguiente paso exacto para retomar en sesión nueva
 
 1. Leer este archivo (`tickets/ESTADO_SESION.md`) completo antes de tocar código.
-2. Confirmar con el usuario qué hacer con #89 (¿reabrir? ¿dejarlo así?).
+2. #89 ya está resuelto y verificado (ver sección 1) — no requiere ninguna decisión pendiente.
 3. Arrancar el issue **#65 — Seed de datos transaccionales**:
    - Revisar `tickets/API_ingresos.md`, `API_egresos.md`, `API_inversiones.md`, `API_metas.md` para los contratos exactos de creación.
    - Diseñar el script de seed (probablemente Node, usando los endpoints reales vía `auth` + los módulos ya conectados) — **no** sembrar directo a SQL para no saltarse la validación de negocio real.
+   - El seed debe mandar `x-mw-user`/`x-mw-scopes` en cada request a `metas` (además de los scopes de ingresos/egresos/inversiones/catálogos que ya lo requerían) — ver #89.
    - Antes de correr el seed contra Railway (producción real), confirmar con el usuario si se quiere limpiar la base primero (`node scripts/import-db.js` resetea todo) o sembrar sobre lo que ya haya.
-4. Repo en `main`, limpio, sin ramas sueltas (verificado: `git status` → "nothing to commit", solo rama `main`).
+4. Repo en `main`, limpio, sin ramas sueltas (verificar con `git status`; al cierre de esta sesión estaba en `791f87f`, PR #92 ya mergeado y rama borrada).
