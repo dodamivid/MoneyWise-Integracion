@@ -32,6 +32,7 @@
 
 import { Router } from "express";
 import { metasController } from "../controllers/metas.controller";
+import { mockAuth, requireScope } from "../middlewares/auth.middleware";
 
 /**
  * Instancia del enrutador Express para rutas relacionadas con metas.
@@ -43,6 +44,14 @@ import { metasController } from "../controllers/metas.controller";
  * @type {Router}
  */
 const router = Router();
+
+/**
+ * Issue #89: `metas` no tenía ningún middleware de auth aplicado (a
+ * diferencia de ingresos/egresos/inversiones/catalogos). Se agrega
+ * mockAuth + requireScope siguiendo el mismo patrón que el resto de
+ * los módulos: lectura requiere `metas:leer`, escritura `metas:escribir`.
+ */
+router.use(mockAuth);
 
 /**
  * @route GET /api/v1/metas/:id
@@ -89,7 +98,7 @@ const router = Router();
  *   }
  * }
  */
-router.get("/:id", metasController.getById);
+router.get("/:id", requireScope("metas:leer"), metasController.getById);
 
 /**
  * @route GET /api/v1/metas
@@ -161,7 +170,7 @@ router.get("/:id", metasController.getById);
  *   }
  * }
  */
-router.get("/", metasController.getAll);
+router.get("/", requireScope("metas:leer"), metasController.getAll);
 
 /**
  * @route POST /api/v1/metas
@@ -243,7 +252,7 @@ router.get("/", metasController.getAll);
  *   }
  * }
  */
-router.post("/", metasController.create);
+router.post("/", requireScope("metas:escribir"), metasController.create);
 
 /**
  * @route PATCH /api/v1/metas/:id
@@ -315,7 +324,7 @@ router.post("/", metasController.create);
  *   }
  * }
  */
-router.patch("/:id", metasController.update);
+router.patch("/:id", requireScope("metas:escribir"), metasController.update);
 
 /**
  * @route DELETE /api/v1/metas/:id
@@ -372,7 +381,7 @@ router.patch("/:id", metasController.update);
  *   }
  * }
  */
-router.delete("/:id", metasController.delete);
+router.delete("/:id", requireScope("metas:escribir"), metasController.delete);
 
 /**
  * Exportar el enrutador configurado.

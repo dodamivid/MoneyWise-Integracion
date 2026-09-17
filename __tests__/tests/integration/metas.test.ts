@@ -13,6 +13,11 @@ import app from "../../../src/app";
 import { metasRepository } from "../../../src/repositories/metas.repository";
 
 const TEST_API_KEY = process.env.TEST_API_KEY ?? "test-x-api-key";
+const baseHeaders = {
+  "x-api-key": TEST_API_KEY,
+  "x-mw-user": "user-23",
+  "x-mw-scopes": "metas:leer,metas:escribir,admin:metas",
+};
 
 describe("Metas API Endpoints", () => {
   // Limpiar el repositorio antes de cada prueba para asegurar estado limpio
@@ -33,7 +38,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(metaData)
         .set("Accept", "application/json")
         .expect(201);
@@ -54,7 +59,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(metaData)
         .set("Accept", "application/json")
         .expect(201);
@@ -73,7 +78,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(invalidMetaData)
         .expect(400);
 
@@ -92,7 +97,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(invalidMetaData)
         .expect(400);
 
@@ -108,7 +113,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(invalidMetaData)
         .expect(400);
 
@@ -125,7 +130,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(invalidMetaData)
         .expect(400);
 
@@ -146,7 +151,7 @@ describe("Metas API Endpoints", () => {
 
       const createResponse = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(metaData)
         .expect(201);
 
@@ -155,7 +160,7 @@ describe("Metas API Endpoints", () => {
       // Luego obtenerla por ID
       const response = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(response.body).toHaveProperty("ok", true);
@@ -172,7 +177,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .get(`/api/v1/metas/${nonExistentId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(404);
 
       expect(response.body).toHaveProperty("ok", false);
@@ -184,7 +189,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .get(`/api/v1/metas/${invalidId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(400);
 
       expect(response.body).toHaveProperty("ok", false);
@@ -196,7 +201,7 @@ describe("Metas API Endpoints", () => {
       // Crear varias metas de prueba
       await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({
           usuarioId: 23,
           nombre: "Meta 1",
@@ -207,7 +212,7 @@ describe("Metas API Endpoints", () => {
 
       await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({
           usuarioId: 23,
           nombre: "Meta 2",
@@ -218,7 +223,7 @@ describe("Metas API Endpoints", () => {
 
       await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({
           usuarioId: 24,
           nombre: "Meta 3",
@@ -231,7 +236,7 @@ describe("Metas API Endpoints", () => {
     it("should return list of metas with pagination", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .query({ pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
@@ -248,7 +253,7 @@ describe("Metas API Endpoints", () => {
     it("should filter metas by usuarioId", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .query({ usuarioId: 23, pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
@@ -262,7 +267,7 @@ describe("Metas API Endpoints", () => {
     it("should filter metas by activa status", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .query({ activa: true, pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
@@ -275,7 +280,7 @@ describe("Metas API Endpoints", () => {
     it("should support ordering by fechaInicio:desc", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .query({ orden: "fechaInicio:desc", pagina: 1, tamanoPagina: 10 })
         .expect(200);
 
@@ -293,7 +298,7 @@ describe("Metas API Endpoints", () => {
     it("should return error for invalid pagination parameters", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .query({ pagina: -1, tamanoPagina: 10 })
         .expect(400);
 
@@ -303,7 +308,7 @@ describe("Metas API Endpoints", () => {
     it("should return error for invalid orden parameter", async () => {
       const response = await request(app)
         .get("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .query({ orden: "campoInvalido:asc" })
         .expect(400);
 
@@ -318,7 +323,7 @@ describe("Metas API Endpoints", () => {
       // Crear una meta de prueba
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({
           usuarioId: 23,
           nombre: "Meta original",
@@ -337,7 +342,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(updateData)
         .expect(200);
 
@@ -347,7 +352,7 @@ describe("Metas API Endpoints", () => {
       // Verificar que se actualiz├│ correctamente
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(50000.0);
@@ -362,7 +367,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(updateData)
         .expect(200);
 
@@ -371,7 +376,7 @@ describe("Metas API Endpoints", () => {
       // Verificar actualizaci├│n
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.nombre).toBe("Meta actualizada");
@@ -385,7 +390,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(updateData)
         .expect(200);
 
@@ -394,7 +399,7 @@ describe("Metas API Endpoints", () => {
       // Verificar actualizaci├│n
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.activa).toBe(false);
@@ -407,7 +412,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(updateData)
         .expect(400);
 
@@ -421,7 +426,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch("/api/v1/metas/9999")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(updateData)
         .expect(404);
 
@@ -435,7 +440,7 @@ describe("Metas API Endpoints", () => {
 
       const response = await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send(updateData)
         .expect(400);
 
@@ -450,7 +455,7 @@ describe("Metas API Endpoints", () => {
       // Crear una meta de prueba
       const response = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({
           usuarioId: 23,
           nombre: "Meta a eliminar",
@@ -465,7 +470,7 @@ describe("Metas API Endpoints", () => {
     it("should delete meta (soft delete)", async () => {
       const response = await request(app)
         .delete(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({ usuarioId: 23 }) // Simulando autenticaci├│n
         .expect(200);
 
@@ -475,7 +480,7 @@ describe("Metas API Endpoints", () => {
       // Verificar que la meta sigue existiendo pero est├í inactiva
       const getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.activa).toBe(false);
@@ -484,7 +489,7 @@ describe("Metas API Endpoints", () => {
     it("should return error for non-existent meta", async () => {
       const response = await request(app)
         .delete("/api/v1/metas/9999")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({ usuarioId: 23 })
         .expect(404);
 
@@ -494,9 +499,42 @@ describe("Metas API Endpoints", () => {
     it("should return error when deleting meta from different user", async () => {
       const response = await request(app)
         .delete(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({ usuarioId: 999 }) // Usuario diferente
         .expect(400);
+
+      expect(response.body).toHaveProperty("ok", false);
+    });
+  });
+
+  describe("Auth (issue #89)", () => {
+    it("should return 403 without metas:leer scope on GET /api/v1/metas", async () => {
+      const response = await request(app)
+        .get("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
+        .set("x-mw-user", "user-23")
+        // Nota: un header x-mw-scopes vacío se trata igual que "sin header"
+        // (mockAuth usa `||`), así que para forzar "sin el scope correcto"
+        // hay que mandar un scope no vacío que no sea metas:leer.
+        .set("x-mw-scopes", "ninguno")
+        .expect(403);
+
+      expect(response.body).toHaveProperty("ok", false);
+    });
+
+    it("should return 403 without metas:escribir scope on POST /api/v1/metas", async () => {
+      const response = await request(app)
+        .post("/api/v1/metas")
+        .set("x-api-key", TEST_API_KEY)
+        .set("x-mw-user", "user-23")
+        .set("x-mw-scopes", "metas:leer")
+        .send({
+          usuarioId: 23,
+          nombre: "Meta sin permiso",
+          montoObjetivo: 10000.0,
+          fechaInicio: "2025-01-01T00:00:00Z",
+        })
+        .expect(403);
 
       expect(response.body).toHaveProperty("ok", false);
     });
@@ -507,7 +545,7 @@ describe("Metas API Endpoints", () => {
       // 1. Crear meta
       const createResponse = await request(app)
         .post("/api/v1/metas")
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({
           usuarioId: 23,
           nombre: "Vacaciones 2026",
@@ -523,7 +561,7 @@ describe("Metas API Endpoints", () => {
       // 2. Obtener meta - verificar estado inicial
       let getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(0.0);
@@ -532,13 +570,13 @@ describe("Metas API Endpoints", () => {
       // 3. Actualizar ahorro - 25% progreso
       await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({ ahorroReal: 25000.0 })
         .expect(200);
 
       getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(25000.0);
@@ -547,13 +585,13 @@ describe("Metas API Endpoints", () => {
       // 4. Actualizar ahorro - 100% progreso
       await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({ ahorroReal: 100000.0 })
         .expect(200);
 
       getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.ahorroReal).toBe(100000.0);
@@ -562,13 +600,13 @@ describe("Metas API Endpoints", () => {
       // 5. Cerrar meta (marcar como completada)
       await request(app)
         .patch(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .send({ activa: false })
         .expect(200);
 
       getResponse = await request(app)
         .get(`/api/v1/metas/${metaId}`)
-        .set("x-api-key", TEST_API_KEY)
+        .set(baseHeaders)
         .expect(200);
 
       expect(getResponse.body.data.activa).toBe(false);
