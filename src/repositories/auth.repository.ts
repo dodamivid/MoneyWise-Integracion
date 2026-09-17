@@ -58,7 +58,7 @@ export class AuthRepository {
     scopes: string[];
   }> {
     const [resultSets] = await db.call<SPUsuarioRegistrarResult[]>(
-      "sp_usuarios_registrar(?, ?, ?, ?, ?, ?)",
+      "sp_usuarios_registrar",
       [nombre, apellidoP, apellidoM, correo, fechaN, hash]
     );
 
@@ -97,7 +97,7 @@ export class AuthRepository {
     scopes: string[];
   } | null> {
     const [resultSets] = await db.call<SPAuthAccesoResult[]>(
-      "sp_auth_acceso(?)",
+      "sp_auth_acceso",
       [correo]
     );
 
@@ -135,7 +135,7 @@ export class AuthRepository {
     const expiraStr = expira.toISOString().slice(0, 19).replace("T", " ");
 
     const [resultSets] = await db.call<SPAuthOlvidoResult[]>(
-      "sp_auth_olvido_iniciar(?, ?, ?)",
+      "sp_auth_olvido_iniciar",
       [correo, token, expiraStr]
     );
 
@@ -157,7 +157,7 @@ export class AuthRepository {
     hashNuevo: string
   ): Promise<boolean> {
     const [resultSets] = await db.call<SPAuthRestablecerResult[]>(
-      "sp_auth_restablecer_confirmar(?, ?)",
+      "sp_auth_restablecer_confirmar",
       [token, hashNuevo]
     );
 
