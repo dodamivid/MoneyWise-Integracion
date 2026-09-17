@@ -59,7 +59,11 @@ export class CatalogosService {
       const resultado = await catalogosRepository.crearDestino(usuarioId, nombre);
       return resultado;
     } catch (error: any) {
-      if (error.message?.includes("Duplicate") || error.code === "ER_DUP_ENTRY") {
+      if (
+        error.message?.includes("Duplicate") ||
+        error.message?.includes("DUPLICADO") ||
+        error.code === "ER_DUP_ENTRY"
+      ) {
         throw new BadRequestError(
           `Ya existe un destino con el nombre "${nombre}"`
         );
@@ -212,7 +216,11 @@ export class CatalogosService {
       const resultado = await catalogosRepository.crearFrecuencia(nombre);
       return resultado;
     } catch (error: any) {
-      if (error.message?.includes("Duplicate") || error.code === "ER_DUP_ENTRY") {
+      if (
+        error.message?.includes("Duplicate") ||
+        error.message?.includes("DUPLICADO") ||
+        error.code === "ER_DUP_ENTRY"
+      ) {
         throw new BadRequestError(
           `Ya existe una frecuencia con el nombre "${nombre}"`
         );

@@ -118,8 +118,9 @@ export class TiposEgresoService {
         data: resultado,
       };
     } catch (error: any) {
-      // Mapear errores del SP a clases de error apropiadas
-      if (error.message?.includes("Ya existe un tipo de egreso")) {
+      // Mapear errores del SP (formato "CODIGO:mensaje", ver SIGNAL en
+      // db/moneywise_schema.sql) a clases de error apropiadas
+      if (error.message?.includes("DUPLICADO")) {
         throw new ConflictError("Ya existe un tipo de egreso con este nombre");
       }
 
@@ -177,16 +178,16 @@ export class TiposEgresoService {
         data: { actualizado: true },
       };
     } catch (error: any) {
-      // Mapear errores del SP
-      if (error.message?.includes("no encontrado")) {
+      // Mapear errores del SP (formato "CODIGO:mensaje")
+      if (error.message?.includes("NO_ENCONTRADO")) {
         throw new NotFoundError("Tipo de egreso", tipoEgresoId.toString());
       }
 
-      if (error.message?.includes("Ya existe un tipo de egreso")) {
+      if (error.message?.includes("DUPLICADO")) {
         throw new ConflictError("Ya existe un tipo de egreso con este nombre");
       }
 
-      if (error.message?.includes("permiso")) {
+      if (error.message?.includes("PERMISO_DENEGADO")) {
         throw new ForbiddenError(
           "No tienes permiso para modificar este tipo de egreso"
         );
@@ -232,22 +233,18 @@ export class TiposEgresoService {
         data: { eliminado: true },
       };
     } catch (error: any) {
-      // Mapear errores del SP
-      if (error.message?.includes("no encontrado")) {
+      // Mapear errores del SP (formato "CODIGO:mensaje")
+      if (error.message?.includes("NO_ENCONTRADO")) {
         throw new NotFoundError("Tipo de egreso", tipoEgresoId.toString());
       }
 
-      if (error.message?.includes("en uso")) {
+      if (error.message?.includes("EN_USO")) {
         throw new ResourceInUseError(
           "No se puede eliminar: el tipo de egreso está en uso"
         );
       }
 
-      if (error.message?.includes("por defecto")) {
-        throw new ForbiddenError("No se pueden eliminar tipos por defecto");
-      }
-
-      if (error.message?.includes("permiso")) {
+      if (error.message?.includes("PERMISO_DENEGADO")) {
         throw new ForbiddenError(
           "No tienes permiso para eliminar este tipo de egreso"
         );
