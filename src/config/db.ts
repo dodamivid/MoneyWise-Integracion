@@ -32,7 +32,16 @@ export const db = {
 
   async call<T = any[]>(sp: string, params: any[] = []): Promise<any[]> {
     if (!this.pool) throw new Error("DB pool no inicializado");
-    const [rows] = await this.pool.query(`CALL ${sp}`, params);
+
+    // IMPORTANTE (issue #73): hay que incluir un placeholder `?` por cada
+    // parámetro. `mysql2`/`sqlstring` solo sustituyen los `?` que encuentran
+    // en el texto del SQL; si el SQL no trae ninguno (como pasaba con
+    // `` `CALL ${sp}` `` a secas), los valores de `params` se descartan en
+    // silencio y MySQL recibe la llamada sin argumentos, lo que rompe
+    // cualquier stored procedure con parámetros `IN` obligatorios.
+    const placeholders = params.map(() => "?").join(", ");
+    const sql = placeholders ? `CALL ${sp}(${placeholders})` : `CALL ${sp}()`;
+    const [rows] = await this.pool.query(sql, params);
 
     // mysql2 devuelve arrays anidados para múltiples result sets
     if (Array.isArray(rows) && Array.isArray(rows[0])) {
