@@ -445,8 +445,11 @@ export class MetasService {
       );
     }
 
-    // Intentar eliminar (soft delete)
-    const deleted = await metasRepository.delete(metaId);
+    // Intentar eliminar (soft delete). usuarioId ya se validó arriba contra
+    // existingMeta.usuarioId; se lo pasamos al repo porque el SP real
+    // (sp_metas_eliminar) lo exige para su propio WHERE usuario_id = ?
+    // (defensa en profundidad, issue #87).
+    const deleted = await metasRepository.delete(metaId, usuarioId);
 
     if (!deleted) {
       throw new NotFoundError("Meta", metaId.toString());
