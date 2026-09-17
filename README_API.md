@@ -1,7 +1,7 @@
 # MoneyWise API - Guía para Frontend
 
 Base URL: `https://moneywise-integracion-production.up.railway.app`  
-Header requerido en todas las peticiones a `/api`: `x-api-key: api-key-moneywise-7af3b1b6-2c6f-4f3d-9b2b-7b8c9d1e5f42`
+Header requerido en todas las peticiones a `/api`: `x-api-key: <pide el valor real a alguien con acceso a Railway → Variables, no lo comitees aquí>`
 
 ## Auth
 - `POST /api/v1/auth/registro`  
@@ -43,7 +43,7 @@ const res = await fetch(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": "api-key-moneywise-7af3b1b6-2c6f-4f3d-9b2b-7b8c9d1e5f42",
+      "x-api-key": "<tu API_KEY, nunca la comitees>",
     },
     body: JSON.stringify({ correo: "mail@example.com", contrasena: "TuPass123" }),
   }

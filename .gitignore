@@ -3,6 +3,12 @@
 
 /node_modules
 coverage/
+dist/
+
+# Nunca comitear credenciales reales (issue #79)
+.env
+.env.local
+.env.*.local
 
 ### AndroidStudio ###
 # Covers files to be ignored for android development using Android Studio.
