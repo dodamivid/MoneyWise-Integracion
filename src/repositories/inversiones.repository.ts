@@ -1,4 +1,5 @@
 import { db } from "../config/db";
+import { toMySQLDateTime } from "../utils/mysqlDate";
 import { Inversion } from "../dtos/inversiones.dto";
 import {
   InversionListQuery,
@@ -147,8 +148,8 @@ async function listarInversionesConDb(
   try {
     const resultSets = await db.call("sp_inversiones_listar", [
       filters.usuarioId,
-      filters.desde ?? null,
-      filters.hasta ?? null,
+      toMySQLDateTime(filters.desde),
+      toMySQLDateTime(filters.hasta),
       filters.pagina,
       filters.tamanoPagina,
       filters.orden,
@@ -235,8 +236,8 @@ async function crearInversionDb(
       payload.destinoId ?? null,
       payload.monto,
       payload.objetivo,
-      payload.fechaInicio,
-      payload.fechaFin ?? null,
+      toMySQLDateTime(payload.fechaInicio),
+      toMySQLDateTime(payload.fechaFin ?? null),
       payload.tasaInteresPorc,
     ]);
 
@@ -306,8 +307,8 @@ async function actualizarInversionDb(
       payload.destinoId ?? null,
       payload.monto,
       payload.objetivo,
-      payload.fechaInicio,
-      payload.fechaFin ?? null,
+      toMySQLDateTime(payload.fechaInicio),
+      toMySQLDateTime(payload.fechaFin ?? null),
       payload.tasaInteresPorc,
     ]);
 
@@ -416,20 +417,12 @@ function eliminarInversionFallback(inversionId: number): boolean {
 (inversionesRepository as any).create = async function (
   payload: InversionCreateInput & { usuarioId: number }
 ) {
+  // IMPORTANTE: no tragar errores aquí (ver issue #84). Antes, cualquier
+  // error no reconocido (ej. el bug de formato de fecha) caía en silencio
+  // al fallback en memoria, devolviendo un "éxito" que nunca se guardó de
+  // verdad en la base.
   if (db.enabled && db.pool) {
-    try {
-      return await crearInversionDb(payload);
-    } catch (error) {
-      if (error instanceof Error && error.message.startsWith("FK_INEXISTENTE")) {
-        throw error;
-      }
-      if (
-        error instanceof Error &&
-        error.message.startsWith("DATOS_INVALIDOS")
-      ) {
-        throw error;
-      }
-    }
+    return await crearInversionDb(payload);
   }
 
   return crearInversionFallback(payload);
@@ -441,22 +434,7 @@ function eliminarInversionFallback(inversionId: number): boolean {
   usuarioId: number
 ): Promise<boolean> {
   if (db.enabled && db.pool) {
-    try {
-      return await actualizarInversionDb(inversionId, payload, usuarioId);
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.startsWith("FK_INEXISTENTE")
-      ) {
-        throw error;
-      }
-      if (
-        error instanceof Error &&
-        error.message.startsWith("DATOS_INVALIDOS")
-      ) {
-        throw error;
-      }
-    }
+    return await actualizarInversionDb(inversionId, payload, usuarioId);
   }
 
   return actualizarInversionFallback(inversionId, payload);

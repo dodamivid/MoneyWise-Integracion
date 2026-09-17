@@ -1,4 +1,5 @@
 import { db } from "../config/db";
+import { toMySQLDateTime } from "../utils/mysqlDate";
 import type {
   ActualizarIngresoBody,
   CrearIngresoBody,
@@ -42,8 +43,8 @@ class IngresosRepository {
 
         const resultSets = await db.call("sp_ingresos_listar", [
           usuarioIdResuelto,
-          desde || null,
-          hasta || null,
+          toMySQLDateTime(desde),
+          toMySQLDateTime(hasta),
           tipoId || null,
           procedenciaId || null,
           min || null,
@@ -180,31 +181,32 @@ class IngresosRepository {
     usuarioIdResuelto: number
   ): Promise<number> {
     if (db.enabled && db.pool) {
-      try {
-        const resultSets = await db.call("sp_ingresos_crear", [
-          usuarioIdResuelto,
-          body.tipoId,
-          body.procedenciaId ?? null,
-          body.monto,
-          body.fechaInicio,
-          body.fechaFin ?? null,
-          body.descripcion ?? null,
-        ]);
+      // IMPORTANTE: no tragar errores aquí. Antes, cualquier falla no
+      // reconocida (ej. el bug de formato de fecha, ver toMySQLDateTime)
+      // caía silenciosamente al ID aleatorio de abajo, devolviendo un
+      // "201 Created" con un ingreso que nunca se guardó de verdad
+      // (ver issue #84). Si la base está habilitada, un error real debe
+      // propagarse como error real.
+      const resultSets = await db.call("sp_ingresos_crear", [
+        usuarioIdResuelto,
+        body.tipoId,
+        body.procedenciaId ?? null,
+        body.monto,
+        toMySQLDateTime(body.fechaInicio),
+        toMySQLDateTime(body.fechaFin ?? null),
+        body.descripcion ?? null,
+      ]);
 
-        const rows = resultSets[0] as any[];
-        if (rows && rows.length > 0 && rows[0].ingresoId) {
-          return Number(rows[0].ingresoId);
-        }
-      } catch (error: any) {
-        console.error("Error en sp_ingresos_crear:", error);
-        if (error.message && error.message.includes("FK_INEXISTENTE")) {
-          throw new Error(
-            "FK_INEXISTENTE: tipoId o procedenciaId no existe"
-          );
-        }
+      const rows = resultSets[0] as any[];
+      if (rows && rows.length > 0 && rows[0].ingresoId) {
+        return Number(rows[0].ingresoId);
       }
+      throw new Error(
+        "No se pudo crear el ingreso: la base no devolvió un ingresoId"
+      );
     }
 
+    // Sin base de datos (tests / DB_ENABLED=false): id simulado.
     return Math.floor(Math.random() * 1000) + 100;
   }
 
@@ -261,8 +263,10 @@ class IngresosRepository {
           body.tipoId ?? actual.tipoId,
           body.procedenciaId !== undefined ? body.procedenciaId : actual.procedenciaId,
           body.monto ?? actual.monto,
-          body.fechaInicio ?? actual.fechaInicio,
-          body.fechaFin !== undefined ? body.fechaFin : actual.fechaFin,
+          toMySQLDateTime(body.fechaInicio ?? actual.fechaInicio),
+          toMySQLDateTime(
+            body.fechaFin !== undefined ? body.fechaFin : actual.fechaFin
+          ),
           body.descripcion !== undefined ? body.descripcion : actual.descripcion,
         ]);
 
