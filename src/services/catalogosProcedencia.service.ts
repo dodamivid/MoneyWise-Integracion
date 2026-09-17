@@ -87,7 +87,7 @@ export class CatalogosProcedenciaService {
         data: resultado,
       };
     } catch (error: any) {
-      if (error.message === "DUPLICADO") {
+      if (error.message?.includes("DUPLICADO")) {
         throw new ConflictError("Ya existe una procedencia con ese nombre");
       }
 
@@ -130,15 +130,15 @@ export class CatalogosProcedenciaService {
 
       return { ok: true, data: resultado };
     } catch (error: any) {
-      if (error.message === "NO_ENCONTRADO") {
+      if (error.message?.includes("NO_ENCONTRADO")) {
         throw new NotFoundError("Procedencia", procedenciaId.toString());
       }
 
-      if (error.message === "DUPLICADO") {
+      if (error.message?.includes("DUPLICADO")) {
         throw new ConflictError("Ya existe una procedencia con ese nombre");
       }
 
-      if (error.message === "PERMISO_DENEGADO") {
+      if (error.message?.includes("PERMISO_DENEGADO")) {
         throw new ForbiddenError(
           "No se pueden editar procedencias predeterminadas sin permisos de administrador"
         );
@@ -179,11 +179,11 @@ export class CatalogosProcedenciaService {
 
       return { ok: true, data: resultado };
     } catch (error: any) {
-      if (error.message === "NO_ENCONTRADO") {
+      if (error.message?.includes("NO_ENCONTRADO")) {
         throw new NotFoundError("Procedencia", procedenciaId.toString());
       }
 
-      if (error.message === "PERMISO_DENEGADO") {
+      if (error.message?.includes("PERMISO_DENEGADO")) {
         throw new ForbiddenError("No se pueden eliminar procedencias por defecto");
       }
 
