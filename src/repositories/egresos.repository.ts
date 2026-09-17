@@ -1,4 +1,5 @@
 import { db } from "../config/db";
+import { toMySQLDateTime } from "../utils/mysqlDate";
 import type {
   EgresoDTO,
   ListarEgresosQuery,
@@ -30,8 +31,8 @@ class EgresosRepository {
 
         const resultSets = await db.call("sp_egresos_listar", [
           usuarioIdResuelto,
-          desde || null,
-          hasta || null,
+          toMySQLDateTime(desde),
+          toMySQLDateTime(hasta),
           tipoId || null,
           destinoId || null,
           min || null,
@@ -144,31 +145,29 @@ class EgresosRepository {
     usuarioIdResuelto: number
   ): Promise<number> {
     if (db.enabled && db.pool) {
-      try {
-        const resultSets = await db.call("sp_egresos_crear", [
-          usuarioIdResuelto,
-          body.tipoId,
-          body.destinoId ?? null,
-          body.monto,
-          body.fechaInicio,
-          body.fechaFin ?? null,
-          body.descripcion ?? null,
-        ]);
+      // IMPORTANTE: no tragar errores aquí (ver issue #84) -- un error real
+      // de la base debe propagarse, no disfrazarse de éxito con un id
+      // inventado.
+      const resultSets = await db.call("sp_egresos_crear", [
+        usuarioIdResuelto,
+        body.tipoId,
+        body.destinoId ?? null,
+        body.monto,
+        toMySQLDateTime(body.fechaInicio),
+        toMySQLDateTime(body.fechaFin ?? null),
+        body.descripcion ?? null,
+      ]);
 
-        const rows = resultSets[0] as any[];
-        if (rows && rows.length > 0 && rows[0].egresoId) {
-          return rows[0].egresoId;
-        }
-      } catch (error: any) {
-        console.error("Error en sp_egresos_crear:", error);
-        // Si el SP lanza SIGNAL con FK_INEXISTENTE, propagar
-        if (error.message && error.message.includes("FK_INEXISTENTE")) {
-          throw new Error("FK_INEXISTENTE: tipoId o destinoId no existe");
-        }
+      const rows = resultSets[0] as any[];
+      if (rows && rows.length > 0 && rows[0].egresoId) {
+        return rows[0].egresoId;
       }
+      throw new Error(
+        "No se pudo crear el egreso: la base no devolvió un egresoId"
+      );
     }
 
-    // Fallback: simular creación
+    // Sin base de datos (tests / DB_ENABLED=false): id simulado.
     return Math.floor(Math.random() * 1000) + 100;
   }
 
@@ -244,8 +243,10 @@ class EgresosRepository {
           body.tipoId ?? actual.tipoId,
           body.destinoId !== undefined ? body.destinoId : actual.destinoId,
           body.monto ?? actual.monto,
-          body.fechaInicio ?? actual.fechaInicio,
-          body.fechaFin !== undefined ? body.fechaFin : actual.fechaFin,
+          toMySQLDateTime(body.fechaInicio ?? actual.fechaInicio),
+          toMySQLDateTime(
+            body.fechaFin !== undefined ? body.fechaFin : actual.fechaFin
+          ),
           body.descripcion !== undefined
             ? body.descripcion
             : actual.descripcion,
