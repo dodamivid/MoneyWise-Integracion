@@ -36,6 +36,9 @@ export function mockAuth(req: Request, res: Response, next: NextFunction) {
       "catalogos:leer",
       "catalogos:escribir",
       "admin:catalogos",
+      "metas:leer",
+      "metas:escribir",
+      "admin:metas",
     ].forEach((scope) => {
       if (!scopes.includes(scope)) {
         scopes.push(scope);

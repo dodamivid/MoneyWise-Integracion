@@ -165,7 +165,7 @@ Todas las rutas bajo `/api/*` requieren el header `x-api-key` (middleware `requi
 | `/api/v1/ingresos` | Ingresos | Sí | MySQL |
 | `/api/v1/egresos` | Egresos | Sí | MySQL |
 | `/api/v1/inversiones` | Inversiones | Sí | MySQL |
-| `/api/v1/metas` | Metas de ahorro | **No** (problema conocido, ver abajo) | MySQL |
+| `/api/v1/metas` | Metas de ahorro | Sí (issue #89, corregido) | MySQL |
 | `/api/v1/version` | Versión del servicio | No | N/A |
 | `/api/v1/dashboard/resumen`, `/balance`, `/metas-vs-ahorro` | Dashboard | Sí | MySQL. `/balance` requiere una fecha de corte registrada en `fechas_corte_ahorro`, y **no existe ningún endpoint para crearla** (problema conocido) |
 | `/api/v1/catalogos/destinos` | Catálogo de destinos | Sí | MySQL |
@@ -184,7 +184,7 @@ Todas las rutas bajo `/api/*` requieren el header `x-api-key` (middleware `requi
 
 ## Problemas Conocidos (vigentes)
 
-- **`/api/v1/metas` sin auth**: `metas.routes.ts` no aplica `mockAuth`/`requireScope` en ninguna ruta. `POST`/`GET` confían en el `usuarioId` que manda el propio cliente; `PATCH` no valida dueño en absoluto (`DELETE` sí). Issue relacionado: #89 (en GitHub aparece cerrado, pero el fix no está en el código — verificar antes de asumir que está resuelto).
+- **`/api/v1/metas` — auth aplicada, pero ownership sigue débil (issue #89, parcialmente corregido)**: `metas.routes.ts` ya aplica `mockAuth`/`requireScope("metas:leer"/"metas:escribir")` en todas sus rutas (igual que ingresos/egresos/inversiones/catálogos). Lo que **sigue sin resolver**, igual que antes: `POST`/`GET` confían en el `usuarioId` que manda el propio cliente en vez de derivarlo de una identidad verificada; `PATCH` no valida dueño en absoluto (`DELETE` sí, pero también confía en el `usuarioId` del body). Esto es el mismo patrón que el resto de la API (no hay JWT real conectado a `mockAuth` todavía — ver "mockAuth concede admin en prod" en memoria), no es exclusivo de `metas`.
 - **`/api/v1/dashboard/balance` es una función muerta**: depende de `fechas_corte_ahorro`, pero no existe ningún endpoint (`routes`/`controller`/`service`/`repository`) para crear/listar fechas de corte, aunque los stored procedures (`sp_fechasCorte_*`) sí existen en el esquema. Spec original en `tickets/API_fechas_corte.md`. Issue: #91.
 - **`/api/users/*` (legacy) sigue en memoria**: sin conexión a BD y sin endpoint de creación — solo se puede consultar/editar un usuario que ya exista en el `Map`, y no hay forma de meter uno ahí vía API. Es un módulo separado de `auth` (que sí es real).
 - **`npm run lint` crasheado**: ver "Limitaciones Actuales" arriba.
@@ -203,6 +203,6 @@ Este proyecto sigue un roadmap de 10 tickets (ver [docs/roadmap.md](docs/roadmap
 - Logging (pino) ✓ (`src/utils/logger.ts`, `logger.middleware.ts`)
 - Dockerfile ✓ (existe en la raíz del repo)
 - Persistencia real en MySQL para la mayoría de los módulos ✓ (ver "Capa de Base de Datos")
-- Pendiente: exponer `fechas_corte_ahorro` por API, auth real en `/metas`, arreglar `npm run lint`
+- Pendiente: exponer `fechas_corte_ahorro` por API, arreglar `npm run lint`
 
 El equipo usa GitHub Projects con etiquetas: `integration`, `backend`, `ts`, `express`, `backlog`
