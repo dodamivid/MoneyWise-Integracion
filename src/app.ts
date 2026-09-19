@@ -17,6 +17,7 @@ import tiposEgresoRoutes from "./routes/tiposEgreso.routes";
 import authRoutes from "./routes/auth.routes";
 import { db } from "./config/db";
 import tiposIngresoRoutes from "./routes/tiposIngreso.routes";
+import fechasCorteRoutes from "./routes/fechasCorte.routes";
 import {
   traceIdMiddleware,
   errorHandler,
@@ -108,6 +109,7 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/catalogos", catalogosRoutes);
 app.use("/api/v1/catalogos", catalogosProcedenciaRoutes);
 app.use("/api/v1/catalogos", tiposEgresoRoutes);
+app.use("/api/v1/ahorro", fechasCorteRoutes);
 // Issue #77: tipos-ingreso ahora vive bajo /catalogos, igual que sus
 // hermanos (antes estaba en /api/v1/tipos-ingreso sin auth aplicada).
 app.use("/api/v1/catalogos", tiposIngresoRoutes);
