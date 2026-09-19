@@ -24,6 +24,7 @@ npm run test:watch   # Ejecutar pruebas en modo observación
 npm run test:coverage # Ejecutar pruebas con reporte de cobertura
 npm run test:ci      # Ejecutar pruebas en modo CI (silencioso, con cobertura)
 npm run test:verbose # Ejecutar pruebas con salida detallada
+npm run test:db      # Pruebas contra MySQL real (requiere DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME) — ver "Pruebas contra MySQL real" abajo
 ```
 
 ### Base de datos (MySQL en Railway)
@@ -91,7 +92,8 @@ Rutas → Controladores → Servicios → Repositorios → Modelos
 
 - `db.enabled`: `true` cuando `DB_ENABLED` o `USE_DB` son `"true"` en el entorno. `db.pool`: pool de `mysql2` (solo existe si `db.enabled`).
 - `db.call(spName, params)`: invoca un stored procedure. **Pasa solo el nombre del SP** (ej. `"sp_ingresos_listar"`), nunca con paréntesis/placeholders incluidos — `db.call()` arma `CALL sp_nombre(?, ?, ...)` con un placeholder por cada elemento de `params`. Es defensivo (si algún caller pasa un nombre con `(` ya incluido, lo recorta), pero la convención correcta es nombre limpio.
-- **Fechas**: cualquier valor de fecha/hora que se le pase a un SP debe pasar por `toMySQLDateTime()` (`src/utils/mysqlDate.ts`) primero. MySQL rechaza el formato ISO-8601 (`2026-01-01T00:00:00Z`) que manda el cliente; hay que convertirlo a `"YYYY-MM-DD HH:MM:SS"`.
+- **Fechas al escribir**: cualquier valor de fecha/hora que se le pase a un SP debe pasar por `toMySQLDateTime()` (`src/utils/mysqlDate.ts`) primero. MySQL rechaza el formato ISO-8601 (`2026-01-01T00:00:00Z`) que manda el cliente; hay que convertirlo a `"YYYY-MM-DD HH:MM:SS"`.
+- **Fechas al leer**: el pool usa `timezone: "Z"` (no `dateStrings`), así que mysql2 devuelve los DATETIME como objetos `Date` interpretados como UTC, y `res.json()` los serializa solo con `.toISOString()` automáticamente — con `Z` explícito, sin ambigüedad. **No cambiar esto a `dateStrings: true`** sin agregar de vuelta una conversión explícita a ISO en cada repositorio: ver "Corrimiento de zona horaria" en "Problemas Conocidos" para la regresión exacta que eso causaba.
 - **SPs `_listar` con paginación + total**: siguen el patrón `(SELECT ... ORDER BY ... LIMIT ? OFFSET ?) UNION ALL SELECT ... COUNT(*) AS totalRegistros ...` — el primer `SELECT` **debe** ir entre paréntesis (MySQL exige esto cuando ese `SELECT` no es el último de un `UNION` y trae `ORDER BY`/`LIMIT`; sin paréntesis es un error de sintaxis real). El código que mapea el resultado debe descartar la última fila (la de `totalRegistros`) del array de datos, no tratarla como un registro real.
 - **SPs `_crear` de catálogos por-usuario** (destinos, procedencias, tipos_ingreso, tipos_egreso): `es_por_defecto` debe insertarse siempre como `0` — estos SPs los llama la API con el usuario autenticado real, nunca para sembrar catálogos globales (eso son los `INSERT` sueltos al inicio de `db/moneywise_schema.sql`, con `es_por_defecto = 1` explícito).
 - **Manejo de errores de los SPs**: cuando un SP lanza `SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CODIGO:mensaje'`, `error.message` en el catch de Node es exactamente ese texto (ej. `"DUPLICADO:La procedencia ya existe"`) y `error.errno` trae el código HTTP del `SIGNAL`. Los services deben usar `error.message?.includes("CODIGO")` para mapear a la clase de error correcta (`ConflictError`, `NotFoundError`, `ForbiddenError`, etc.) — comparar con `===` exacto no funciona.
@@ -120,9 +122,9 @@ Rutas → Controladores → Servicios → Repositorios → Modelos
 
 - **Test Runner**: Jest con preset ts-jest
 - **Pruebas HTTP**: Supertest para pruebas de endpoints de la API
-- **Ubicación de Pruebas**: `__tests__/tests/integration/`
-- **Meta de Cobertura**: Mínimo 70% (según el roadmap)
-- **Timeout de Pruebas**: 10 segundos
+- **Ubicación de Pruebas**: `__tests__/tests/integration/` y `__tests__/tests/unit/` (con `DB_ENABLED` apagado — ver "Pruebas contra MySQL real" abajo para la suite que sí pega a una base real)
+- **Meta de Cobertura**: Mínimo 70% (según el roadmap) — con `npm test` normal da ~46%, y **eso es esperado, no un déficit a perseguir**: casi todo el código que llama a MySQL de verdad (`db.call(...)`) solo se ejecuta con `DB_ENABLED=true`, y `npm test` corre con eso apagado a propósito (fallback en memoria). La suite `npm run test:db` es la que cubre esos paths, contra una base real.
+- **Timeout de Pruebas**: 10 segundos (20s en `npm run test:db`, las llamadas a MySQL real tardan más que el mock)
 
 ### Estructura de Pruebas
 Las pruebas son pruebas de integración que:
@@ -130,6 +132,31 @@ Las pruebas son pruebas de integración que:
 2. Usan supertest para hacer peticiones HTTP
 3. Verifican códigos de estado y formatos de respuesta
 4. Verifican integridad de datos
+
+### Pruebas contra MySQL real (`npm run test:db`)
+
+Hay dos suites de Jest, con dos configs distintas, que **no se mezclan**:
+
+| | `npm test` (`jest.config.js`) | `npm run test:db` (`jest.db.config.js`) |
+|---|---|---|
+| Ubicación | `__tests__/tests/integration/`, `__tests__/tests/unit/` | `__tests__/tests/db/` |
+| `DB_ENABLED` | apagado (fallback en memoria) | forzado a `true` |
+| Qué prueba realmente | lógica de negocio, validación Zod, scopes/auth, el fallback en memoria | los repositorios que llaman de verdad a `db.call()` — los SPs reales, contra una base MySQL real |
+| Requiere BD | no | sí (ver abajo) |
+| Corre en CI | sí, siempre (`.github/workflows/test.yml`, job `test`) | sí, contra un contenedor MySQL efímero del propio workflow (job `test-db`) |
+
+**Por qué existe esta segunda suite**: antes de que existiera, la única forma de confirmar que algo funcionaba contra MySQL real era probarlo a mano con `curl` contra Railway (así se encontraron y arreglaron #73, #75, #80, #82, #84 en su momento) — trabajo real pero manual, no repetible, no en CI. `npm run test:db` automatiza exactamente ese tipo de verificación. De hecho, escribiéndola se encontró y arregló un bug real que antes solo estaba anotado como sospecha (ver "Corrimiento de zona horaria" más abajo).
+
+**Cómo correrla en local** (requiere Docker):
+```bash
+docker run -d --name moneywise-test-db -e MYSQL_ROOT_PASSWORD=testpass123 -p 3307:3306 mysql:8.0
+# esperar unos segundos a que el contenedor termine de arrancar, luego:
+DB_HOST=127.0.0.1 DB_PORT=3307 DB_USER=root DB_PASS=testpass123 node scripts/import-db.js
+DB_HOST=127.0.0.1 DB_PORT=3307 DB_USER=root DB_PASSWORD=testpass123 DB_NAME=moneywise npm run test:db
+```
+Nota las dos variables de contraseña distintas: `scripts/import-db.js` usa `DB_PASS`, pero el runtime real (`src/config/db.ts`, que es lo que `test:db` ejercita) usa `DB_PASSWORD` — son variables diferentes con nombres parecidos, no un typo.
+
+**Nunca correr `test:db` apuntando a la base de Railway de producción** — usa una base efímera/de pruebas (el contenedor Docker de arriba, o el service container de CI). Los tests crean usuarios/movimientos reales con datos de prueba.
 
 ## Notas Importantes
 
@@ -191,7 +218,7 @@ Todas las rutas bajo `/api/*` requieren el header `x-api-key` (middleware `requi
 - ~~`npm run lint` crasheado~~ **Resuelto (issue #96 + fix de los 4 errores reales)** — ver "Limitaciones Actuales" arriba. Ya conectado al CI.
 - **Formato de respuesta no uniforme entre módulos**: ver nota en "Notas Importantes".
 - ~~`dist/` sigue trackeado en git~~ **Resuelto (issue #97)**: destrackeado con `git rm -r --cached dist/`. Sigue en `.gitignore`, ya no genera diffs en PRs nuevos.
-- **Corrimiento de zona horaria observado (~6h) en algunas fechas leídas de vuelta** desde MySQL — no confirmado a fondo, posible tema de timezone de sesión MySQL vs. UTC.
+- ~~Corrimiento de zona horaria observado (~6h) en algunas fechas leídas de vuelta desde MySQL~~ **Confirmado y resuelto**: el pool de `mysql2` usaba `dateStrings: true`, así que devolvía los DATETIME como texto crudo sin marca de zona horaria (ej. `"2026-01-15 00:00:00"`). Cualquier cliente que hiciera `new Date(valor)` sobre ese texto lo interpretaba como hora **local** del cliente, no UTC — en Chihuahua/CDMX (UTC-6) eso corría la fecha 6 horas hacia adelante al convertirla de vuelta a ISO. Confirmado con una prueba real contra MySQL (`__tests__/tests/db/movimientos.db.test.ts`) y corregido cambiando el pool a `timezone: "Z"` (sin `dateStrings`) en `src/config/db.ts` — ver el comentario ahí para el detalle completo. Con el fix, todas las fechas salen en JSON como ISO-8601 con `Z` explícito, sin ambigüedad, sin tocar ningún repositorio/DTO.
 
 ## Contexto del Roadmap
 

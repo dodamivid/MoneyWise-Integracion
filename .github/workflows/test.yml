@@ -31,3 +31,51 @@ jobs:
         with:
           file: ./coverage/lcov.info
           fail_ci_if_error: false
+
+  # Suite separada: pega a MySQL real (no al fallback en memoria), sobre
+  # un contenedor de servicio efímero -- se crea y se destruye con el job,
+  # nunca toca Railway. Ver CLAUDE.md, "Pruebas contra MySQL real".
+  test-db:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass123
+          MYSQL_DATABASE: moneywise
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -ptestpass123"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Import schema into the MySQL service container
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASS: testpass123
+        run: node scripts/import-db.js
+
+      - name: Run tests against real MySQL
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: testpass123
+          DB_NAME: moneywise
+        run: npm run test:db
