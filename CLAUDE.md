@@ -49,7 +49,7 @@ Rutas → Controladores → Servicios → Repositorios → Modelos
 
 1. **Rutas** (`src/routes/`)
    - Definen los endpoints HTTP y los mapean a controladores
-   - Un archivo de rutas por módulo (`ingresos.routes.ts`, `egresos.routes.ts`, `inversiones.routes.ts`, `metas.routes.ts`, `auth.routes.ts`, `dashboard.routes.ts`, `catalogos.routes.ts`, `catalogosProcedencia.routes.ts`, `tiposEgreso.routes.ts`, `tiposIngreso.routes.ts`, `users.routes.ts`, `version.routes.ts`, `health.ts`)
+   - Un archivo de rutas por módulo (`ingresos.routes.ts`, `egresos.routes.ts`, `inversiones.routes.ts`, `metas.routes.ts`, `auth.routes.ts`, `dashboard.routes.ts`, `catalogos.routes.ts`, `catalogosProcedencia.routes.ts`, `tiposEgreso.routes.ts`, `tiposIngreso.routes.ts`, `fechasCorte.routes.ts`, `users.routes.ts`, `version.routes.ts`, `health.ts`)
    - Ver "Mapa de Endpoints" más abajo para la lista completa con sus prefijos
 
 2. **Controladores** (`src/controllers/`)
@@ -67,7 +67,7 @@ Rutas → Controladores → Servicios → Repositorios → Modelos
 
 4. **Repositorios** (`src/repositories/`)
    - Capa de abstracción de acceso a datos
-   - **La mayoría usan MySQL real** (vía stored procedures) con fallback en memoria: `if (db.enabled && db.pool) { await db.call(...) } else { /* memoria */ }`. Conectados así: `ingresos`, `egresos`, `inversiones`, `metas`, `destinos`, `frecuencias`, `procedencias`, `tipos_egreso`, `tipos_ingreso`.
+   - **La mayoría usan MySQL real** (vía stored procedures) con fallback en memoria: `if (db.enabled && db.pool) { await db.call(...) } else { /* memoria */ }`. Conectados así: `ingresos`, `egresos`, `inversiones`, `metas`, `destinos`, `frecuencias`, `procedencias`, `tipos_egreso`, `tipos_ingreso`, `fechasCorte`.
    - **Excepción real**: `user.repository.ts` (usado por el módulo legacy `/api/users`) es **puro en memoria** (`Map`), sin ninguna conexión a BD, y sin endpoint de creación vía API — ver "Problemas Conocidos".
    - Ver la sección "Capa de Base de Datos" más abajo para la convención de `db.call()`.
 
@@ -167,7 +167,8 @@ Todas las rutas bajo `/api/*` requieren el header `x-api-key` (middleware `requi
 | `/api/v1/inversiones` | Inversiones | Sí | MySQL |
 | `/api/v1/metas` | Metas de ahorro | Sí (issue #89, corregido) | MySQL |
 | `/api/v1/version` | Versión del servicio | No | N/A |
-| `/api/v1/dashboard/resumen`, `/balance`, `/metas-vs-ahorro` | Dashboard | Sí | MySQL. `/balance` requiere una fecha de corte registrada en `fechas_corte_ahorro`, y **no existe ningún endpoint para crearla** (problema conocido) |
+| `/api/v1/dashboard/resumen`, `/balance`, `/metas-vs-ahorro` | Dashboard | Sí | MySQL. `/balance` requiere una fecha de corte registrada en `fechas_corte_ahorro` — issue #91, resuelto: ver `/api/v1/ahorro/fechas-corte` abajo |
+| `/api/v1/ahorro/fechas-corte` | Fechas de corte de ahorro (alimenta `dashboard/balance`) | Sí | MySQL (issue #91) |
 | `/api/v1/catalogos/destinos` | Catálogo de destinos | Sí | MySQL |
 | `/api/v1/catalogos/frecuencias` | Catálogo de frecuencias | Sí (escritura requiere `admin:catalogos`, es global) | MySQL |
 | `/api/v1/catalogos/procedencias` | Catálogo de procedencias | Sí | MySQL |
@@ -185,10 +186,11 @@ Todas las rutas bajo `/api/*` requieren el header `x-api-key` (middleware `requi
 ## Problemas Conocidos (vigentes)
 
 - **`/api/v1/metas` — auth aplicada, pero ownership sigue débil (issue #89, parcialmente corregido)**: `metas.routes.ts` ya aplica `mockAuth`/`requireScope("metas:leer"/"metas:escribir")` en todas sus rutas (igual que ingresos/egresos/inversiones/catálogos). Lo que **sigue sin resolver**, igual que antes: `POST`/`GET` confían en el `usuarioId` que manda el propio cliente en vez de derivarlo de una identidad verificada; `PATCH` no valida dueño en absoluto (`DELETE` sí, pero también confía en el `usuarioId` del body). Esto es el mismo patrón que el resto de la API (no hay JWT real conectado a `mockAuth` todavía — ver "mockAuth concede admin en prod" en memoria), no es exclusivo de `metas`.
-- **`/api/v1/dashboard/balance` es una función muerta**: depende de `fechas_corte_ahorro`, pero no existe ningún endpoint (`routes`/`controller`/`service`/`repository`) para crear/listar fechas de corte, aunque los stored procedures (`sp_fechasCorte_*`) sí existen en el esquema. Spec original en `tickets/API_fechas_corte.md`. Issue: #91.
+- ~~`/api/v1/dashboard/balance` es una función muerta~~ **Resuelto (issue #91)**: ahora existe `/api/v1/ahorro/fechas-corte` (GET/POST/DELETE, `mockAuth`/`requireScope("ahorro:leer"/"ahorro:escribir")`) para alimentar `fechas_corte_ahorro`, conectado a los SPs `sp_fechasCorte_*` que ya existían. De paso se encontró y corrigió un bug separado en `DashboardService.balance()`: leía `row.ingresos`/`row.egresos`/`row.balance` en vez de los nombres reales que devuelve el SP (`ingresosAcumulados`/`egresosAcumulados`/`balanceAcumulado`), así que siempre daba 0 aunque hubiera movimientos reales — nadie lo había notado porque no existía ningún test de `dashboard/balance` hasta ahora. Ambos verificados en vivo contra Railway.
 - **`/api/users/*` (legacy) sigue en memoria**: sin conexión a BD y sin endpoint de creación — solo se puede consultar/editar un usuario que ya exista en el `Map`, y no hay forma de meter uno ahí vía API. Es un módulo separado de `auth` (que sí es real).
 - **`npm run lint` crasheado**: ver "Limitaciones Actuales" arriba.
 - **Formato de respuesta no uniforme entre módulos**: ver nota en "Notas Importantes".
+- **`dist/` sigue trackeado en git**: a pesar de que `.gitignore` incluye `dist/` desde el #79, quedan un montón de archivos compilados de PRs anteriores todavía versionados (se arrastran de antes de ese cambio). `npm run build` local genera diffs enormes ahí que no tienen nada que ver con el cambio real — no comitear esos diffs; limpiar aparte con `git rm -r --cached dist/` en un PR dedicado.
 - **Corrimiento de zona horaria observado (~6h) en algunas fechas leídas de vuelta** desde MySQL — no confirmado a fondo, posible tema de timezone de sesión MySQL vs. UTC.
 
 ## Contexto del Roadmap
@@ -203,6 +205,7 @@ Este proyecto sigue un roadmap de 10 tickets (ver [docs/roadmap.md](docs/roadmap
 - Logging (pino) ✓ (`src/utils/logger.ts`, `logger.middleware.ts`)
 - Dockerfile ✓ (existe en la raíz del repo)
 - Persistencia real en MySQL para la mayoría de los módulos ✓ (ver "Capa de Base de Datos")
-- Pendiente: exponer `fechas_corte_ahorro` por API, arreglar `npm run lint`
+- Exponer `fechas_corte_ahorro` por API ✓ (issue #91)
+- Pendiente: arreglar `npm run lint`
 
 El equipo usa GitHub Projects con etiquetas: `integration`, `backend`, `ts`, `express`, `backlog`

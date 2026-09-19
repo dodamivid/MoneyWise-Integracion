@@ -1,7 +1,7 @@
 # Estado de sesión — MoneyWise Integración
 
-**Generado:** 2026-09-17 (actualizado el mismo día tras cerrar #89 y sembrar datos para #65)
-**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-17 (issue #87 + barrido de endpoints + issue #89 + issue #65)
+**Generado:** 2026-09-17, actualizado 2026-09-18 tras resolver #91 (fechas de corte + fix de dashboard/balance)
+**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-18 (issue #87 + barrido de endpoints + issue #89 + issue #65 + issue #91)
 **Método:** este documento se armó cruzando `git log --oneline -30`, `git status`, `git diff HEAD`, `gh issue list`, y lectura directa de código — no solo memoria de la conversación. Donde algo viene solo de memoria (no verificado en esta pasada), se marca explícitamente como **[memoria, no re-verificado]**.
 
 ---
@@ -98,14 +98,18 @@
 - Idempotente a nivel usuario+recurso: se verificó corriendo el script dos veces seguidas sobre el mismo usuario — la segunda vez no crea nada (`ingresos: ya tiene N, se salta`, etc.). **No** es idempotente fila-por-fila (no completa un sembrado parcial).
 - **Ejecutado en vivo contra Railway**: 5 usuarios, **139 ingresos, 1686 egresos, 17 inversiones, 14 metas — 100% creados sin errores**. `GET /dashboard/resumen` confirmado con ingresos/egresos/balance reales y != 0 para los 5 usuarios (ej. usuarioId 3: ingresos $173,493.66, egresos $232,885.55, balance -$59,391.89, con desglose real por tipo/procedencia/destino). `GET /dashboard/metas-vs-ahorro` confirmado con metas y `ahorroReal`/`porcentajeAvance` reales.
 - `npx jest` completo: 74/74 sigue pasando.
-- PR #93. **Pendiente el squash merge** — bloqueado por el clasificador de permisos del entorno (`gh pr merge` denegado), igual que pasó varias veces con acciones de estado en sesiones anteriores. Le pedí al usuario mergearlo manualmente (UI de GitHub o `gh pr merge 93 --squash --delete-branch` desde su propia terminal). **Verificar en la próxima sesión si ya se mergeó** (`gh pr view 93` o `git log`).
-- **Lo que NO se sembró**: `fechas_corte_ahorro` — no existe ningún endpoint para crearla todavía (issue #91, sigue abierto, no bloqueaba esto).
+- PR #93, **mergeado** (commit `bf3a37f`). Quedó pendiente al cierre de la sesión anterior por el clasificador de permisos del entorno; el usuario (o un retry posterior) lo mergeó — confirmado con `gh pr view 93` → `mergedAt` no nulo.
+- **Lo que NO se sembró**: `fechas_corte_ahorro` — no existía ningún endpoint para crearla en ese momento (issue #91). Resuelto después, en la misma sesión siguiente — ver abajo.
 
-### #91 — `dashboard/balance` es función muerta (abierto, no bloquea #65)
-- Encontrado durante el barrido final de endpoints: `GET /api/v1/dashboard/balance` siempre da `404 NO_ENCONTRADO:No hay fechas de corte registradas` porque depende de la tabla `fechas_corte_ahorro`, y **no existe ningún endpoint** para crear/listar fechas de corte — ni rutas, ni controller, ni service, ni repository.
-- Los SPs (`sp_fechasCorte_listar/crear/eliminar`) ya existen en la base.
-- Ya existe el ticket de spec original: `tickets/API_fechas_corte.md` (ruta propuesta: `/api/v1/ahorro/fechas-corte`, scopes `ahorro:leer`/`ahorro:escribir`) — nunca se implementó.
-- No bloquea #65.
+### #91 — `dashboard/balance` era función muerta — ✅ RESUELTO (verificado en vivo)
+- Nuevo módulo `fechasCorte` (dto/repository/service/controller/routes), calcado del patrón de `tiposEgreso`, conectado a los SPs `sp_fechasCorte_listar/crear/eliminar` que ya existían en el esquema pero no tenían nada en `src/` que los llamara.
+- Montado en `/api/v1/ahorro/fechas-corte` (GET/POST/DELETE) con `mockAuth`/`requireScope("ahorro:leer"/"ahorro:escribir")`, tal como especifica `tickets/API_fechas_corte.md`. `usuarioId` se deriva de `res.locals.auth` (headers `x-mw-user`), igual que ingresos/egresos/inversiones — no del body como en `metas`.
+- Nuevos tests: `fechasCorte-db.test.ts` (unit, UNION ALL + conversión de fecha) y `fechasCorte.test.ts` (integración, CRUD + 403 + 409 + 422).
+- PR #94, mergeado (commit `100e637`).
+- **Bug adicional encontrado al verificar en vivo**: tras crear una fecha de corte real para un usuario con ~$173k en ingresos sembrados, `GET /dashboard/balance` seguía devolviendo `ingresosAcumulados: 0, egresosAcumulados: 0, balanceAcumulado: 0`. Causa: `DashboardService.balance()` leía `row.ingresos`/`row.egresos`/`row.balance`, pero `sp_dashboard_balance` devuelve las columnas como `ingresosAcumulados`/`egresosAcumulados`/`balanceAcumulado` — nombres que no existían en la fila, así que siempre caía al `|| 0`. No había ningún test de `dashboard/balance` antes de esto (nuevo `dashboard-balance.test.ts`). Fix en PR #95, mergeado (commit `6e2141c`).
+- **Verificado en vivo contra Railway, end-to-end, en ese orden exacto**: `GET /dashboard/balance` → 404 (sin fecha de corte) → `POST /ahorro/fechas-corte` → 201 → `POST` duplicada → 409 → `GET /dashboard/balance` → **200 con `ingresosAcumulados: 173493.66, egresosAcumulados: 232885.55, balanceAcumulado: -59391.89`**, coincidiendo exacto con lo que ya mostraba `dashboard/resumen` para ese mismo usuario.
+- **Hallazgo aparte, no bloqueante**: `dist/` sigue trackeado en git a pesar de que `.gitignore` lo incluye desde el #79 (arrastre de PRs anteriores al cambio). `npm run build` local genera diffs enormes ahí — no comitear esos diffs; limpiar en un PR aparte con `git rm -r --cached dist/`. Documentado en `CLAUDE.md`.
+- `npx jest` completo: 87/87.
 
 ---
 
@@ -159,7 +163,8 @@
 | `GET/POST/PATCH/DELETE /api/v1/metas` | ✅ PROBADO EN VIVO | CRUD completo, `ahorro_real`/`eliminado_en` confirmados por `SELECT` directo. Auth (`mockAuth`/`requireScope`) agregada y verificada en vivo el mismo día (#89, PR #92): 403 sin scope, 201/200 con scope, ownership de `DELETE` preservado |
 | `GET /api/v1/dashboard/resumen` | ✅ PROBADO EN VIVO | Reflejó totales reales (ingresos/egresos/balance) |
 | `GET /api/v1/dashboard/metas-vs-ahorro` | ✅ PROBADO EN VIVO | 200, respuesta correcta (vacía porque no había metas activas en ese momento) |
-| `GET /api/v1/dashboard/balance` | ❌ **FALLA (esperado/función muerta)** | `404 NO_ENCONTRADO:No hay fechas de corte registradas` — no existe forma de registrar una fecha de corte por API. Ver issue #91 |
+| `GET /api/v1/dashboard/balance` | ✅ PROBADO EN VIVO | Resuelto (#91, PR #94/#95): `POST /ahorro/fechas-corte` para alimentarla + fix de un bug de mapeo de columnas que hacía que diera 0. Confirmado con valores reales (`ingresosAcumulados: 173493.66`, etc.) |
+| `GET/POST/DELETE /api/v1/ahorro/fechas-corte` | ✅ PROBADO EN VIVO | CRUD (sin PATCH, no aplica) + 403 sin scope + 409 duplicado (#91) |
 | `GET/POST/PUT/DELETE /api/v1/catalogos/destinos` | ✅ PROBADO EN VIVO | CRUD completo + duplicado (400) + bloqueo de default |
 | `GET/POST/PUT/DELETE /api/v1/catalogos/procedencias` | ✅ PROBADO EN VIVO | CRUD completo |
 | `GET/POST/PUT/DELETE /api/v1/catalogos/tipos-egreso` | ✅ PROBADO EN VIVO | CRUD completo |
@@ -183,7 +188,7 @@
 4. **`metas` preservó su interfaz pública al conectar a SPs** (#87) — para no tocar `metas.service.ts`/`metas.controller.ts` más de lo estrictamente necesario y no romper los 25 tests de integración existentes que ya pasaban.
 5. **Auth de `metas` (#89) se dejó fuera de #87 a propósito** — para no mezclar un cambio de auth con uno de persistencia en el mismo PR. Quedó pendiente (ver advertencia arriba: el issue se cerró sin el fix).
 6. **`update()` de metas no valida dueño** (comportamiento preexistente, se mantuvo) — el service nunca lo validó ahí (solo en `delete`); cambiar eso hubiera sido ensanchar el alcance de #87 hacia el problema de auth que le corresponde a #89.
-7. **`dashboard/balance` (#91) no se implementó, solo se documentó** — hubiera significado construir un módulo CRUD completo nuevo (`fechasCorte.*`), fuera del alcance de "verificar antes de #65".
+7. **`dashboard/balance` (#91) se dejó documentado (no implementado) en la sesión del #65** porque hubiera significado construir un módulo CRUD completo nuevo (`fechasCorte.*`), fuera del alcance de "verificar antes de #65" — se implementó después, en la sesión siguiente (ver sección 1).
 
 ---
 
@@ -192,7 +197,8 @@
 | Item | Estado | Detalle |
 |---|---|---|
 | #89 — metas sin auth | **Resuelto** (PR #92, verificado en vivo) | Auth agregada; queda pendiente (no bloqueante, era opcional) cerrar el gap de ownership en `PATCH` y dejar de confiar en el `usuarioId` del body |
-| #91 — dashboard/balance función muerta | Abierto | Falta módulo `fechasCorte.*` completo. Spec ya existe en `tickets/API_fechas_corte.md` |
+| #91 — dashboard/balance función muerta | **Resuelto** (PRs #94/#95, verificado en vivo) | Módulo `fechasCorte.*` agregado + bug de mapeo de columnas corregido |
+| `dist/` trackeado en git pese a `.gitignore` | Sin issue, no bloqueante | Arrastre de PRs previos al #79. `npm run build` local genera diffs enormes que no se deben comitear; limpiar aparte con `git rm -r --cached dist/` |
 | Encoding roto en mensajes de error | No hay issue abierto | "invÃ¡lido" en vez de "inválido", visto en `restablecer`. Cosmético |
 | Corrimiento de ~6h en fechas leídas | No hay issue abierto, **[memoria, no re-verificado]** | Posible tema de timezone de sesión MySQL |
 | `eslint.config.js` roto | No hay issue abierto | Usa `import` ES module sin `"type":"module"` en `package.json`; `npm run lint` crashea por completo, no solo da warnings |
@@ -203,14 +209,14 @@
 
 ## 6. Qué falta antes de pasar al #65
 
-**#65 ya se hizo** (ver sección 1) — esta sección queda como referencia histórica. #89 y #65 ambos resueltos y verificados en vivo el mismo día.
+**#65 ya se hizo** (ver sección 1) — esta sección queda como referencia histórica. #89, #65 y #91 resueltos y verificados en vivo.
 
 ---
 
 ## 7. Siguiente paso exacto para retomar en sesión nueva
 
 1. Leer este archivo (`tickets/ESTADO_SESION.md`) completo antes de tocar código.
-2. **Primero confirmar si el PR #93 (#65) ya se mergeó** — se creó pero el squash merge quedó bloqueado por el clasificador de permisos del entorno (`gh pr merge` denegado) y se le pidió al usuario que lo mergeara manualmente. Correr `gh pr view 93` o revisar `git log --oneline -5` en `main`: si el commit de "feat(seed): script de seed transaccional..." no aparece ahí, el PR sigue sin mergear y hay que retomar eso antes que nada.
-3. #89 y #65 ya están resueltos y verificados en vivo — no quedan issues abiertos bloqueantes de esta sesión. Los datos transaccionales de #65 (5 usuarios `*.seed@moneywise.test`, password `SeedMW2026!`) ya están sembrados en Railway; volver a correr `npm run seed:transaccional` es seguro (es idempotente a nivel usuario+recurso) si se necesita más historia o más usuarios.
-4. Pendientes reales que quedan abiertos (ninguno bloqueante): **#91** (`dashboard/balance` sigue siendo función muerta, falta el módulo `fechasCorte.*`), y los ítems menores de la sección 5 (encoding roto, posible timezone offset, `eslint` roto, `/api/users` legacy).
-5. Repo: verificar `git status` (debe estar limpio) y qué rama quedó activa — al cierre de esta sesión el trabajo de #65 estaba en la rama `Integration/MWI-65/seed-transaccional` (PR #93, pendiente de merge/borrado). Si el PR ya se mergeó, hacer `git checkout main && git pull`.
+2. **No quedan issues abiertos ni PRs pendientes de merge de esta sesión.** #67, #68, #71, #73, #75, #77, #79, #80, #82, #84, #87, #89, #65 y #91 están todos cerrados con su fix real adentro (verificado, no solo cerrados de nombre — ver sección 1 para el detalle de cada uno).
+3. Datos de #65 ya sembrados en Railway (5 usuarios `*.seed@moneywise.test`, password `SeedMW2026!`); `npm run seed:transaccional` es seguro de re-correr (idempotente a nivel usuario+recurso).
+4. Pendientes reales que quedan abiertos (ninguno bloqueante, ninguno tiene issue de GitHub todavía salvo donde se indica): `eslint` roto (ver "Limitaciones Actuales" en `CLAUDE.md`), `dist/` sigue trackeado en git pese a estar en `.gitignore`, encoding roto en al menos un mensaje de error, posible corrimiento de ~6h en fechas leídas de vuelta (no confirmado a fondo), `/api/users` legacy sigue en memoria sin endpoint de creación (esto último es comportamiento esperado, no un bug).
+5. Repo: verificar `git status` (debe estar limpio, en `main`). Último commit conocido al cierre de esta sesión: `6e2141c` (fix del mapeo de `dashboard/balance`, PR #95).
