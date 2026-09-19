@@ -25,7 +25,27 @@ export const db = {
       password,
       database,
       connectionLimit,
-      dateStrings: true,
+      // NO dateStrings: true (ver historial de este archivo). Con
+      // dateStrings, mysql2 devolvía los DATETIME como texto crudo sin
+      // marca de zona horaria (ej. "2026-01-15 00:00:00"), y cada
+      // repositorio lo mandaba tal cual en la respuesta JSON. Cualquier
+      // cliente que hiciera `new Date(valor)` sobre ese texto (sin "Z")
+      // lo interpretaba como hora LOCAL del cliente, no UTC -- en
+      // Chihuahua/CDMX (UTC-6) eso corre la fecha 6 horas hacia
+      // adelante al convertirla de vuelta a UTC. Confirmado con una
+      // prueba real contra MySQL (__tests__/tests/db/movimientos.db.test.ts):
+      // se mandó "2026-01-15T00:00:00Z" y se leyó de vuelta como si
+      // fuera "2026-01-15T06:00:00Z". Coincide con la nota de
+      // "corrimiento de ~6h" que CLAUDE.md tenía como "no confirmado".
+      //
+      // `timezone: "Z"` le dice a mysql2 que interprete los DATETIME
+      // como UTC al convertirlos a objetos Date de JS; Express serializa
+      // esos Date con .toISOString() automáticamente al mandar el JSON
+      // (res.json() -> JSON.stringify() -> Date.prototype.toJSON()), así
+      // que la respuesta queda en ISO-8601 con "Z" sin tocar ningún
+      // repositorio/DTO. La escritura (toMySQLDateTime produce strings,
+      // no objetos Date) no se ve afectada por este cambio.
+      timezone: "Z",
       supportBigNumbers: true,
     });
   },
