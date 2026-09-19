@@ -146,7 +146,11 @@ export const UserSchema = z.object({
     .regex(/[0-9]/, {
       message: "La contraseña debe contener al menos un número",
     })
-    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, {
+    // Nota (#96): dentro de una clase de caracteres [...] no hace falta
+    // escapar "[" ni "/" -- el lexer de JS ya sabe que no terminan la
+    // clase ni el literal de regex ahí. ESLint (no-useless-escape) los
+    // marcaba como error; se quitan sin cambiar qué matchea el regex.
+    .regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/, {
       message: "La contraseña debe contener al menos un símbolo especial",
     }),
 
@@ -526,7 +530,8 @@ export const ChangePasswordSchema = z
       .regex(/[0-9]/, {
         message: "La contraseña debe contener al menos un número",
       })
-      .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, {
+      // Ver nota en el schema de contraseña de arriba (#96, no-useless-escape).
+      .regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/, {
         message: "La contraseña debe contener al menos un símbolo especial",
       }),
   })
