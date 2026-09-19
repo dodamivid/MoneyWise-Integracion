@@ -1,7 +1,7 @@
 # Estado de sesión — MoneyWise Integración
 
-**Generado:** 2026-09-17 (actualizado el mismo día tras retomar y cerrar #89)
-**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-17 (issue #87 + barrido de endpoints + issue #89)
+**Generado:** 2026-09-17 (actualizado el mismo día tras cerrar #89 y sembrar datos para #65)
+**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-17 (issue #87 + barrido de endpoints + issue #89 + issue #65)
 **Método:** este documento se armó cruzando `git log --oneline -30`, `git status`, `git diff HEAD`, `gh issue list`, y lectura directa de código — no solo memoria de la conversación. Donde algo viene solo de memoria (no verificado en esta pasada), se marca explícitamente como **[memoria, no re-verificado]**.
 
 ---
@@ -89,6 +89,17 @@
 - PR #92, mergeado (commit `791f87f`).
 - **Verificado en vivo contra Railway tras el deploy** (no solo Jest): `GET /metas` sin `metas:leer` → 403; con el scope → 200; `POST /metas` sin `metas:escribir` → 403; `POST /metas` con el scope → 201 y persistencia real confirmada con `GET /metas/:id`; `DELETE` con `usuarioId` equivocado en el body → 400 (el ownership check de `DELETE` se preservó); `DELETE` con el `usuarioId` correcto → 200. Usuario de prueba real creado vía `/auth/registro` (`usuarioId: 2`) y la meta de prueba se limpió al final (soft-delete).
 - **Lo que sigue sin resolver a propósito** (era mejora opcional del issue, no su defecto principal): `POST`/`GET` siguen confiando en el `usuarioId` que manda el cliente en vez de derivarlo de una identidad verificada; `PATCH` sigue sin validar dueño (`DELETE` sí). Es el mismo patrón que el resto de la API — no hay JWT real conectado a `mockAuth` todavía.
+
+### #65 — Seed de datos transaccionales — ✅ RESUELTO (verificado en vivo)
+- Antes de sembrar se revisó el estado real de la base vía API (sin credenciales de MySQL directas): `ingresos`/`egresos`/`inversiones`/`metas` ya estaban en 0 filas (se habían limpiado solas durante los bugs de la sesión anterior), y los catálogos ya tenían su seed global. Se decidió **sembrar directo, sin reset** (un `import-db.js` no aportaba nada y era más riesgo).
+- Nuevo `scripts/seed-transaccional.js`: siembra vía los endpoints reales de la API (no SQL directo, para pasar por las mismas validaciones de negocio que un cliente real). Requiere solo `MWI_API_URL`/`MWI_API_KEY` (no credenciales de MySQL).
+- 5 usuarios de ejemplo registrados vía `/auth/registro` (`ana.martinez.seed@…`, `luis.hernandez.seed@…`, `sofia.ramirez.seed@…`, `diego.flores.seed@…`, `valeria.morales.seed@…`, password fijo `SeedMW2026!`), cada uno con 12 meses de historia: sueldos quincenales + bonos ocasionales (ingresos), ~10 categorías de egresos variables, 2-4 inversiones, 2-3 metas con progreso real (`PATCH ahorroReal`, no solo creadas en 0).
+- Cada usuario crea sus propios destinos extra (`Salud`, `Educación`, `Entretenimiento`, `Ropa`, `Mascotas`, `Impuestos`) vía `POST /catalogos/destinos` — **no se amplió el catálogo global** de destinos en la Railway real (eso requeriría credenciales de MySQL que no se compartieron en esta sesión; solo se compartió la `API_KEY` de aplicación). Sí se agregó al seed global en `db/moneywise_schema.sql` (4→10 destinos) para que un futuro reimport lo traiga de una vez.
+- Idempotente a nivel usuario+recurso: se verificó corriendo el script dos veces seguidas sobre el mismo usuario — la segunda vez no crea nada (`ingresos: ya tiene N, se salta`, etc.). **No** es idempotente fila-por-fila (no completa un sembrado parcial).
+- **Ejecutado en vivo contra Railway**: 5 usuarios, **139 ingresos, 1686 egresos, 17 inversiones, 14 metas — 100% creados sin errores**. `GET /dashboard/resumen` confirmado con ingresos/egresos/balance reales y != 0 para los 5 usuarios (ej. usuarioId 3: ingresos $173,493.66, egresos $232,885.55, balance -$59,391.89, con desglose real por tipo/procedencia/destino). `GET /dashboard/metas-vs-ahorro` confirmado con metas y `ahorroReal`/`porcentajeAvance` reales.
+- `npx jest` completo: 74/74 sigue pasando.
+- PR #93. **Pendiente el squash merge** — bloqueado por el clasificador de permisos del entorno (`gh pr merge` denegado), igual que pasó varias veces con acciones de estado en sesiones anteriores. Le pedí al usuario mergearlo manualmente (UI de GitHub o `gh pr merge 93 --squash --delete-branch` desde su propia terminal). **Verificar en la próxima sesión si ya se mergeó** (`gh pr view 93` o `git log`).
+- **Lo que NO se sembró**: `fechas_corte_ahorro` — no existe ningún endpoint para crearla todavía (issue #91, sigue abierto, no bloqueaba esto).
 
 ### #91 — `dashboard/balance` es función muerta (abierto, no bloquea #65)
 - Encontrado durante el barrido final de endpoints: `GET /api/v1/dashboard/balance` siempre da `404 NO_ENCONTRADO:No hay fechas de corte registradas` porque depende de la tabla `fechas_corte_ahorro`, y **no existe ningún endpoint** para crear/listar fechas de corte — ni rutas, ni controller, ni service, ni repository.
@@ -192,22 +203,14 @@
 
 ## 6. Qué falta antes de pasar al #65
 
-**Nada bloqueante.** Todos los endpoints que #65 (seed de datos transaccionales: ingresos, egresos, inversiones, metas) necesita para funcionar de verdad ya están confirmados en vivo contra MySQL real:
-- Usuarios reales se pueden crear (`POST /api/v1/auth/registro`) — el `usuarios` table SÍ es real y persistente (vía `auth`, no vía el módulo legacy `/api/users`).
-- Los 4 tipos de movimiento (ingresos/egresos/inversiones/metas) persisten de verdad, con fechas correctas.
-- Los catálogos que los movimientos referencian (tipos, destinos, procedencias) persisten y tienen datos seed reales.
-
-**#89 ya no es un pendiente** — se arregló y se verificó en vivo el mismo día (PR #92). `metas` ahora exige `mockAuth`/`requireScope` igual que el resto de módulos; el seed de #65 debe mandar `x-mw-user`/`x-mw-scopes: metas:leer,metas:escribir` (y los scopes equivalentes de ingresos/egresos/inversiones) en cada request, igual que ya hace el resto de la API.
+**#65 ya se hizo** (ver sección 1) — esta sección queda como referencia histórica. #89 y #65 ambos resueltos y verificados en vivo el mismo día.
 
 ---
 
 ## 7. Siguiente paso exacto para retomar en sesión nueva
 
 1. Leer este archivo (`tickets/ESTADO_SESION.md`) completo antes de tocar código.
-2. #89 ya está resuelto y verificado (ver sección 1) — no requiere ninguna decisión pendiente.
-3. Arrancar el issue **#65 — Seed de datos transaccionales**:
-   - Revisar `tickets/API_ingresos.md`, `API_egresos.md`, `API_inversiones.md`, `API_metas.md` para los contratos exactos de creación.
-   - Diseñar el script de seed (probablemente Node, usando los endpoints reales vía `auth` + los módulos ya conectados) — **no** sembrar directo a SQL para no saltarse la validación de negocio real.
-   - El seed debe mandar `x-mw-user`/`x-mw-scopes` en cada request a `metas` (además de los scopes de ingresos/egresos/inversiones/catálogos que ya lo requerían) — ver #89.
-   - Antes de correr el seed contra Railway (producción real), confirmar con el usuario si se quiere limpiar la base primero (`node scripts/import-db.js` resetea todo) o sembrar sobre lo que ya haya.
-4. Repo en `main`, limpio, sin ramas sueltas (verificar con `git status`; al cierre de esta sesión estaba en `791f87f`, PR #92 ya mergeado y rama borrada).
+2. **Primero confirmar si el PR #93 (#65) ya se mergeó** — se creó pero el squash merge quedó bloqueado por el clasificador de permisos del entorno (`gh pr merge` denegado) y se le pidió al usuario que lo mergeara manualmente. Correr `gh pr view 93` o revisar `git log --oneline -5` en `main`: si el commit de "feat(seed): script de seed transaccional..." no aparece ahí, el PR sigue sin mergear y hay que retomar eso antes que nada.
+3. #89 y #65 ya están resueltos y verificados en vivo — no quedan issues abiertos bloqueantes de esta sesión. Los datos transaccionales de #65 (5 usuarios `*.seed@moneywise.test`, password `SeedMW2026!`) ya están sembrados en Railway; volver a correr `npm run seed:transaccional` es seguro (es idempotente a nivel usuario+recurso) si se necesita más historia o más usuarios.
+4. Pendientes reales que quedan abiertos (ninguno bloqueante): **#91** (`dashboard/balance` sigue siendo función muerta, falta el módulo `fechasCorte.*`), y los ítems menores de la sección 5 (encoding roto, posible timezone offset, `eslint` roto, `/api/users` legacy).
+5. Repo: verificar `git status` (debe estar limpio) y qué rama quedó activa — al cierre de esta sesión el trabajo de #65 estaba en la rama `Integration/MWI-65/seed-transaccional` (PR #93, pendiente de merge/borrado). Si el PR ya se mergeó, hacer `git checkout main && git pull`.
