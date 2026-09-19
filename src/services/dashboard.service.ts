@@ -56,11 +56,19 @@ class DashboardService {
     if (!row) {
       throw new Error("NO_ENCONTRADO: no existe fecha de corte registrada");
     }
+    // Bug encontrado durante #91: sp_dashboard_balance devuelve las
+    // columnas como ingresosAcumulados/egresosAcumulados/balanceAcumulado
+    // (ver db/moneywise_schema.sql), pero este mapeo leia row.ingresos/
+    // row.egresos/row.balance -- ninguno existe en la fila, asi que
+    // siempre daba 0 aunque el usuario tuviera movimientos reales.
     return {
       fechaCorte: row.fechaCorte,
-      ingresosAcumulados: Number(row.ingresos || 0),
-      egresosAcumulados: Number(row.egresos || 0),
-      balanceAcumulado: Number(row.balance || (row.ingresos || 0) - (row.egresos || 0)),
+      ingresosAcumulados: Number(row.ingresosAcumulados || 0),
+      egresosAcumulados: Number(row.egresosAcumulados || 0),
+      balanceAcumulado: Number(
+        row.balanceAcumulado ??
+          Number(row.ingresosAcumulados || 0) - Number(row.egresosAcumulados || 0)
+      ),
     };
   }
 
