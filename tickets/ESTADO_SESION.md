@@ -1,8 +1,8 @@
 # Estado de sesión — MoneyWise Integración
 
-**Generado:** 2026-09-17, actualizado 2026-09-18 tras resolver #91 (fechas de corte + fix de dashboard/balance)
-**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-18 (issue #87 + barrido de endpoints + issue #89 + issue #65 + issue #91)
-**Método:** este documento se armó cruzando `git log --oneline -30`, `git status`, `git diff HEAD`, `gh issue list`, y lectura directa de código — no solo memoria de la conversación. Donde algo viene solo de memoria (no verificado en esta pasada), se marca explícitamente como **[memoria, no re-verificado]**.
+**Generado:** 2026-09-17. Actualizado 2026-09-18 (#91) y 2026-09-19 (#96, #97, CI con lint+build, suite `test:db` contra MySQL real y fix de zona horaria — cierre de la fase 1).
+**Cubre:** sesión larga del 2026-09-09 (issue #67) al 2026-09-19. **Fase 1 (API `MoneyWise-Integracion`) cerrada**; la fase 2 es el repo aparte `dodamivid/MoneyWise-DataLake` (ver sección 7).
+**Método:** este documento se armó cruzando `git log`, `git status`, `git diff --stat`, `gh issue list`, `gh run list` y lectura directa de código — no solo memoria de la conversación. La lista de archivos de la sección 2 posterior al #91 sale de `git diff --stat 1302f0e HEAD`. Donde algo viene solo de memoria (no verificado en esta pasada), se marca explícitamente como **[memoria, no re-verificado]**.
 
 ---
 
@@ -108,8 +108,28 @@
 - PR #94, mergeado (commit `100e637`).
 - **Bug adicional encontrado al verificar en vivo**: tras crear una fecha de corte real para un usuario con ~$173k en ingresos sembrados, `GET /dashboard/balance` seguía devolviendo `ingresosAcumulados: 0, egresosAcumulados: 0, balanceAcumulado: 0`. Causa: `DashboardService.balance()` leía `row.ingresos`/`row.egresos`/`row.balance`, pero `sp_dashboard_balance` devuelve las columnas como `ingresosAcumulados`/`egresosAcumulados`/`balanceAcumulado` — nombres que no existían en la fila, así que siempre caía al `|| 0`. No había ningún test de `dashboard/balance` antes de esto (nuevo `dashboard-balance.test.ts`). Fix en PR #95, mergeado (commit `6e2141c`).
 - **Verificado en vivo contra Railway, end-to-end, en ese orden exacto**: `GET /dashboard/balance` → 404 (sin fecha de corte) → `POST /ahorro/fechas-corte` → 201 → `POST` duplicada → 409 → `GET /dashboard/balance` → **200 con `ingresosAcumulados: 173493.66, egresosAcumulados: 232885.55, balanceAcumulado: -59391.89`**, coincidiendo exacto con lo que ya mostraba `dashboard/resumen` para ese mismo usuario.
-- **Hallazgo aparte, no bloqueante**: `dist/` sigue trackeado en git a pesar de que `.gitignore` lo incluye desde el #79 (arrastre de PRs anteriores al cambio). `npm run build` local genera diffs enormes ahí — no comitear esos diffs; limpiar en un PR aparte con `git rm -r --cached dist/`. Documentado en `CLAUDE.md`.
+- **Hallazgo aparte** (resuelto después en #97, ver abajo): `dist/` seguía trackeado en git a pesar de que `.gitignore` lo incluía desde el #79.
 - `npx jest` completo: 87/87.
+
+### #97 — `dist/` trackeado en git pese a `.gitignore` — ✅ RESUELTO
+- Arrastre de PRs anteriores al #79: `.gitignore` no destrackea lo que ya estaba commiteado, así que `npm run build` local generaba diffs enormes de JS compilado en cualquier PR.
+- Fix: `git rm -r --cached dist/` (83 archivos; siguen en disco, solo dejan de estar versionados). PR #98, commit `25c597a`. Issue cerrado automáticamente.
+
+### #96 — `npm run lint` crasheaba por completo — ✅ RESUELTO
+- `eslint.config.js` usaba `import` sin `"type":"module"` → `SyntaxError: Cannot use import statement outside a module` antes de analizar un solo archivo (reproducido antes de tocar nada).
+- Fix: renombrado a `eslint.config.mjs`. Ya corriendo, salieron ~80 "errores" que eran ruido de configuración: la regla base `no-unused-vars` (no respeta `_req`/`_res`) duplicaba la de `@typescript-eslint`, y los `.js` sueltos no tenían globals de Node (`console`/`process`/`require`/`fetch` como `no-undef`). Se apagó la base para `.ts` y se agregó un bloque `**/*.js` con `globals.node`. PR #99, commit `3a9e2ba`.
+- Quedaban 4 errores reales (`no-useless-escape` en el regex de símbolos especiales de contraseña, `user.model.ts`, dos ocurrencias). Se corrigieron en el PR #100 **después de comprobar carácter por carácter** que el regex nuevo acepta exactamente los mismos símbolos que el viejo (la validación de contraseñas no cambia).
+- Resultado: `npm run lint` → **0 errores** (~830 warnings de formato de Prettier, deuda ya documentada y no bloqueante).
+
+### CI con lint + build — ✅ HECHO (PR #100, commit `c13c89f`)
+- `.github/workflows/test.yml` solo corría `npm run test:ci`; el ticket original del roadmap (#11, ya cerrado) pedía typecheck + lint + test. Ahora corre `lint`, `build` (tsc) y tests en cada push/PR. Workflow renombrado de "Run Tests" a "CI". Verificado: el CI pasó en verde en GitHub Actions antes de mergear.
+
+### Suite `test:db` contra MySQL real + fix de zona horaria — ✅ HECHO (PR #101, commit `546e7c6`)
+- **Por qué**: `npm test` corre con `DB_ENABLED` apagado (fallback en memoria), así que el código que llama de verdad a MySQL casi no tenía cobertura (`ingresos.repository.ts` 3%, `inversiones.repository.ts` 7%, `auth.repository.ts` 6.5%; cobertura total 46%). Toda la evidencia de que funcionaba con MySQL real eran pruebas manuales con `curl` (no repetibles).
+- **Qué**: `jest.db.config.js` + `__tests__/tests/db/` (helpers, `env.setup.js` y 5 archivos, **21 tests**) que pasan por la capa HTTP (supertest) con `DB_ENABLED=true` contra una base real efímera. Cubren las regresiones históricas: #84 (crear y releer, persistencia real), #75 (UNION ALL / fila de `COUNT(*)`), #82 (`es_por_defecto`), #89 (403 sin scope) y #91 (fechas-corte → dashboard/balance). `jest.config.js` excluye `__tests__/tests/db/` de la suite normal.
+- **CI**: nuevo job `test-db` con un **contenedor de servicio MySQL efímero** (se crea y destruye con el job; nunca toca Railway). Verificado en GitHub Actions: ambos jobs en verde.
+- **Bug real encontrado al escribirla (no un gap de cobertura)**: al crear un ingreso con `2026-01-15T00:00:00Z` y leerlo de vuelta, salía `2026-01-15T06:00:00Z`. Root cause: el pool de `mysql2` usaba `dateStrings: true`, así que los `DATETIME` salían como texto sin zona (`"2026-01-15 00:00:00"`) y cualquier cliente que hiciera `new Date(valor)` lo interpretaba como hora **local** (en Chihuahua/CDMX, UTC-6 → +6h). Era exactamente el "corrimiento de ~6h" anotado antes como sospecha sin confirmar.
+- **Fix**: `src/config/db.ts` cambia `dateStrings: true` por `timezone: "Z"`; mysql2 devuelve `Date` interpretados como UTC y `res.json()` los serializa con `.toISOString()`. Sin cambios en repositorios/DTOs. **Verificado en vivo contra Railway** tras el deploy: se mandó `2026-01-15T00:00:00Z` y se leyó `2026-01-15T00:00:00.000Z` (registro de prueba borrado al final).
 
 ---
 
@@ -142,6 +162,23 @@
 | `__tests__/tests/unit/metas-db.test.ts` | **Nuevo** (#87) |
 | `__tests__/tests/integration/tiposIngreso.test.ts` | **Nuevo** (#77) |
 | `docs/historico/README.md` | **Nuevo** (#67) |
+
+**Posteriores al #91** (esta parte sí sale de `git diff --stat 1302f0e HEAD`, no de memoria):
+
+| Archivo | Qué cambió |
+|---|---|
+| `scripts/seed-transaccional.js`, `package.json` (`seed:transaccional`) | **Nuevo** — seed vía API real (#65) |
+| `db/moneywise_schema.sql` | Seed global de `destinos` ampliado de 4 a 10 (#65) |
+| `src/dtos/`, `repositories/`, `services/`, `controllers/`, `routes/fechasCorte.*` (5 archivos) | **Nuevos** — módulo de fechas de corte (#91) |
+| `src/app.ts`, `src/middlewares/auth.middleware.ts` | Mount `/api/v1/ahorro`; scopes `ahorro:leer/escribir` por defecto en `mockAuth` (#91) |
+| `src/services/dashboard.service.ts` | Fix del mapeo de columnas de `balance()` (#91/#95) |
+| `__tests__/tests/unit/fechasCorte-db.test.ts`, `dashboard-balance.test.ts`; `integration/fechasCorte.test.ts` | **Nuevos** (#91) |
+| `eslint.config.js` → `eslint.config.mjs` | Renombrado + reglas/globals corregidos (#96) |
+| `dist/` (83 archivos) | Destrackeado de git (#97) |
+| `src/models/user.model.ts` | Regex de símbolos de contraseña sin escapes inútiles, mismo comportamiento (#100) |
+| `.github/workflows/test.yml` | Jobs `test` (lint+build+test) y `test-db` (MySQL efímero) (#100/#101) |
+| `src/config/db.ts` | `dateStrings: true` → `timezone: "Z"` (fix de zona horaria, #101) |
+| `jest.db.config.js`, `jest.config.js`, `package.json` (`test:db`), `__tests__/tests/db/*` (7 archivos) | **Nueva** suite contra MySQL real (#101) |
 
 ---
 
@@ -176,7 +213,21 @@
 
 **Nota sobre encoding**: el mensaje de error "Token de restablecimiento inválido" sale como "invÃ¡lido" (problema de encoding/mojibake). Cosmético, no investigado a fondo, bajo prioridad.
 
-**Nota sobre timezone**: se observó un corrimiento de ~6 horas en algunas `fecha_inicio` leídas de vuelta (ej. se mandó `00:00:00Z` y se leyó `06:00:00Z`). **[memoria, no re-verificado en esta pasada]** — posible tema de zona horaria de sesión MySQL vs. UTC. No bloquea nada, pero vale la pena investigarlo antes de confiar en reportes de fecha exactos.
+**Nota sobre timezone — RESUELTA** (PR #101): el corrimiento de ~6h era que las fechas salían de la API sin marca de zona (`dateStrings: true`) y los clientes en UTC-6 las leían como hora local. Ahora salen como ISO-8601 con `Z` (`timezone: "Z"` en `src/config/db.ts`). Verificado en vivo: se mandó `2026-01-15T00:00:00Z` y se leyó `2026-01-15T00:00:00.000Z`. Ojo: los registros que ya existían en Railway no cambian en la base (siempre se guardaron bien, en UTC); solo cambió cómo se leen.
+
+### Cobertura automatizada contra MySQL real (`npm run test:db`, 21 tests)
+
+Las pruebas "en vivo" de la tabla de arriba se hicieron a mano con `curl` (no se repiten solas). Desde el PR #101 una parte quedó **automatizada** contra una base MySQL real, en local (Docker) y en CI:
+
+| Cubierto por `test:db` | Sigue verificado solo a mano |
+|---|---|
+| Auth: registro, login correcto/incorrecto, correo duplicado | Auth: `olvido` / `restablecer` |
+| Ingresos: crear + releer (fecha exacta), listar con paginación, eliminar + 404 | Ingresos: `PATCH` |
+| Egresos: crear + releer, `PATCH` + releer | Egresos: `DELETE`, listado con filtros |
+| Inversiones: crear + releer | Inversiones: listar, `PATCH`, `DELETE` |
+| Catálogos: destinos/procedencias/tipos-egreso (crear, editar, borrar, duplicado, paginación), frecuencias (lectura libre + 403 escritura) | Catálogos: `tipos-ingreso` |
+| Metas: 403 sin scope, crear/leer/actualizar con avance real, `DELETE` con dueño correcto e incorrecto | Metas: listado con filtros |
+| Dashboard: `balance` (404 sin fecha de corte, luego montos reales), `resumen`; fechas-corte: crear y duplicado (409) | Dashboard: `metas-vs-ahorro`; fechas-corte: listar y `DELETE` |
 
 ---
 
@@ -189,6 +240,11 @@
 5. **Auth de `metas` (#89) se dejó fuera de #87 a propósito** — para no mezclar un cambio de auth con uno de persistencia en el mismo PR. Quedó pendiente (ver advertencia arriba: el issue se cerró sin el fix).
 6. **`update()` de metas no valida dueño** (comportamiento preexistente, se mantuvo) — el service nunca lo validó ahí (solo en `delete`); cambiar eso hubiera sido ensanchar el alcance de #87 hacia el problema de auth que le corresponde a #89.
 7. **`dashboard/balance` (#91) se dejó documentado (no implementado) en la sesión del #65** porque hubiera significado construir un módulo CRUD completo nuevo (`fechasCorte.*`), fuera del alcance de "verificar antes de #65" — se implementó después, en la sesión siguiente (ver sección 1).
+8. **`fechasCorte` en `/api/v1/ahorro/fechas-corte` con `usuarioId` tomado de `res.locals.auth`** (#91) — la ruta y los scopes (`ahorro:*`) son los del ticket original (`tickets/API_fechas_corte.md`); derivar el usuario del contexto de auth (como ingresos/egresos/inversiones) evita repetir el defecto de `metas`, donde el cliente manda su propio `usuarioId`.
+9. **Fix de zona horaria en un solo lugar (`timezone: "Z"` en el pool) en vez de parchear cada repositorio** (#101) — la causa era el formato de lectura de todo el pool; arreglarlo ahí corrige todos los módulos a la vez, sin tocar DTOs, y la escritura (`toMySQLDateTime` produce strings) no se ve afectada. No volver a `dateStrings: true` sin reponer una conversión explícita a ISO.
+10. **`test:db` pasa por la capa HTTP (supertest), no llama repositorios directamente** (#101) — ejercita rutas → controllers → services → repositorios → SPs reales, que es lo que se había probado a mano con `curl`, y no depende de conocer las firmas internas de cada repo.
+11. **CI de `test:db` con un contenedor de servicio efímero, nunca contra Railway** (#101) — los tests crean usuarios y movimientos reales; correrlos contra producción la contaminaría y obligaría a guardar credenciales reales en CI. Nota práctica: `scripts/import-db.js` lee `DB_PASS`, pero el runtime (`src/config/db.ts`) lee `DB_PASSWORD` — son variables distintas, documentado en `CLAUDE.md`.
+12. **ESLint: renombrar a `.mjs` en vez de poner `"type":"module"` global** (#96) — un `type: module` a nivel de proyecto hubiera roto los scripts CommonJS existentes (`jest.config.js`, `scripts/*.js`). El regex de contraseña se corrigió solo después de demostrar equivalencia carácter por carácter, porque cambiar una validación de contraseñas "a ojo" es riesgoso.
 
 ---
 
@@ -198,12 +254,17 @@
 |---|---|---|
 | #89 — metas sin auth | **Resuelto** (PR #92, verificado en vivo) | Auth agregada; queda pendiente (no bloqueante, era opcional) cerrar el gap de ownership en `PATCH` y dejar de confiar en el `usuarioId` del body |
 | #91 — dashboard/balance función muerta | **Resuelto** (PRs #94/#95, verificado en vivo) | Módulo `fechasCorte.*` agregado + bug de mapeo de columnas corregido |
-| `dist/` trackeado en git pese a `.gitignore` | Sin issue, no bloqueante | Arrastre de PRs previos al #79. `npm run build` local genera diffs enormes que no se deben comitear; limpiar aparte con `git rm -r --cached dist/` |
-| Encoding roto en mensajes de error | No hay issue abierto | "invÃ¡lido" en vez de "inválido", visto en `restablecer`. Cosmético |
-| Corrimiento de ~6h en fechas leídas | No hay issue abierto, **[memoria, no re-verificado]** | Posible tema de timezone de sesión MySQL |
-| `eslint.config.js` roto | No hay issue abierto | Usa `import` ES module sin `"type":"module"` en `package.json`; `npm run lint` crashea por completo, no solo da warnings |
+| `dist/` trackeado en git pese a `.gitignore` | **Resuelto** (#97, PR #98) | Destrackeado con `git rm -r --cached dist/` |
+| `npm run lint` roto | **Resuelto** (#96, PRs #99/#100) | 0 errores; ya conectado al CI |
+| Corrimiento de ~6h en fechas leídas | **Resuelto** (PR #101) | `dateStrings: true` → `timezone: "Z"`; verificado en vivo |
+| Encoding roto en mensajes de error | **Sigue abierto, sin issue** | "Correo o contraseÃ±a incorrectos", "invÃ¡lido": mojibake en mensajes del backend (visto en login y `restablecer`, también en los logs de `test:db`). Cosmético, no investigado a fondo |
+| ~830 warnings de Prettier | Sigue abierto, sin issue | Solo formato; no rompe lint ni CI (los warnings no fallan `eslint`) |
+| Cobertura de `npm test` = ~46% | Por diseño, no es un déficit a perseguir | El código que llama a MySQL solo corre con `DB_ENABLED=true`; eso lo cubre `test:db` (21 tests). Lo que `test:db` NO cubre está listado en la sección 3 |
+| Ownership débil en varios módulos | Sigue abierto (decisión consciente) | `POST`/`GET`/`DELETE` de `metas` confían en el `usuarioId` del body y `PATCH` no valida dueño; en general `mockAuth` es auth simulada por headers (sin JWT real ligado a scopes/ownership). Ver `CLAUDE.md` → "Problemas Conocidos" |
 | `/api/users/*` (legacy) sigue en memoria, sin endpoint de creación | Documentado, no es un bug nuevo | Ya estaba así antes de esta sesión (ver CLAUDE.md histórico); no hay forma de poblarlo vía API |
 | `db/stored-procedures/sp_usuarios.sql` | No investigado | Archivo separado de `db/moneywise_schema.sql` (la fuente de verdad desde #67) — posible contenido duplicado/obsoleto, no se revisó en esta sesión |
+| Issue #63 "Documentación" (PDF ITCHII/TecNM) | Abierto — lo lleva el usuario | No es código: entregable académico con varias personas asignadas |
+| Issue #1 "other issue" (cuerpo: "dashboarrd") | Abierto, parece vacío/basura | Pendiente de que el usuario decida si se cierra |
 
 ---
 
@@ -215,8 +276,24 @@
 
 ## 7. Siguiente paso exacto para retomar en sesión nueva
 
-1. Leer este archivo (`tickets/ESTADO_SESION.md`) completo antes de tocar código.
-2. **No quedan issues abiertos ni PRs pendientes de merge de esta sesión.** #67, #68, #71, #73, #75, #77, #79, #80, #82, #84, #87, #89, #65 y #91 están todos cerrados con su fix real adentro (verificado, no solo cerrados de nombre — ver sección 1 para el detalle de cada uno).
-3. Datos de #65 ya sembrados en Railway (5 usuarios `*.seed@moneywise.test`, password `SeedMW2026!`); `npm run seed:transaccional` es seguro de re-correr (idempotente a nivel usuario+recurso).
-4. Pendientes reales que quedan abiertos (ninguno bloqueante, ninguno tiene issue de GitHub todavía salvo donde se indica): `eslint` roto (ver "Limitaciones Actuales" en `CLAUDE.md`), `dist/` sigue trackeado en git pese a estar en `.gitignore`, encoding roto en al menos un mensaje de error, posible corrimiento de ~6h en fechas leídas de vuelta (no confirmado a fondo), `/api/users` legacy sigue en memoria sin endpoint de creación (esto último es comportamiento esperado, no un bug).
-5. Repo: verificar `git status` (debe estar limpio, en `main`). Último commit conocido al cierre de esta sesión: `6e2141c` (fix del mapeo de `dashboard/balance`, PR #95).
+1. Leer este archivo (`tickets/ESTADO_SESION.md`) y `CLAUDE.md` completos antes de tocar código.
+2. **Fase 1 (esta API) cerrada.** No hay PRs pendientes ni ramas de trabajo sueltas. #67, #68, #71, #73, #75, #77, #79, #80, #82, #84, #87, #89, #65, #91, #96 y #97 están cerrados con su fix real adentro (verificado, no solo cerrados de nombre — ver sección 1). `main` en sincronía con GitHub; último commit de código: `546e7c6` (PR #101); después solo commits de documentación. CI en verde (jobs `test` y `test-db`).
+3. Issues abiertos hoy: **#63** (documentación/PDF — lo lleva el usuario, no es código) y **#1** (vacío, pendiente de decidir si se cierra). Nada más.
+4. Datos de #65 ya sembrados en Railway (5 usuarios `*.seed@moneywise.test`, password `SeedMW2026!`); `npm run seed:transaccional` es seguro de re-correr (idempotente a nivel usuario+recurso).
+5. Verificar `git status` (limpio, en `main`) y correr `npm test`, `npm run lint`, `npm run build`. Para `npm run test:db` hace falta un MySQL de pruebas (ver `CLAUDE.md` → "Pruebas contra MySQL real").
+
+### Fase 2 — `dodamivid/MoneyWise-DataLake` (NO iniciada; la arranca el usuario cuando lo indique)
+
+**Regla de proceso (corrección explícita del usuario):** "ya podemos empezar con la segunda fase" fue una *pregunta* ("¿estamos listos?"), no una instrucción. En la sesión se clonó el repo, se creó una rama local y se escribió un `docker-compose.yml` de borrador **sin que se pidiera**; el usuario lo frenó y se borró todo (clon e imágenes de Docker descargadas). **No clonar ni escribir nada en el repo del DataLake hasta que el usuario diga "empezamos".**
+
+Lo que se observó (solo lectura, vía `gh`) — el repo es **solo un esqueleto**, sin código:
+- README con la arquitectura objetivo: MySQL (binlog ROW) → Debezium (Kafka Connect) → Kafka + Zookeeper → Spark Structured Streaming en capas Bronze → Silver → Gold (Parquet local) → detección de anomalías (z-score/IQR) → orquestación con Airflow → GCP Cloud Storage → dashboard de BI (Power BI/Metabase). Declara como fuente "schema adaptado de MoneyWise-Integracion".
+- `.env.example` completo, `.gitignore` razonable (excluye `.env`, `data/*`, credenciales de GCP), carpetas vacías con `.gitkeep`, y **13 issues abiertos** que son el roadmap: #1 docker-compose base, #2 fuente MySQL con datos reales, #3 conector Debezium, #4 script de verificación de eventos, #5–#7 jobs Spark Bronze/Silver/Gold, #8 anomalías, #9 Airflow, #10 salida a GCP, #11 documentación, #12 tests de calidad de datos, #13 dashboard de BI. La cadena natural de arranque es #1 → #2 → #3 → #4 (base del CDC) antes de meter Spark.
+
+Entorno del usuario (observado esta sesión): Docker 28 con Compose v2 y ~12 GB de RAM asignados (12 CPUs), Python 3.14 (por defecto) y 3.11 instalados, Java 21. **El puerto 3306 del host ya lo ocupa otro contenedor del usuario** (`proyecto-php-sql-db-1`, no tocar) → el MySQL del DataLake tiene que publicarse en otro puerto (p. ej. 3308). Hay wheels de `confluent-kafka` para Windows en Python 3.14 y 3.11. Se comprobó que las imágenes `mysql:8.0`, `confluentinc/cp-zookeeper:7.5.3`, `confluentinc/cp-kafka:7.5.3` y `quay.io/debezium/connect:2.7.3.Final` existen y se pueden descargar. **[Inferencia, no verificada]** PySpark probablemente no soporte todavía Python 3.14 → conviene correr Spark en Docker o con 3.11.
+
+Qué implica lo hecho en la fase 1 para el DataLake (para no redescubrirlo):
+- **Los borrados de la API son lógicos** (`eliminado_en`), así que el CDC los ve como `UPDATE`, no como `DELETE`; la capa Silver debe filtrar `eliminado_en IS NULL`.
+- **Datos sensibles que no deben entrar al lake**: los hashes de contraseña de `usuarios` y la tabla `auth_tokens` (tokens de recuperación). Excluirlos desde el conector (`table.exclude.list` / `column.exclude.list`) es lo natural.
+- **Las fechas son UTC** (`DATETIME` guardado como UTC; tras el #101 la API también las lee como UTC). Relevante para particionar Bronze/Silver por fecha.
+- **Fuente de datos de prueba**: el esquema canónico es `db/moneywise_schema.sql` (única fuente de verdad) y `npm run seed:transaccional` genera ~1,800 movimientos realistas, pero lo hace **vía la API**; para alimentar un MySQL propio del DataLake habría que levantar la API local contra ese MySQL (`test:db` demuestra que la API corre contra un MySQL local en Docker). *Sugerencia de diseño, no verificada:* montos `DECIMAL` con `decimal.handling.mode=string` en Debezium para no perder exactitud en dinero.
