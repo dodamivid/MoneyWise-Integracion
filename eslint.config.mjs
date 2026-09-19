@@ -32,6 +32,11 @@ export default [
     },
     rules: {
       "prettier/prettier": ["warn", { endOfLine: "auto" }],
+      // Apagada a favor de la de @typescript-eslint de abajo: la base de
+      // js.configs.recommended no respeta argsIgnorePattern/varsIgnorePattern,
+      // así que marcaba como error params como `_req`/`_res` (ignorados a
+      // propósito por convención) además de la regla de TS.
+      "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
@@ -43,5 +48,23 @@ export default [
     files: ["**/__tests__/**/*.ts", "__tests__/**/*.ts"],
     languageOptions: { parser: tsparser, globals: { ...globals.jest, ...globals.node } },
     rules: {},
+  },
+  {
+    // Scripts/config sueltos en CommonJS (scripts/*.js, jest.config.js,
+    // tickets/demo.js). Sin este bloque, js.configs.recommended los
+    // analiza sin globals de Node, así que console/process/require/
+    // module/__dirname/fetch salían como "no definido" (no-undef) aunque
+    // son globals reales del entorno donde corren.
+    files: ["**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+    },
   },
 ];
