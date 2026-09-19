@@ -34,7 +34,7 @@ DB_HOST=<host> DB_PORT=<port> DB_USER=<user> DB_PASS=<password> node scripts/imp
 Las credenciales reales viven en Railway → Variables de cada servicio (web y MySQL), nunca en archivos del repo (ver "Problemas Conocidos"). `db/moneywise_schema.sql` es la **única** fuente de verdad del esquema — cualquier otro dump en el repo (`docs/historico/`) es legado y no debe importarse.
 
 ### Limitaciones Actuales
-- `npm run lint` (ESLint) está **configurado pero roto**: `eslint.config.js` usa `import` de ES modules sin que `package.json` tenga `"type": "module"` — crashea al correr, no da warnings, no corre en absoluto.
+- `npm run lint` (ESLint) **ya corre** (issue #96, resuelto): el config es `eslint.config.mjs` (antes `.js`, crasheaba). Da ~770 *problems*: 4 errores reales (escapes innecesarios en un regex de `user.model.ts`, sin corregir todavía) y el resto son warnings de formato (`prettier/prettier`) — ver el punto siguiente.
 - `npm run format` (Prettier) sí corre y sí está configurado, pero no se aplica de forma consistente (encontró ~110 archivos con problemas de estilo la última vez que se corrió).
 
 ## Arquitectura
@@ -188,9 +188,9 @@ Todas las rutas bajo `/api/*` requieren el header `x-api-key` (middleware `requi
 - **`/api/v1/metas` — auth aplicada, pero ownership sigue débil (issue #89, parcialmente corregido)**: `metas.routes.ts` ya aplica `mockAuth`/`requireScope("metas:leer"/"metas:escribir")` en todas sus rutas (igual que ingresos/egresos/inversiones/catálogos). Lo que **sigue sin resolver**, igual que antes: `POST`/`GET` confían en el `usuarioId` que manda el propio cliente en vez de derivarlo de una identidad verificada; `PATCH` no valida dueño en absoluto (`DELETE` sí, pero también confía en el `usuarioId` del body). Esto es el mismo patrón que el resto de la API (no hay JWT real conectado a `mockAuth` todavía — ver "mockAuth concede admin en prod" en memoria), no es exclusivo de `metas`.
 - ~~`/api/v1/dashboard/balance` es una función muerta~~ **Resuelto (issue #91)**: ahora existe `/api/v1/ahorro/fechas-corte` (GET/POST/DELETE, `mockAuth`/`requireScope("ahorro:leer"/"ahorro:escribir")`) para alimentar `fechas_corte_ahorro`, conectado a los SPs `sp_fechasCorte_*` que ya existían. De paso se encontró y corrigió un bug separado en `DashboardService.balance()`: leía `row.ingresos`/`row.egresos`/`row.balance` en vez de los nombres reales que devuelve el SP (`ingresosAcumulados`/`egresosAcumulados`/`balanceAcumulado`), así que siempre daba 0 aunque hubiera movimientos reales — nadie lo había notado porque no existía ningún test de `dashboard/balance` hasta ahora. Ambos verificados en vivo contra Railway.
 - **`/api/users/*` (legacy) sigue en memoria**: sin conexión a BD y sin endpoint de creación — solo se puede consultar/editar un usuario que ya exista en el `Map`, y no hay forma de meter uno ahí vía API. Es un módulo separado de `auth` (que sí es real).
-- **`npm run lint` crasheado**: ver "Limitaciones Actuales" arriba. Issue: #96.
+- ~~`npm run lint` crasheado~~ **Resuelto (issue #96)** — ver "Limitaciones Actuales" arriba.
 - **Formato de respuesta no uniforme entre módulos**: ver nota en "Notas Importantes".
-- **`dist/` sigue trackeado en git**: a pesar de que `.gitignore` incluye `dist/` desde el #79, quedan un montón de archivos compilados de PRs anteriores todavía versionados (se arrastran de antes de ese cambio). `npm run build` local genera diffs enormes ahí que no tienen nada que ver con el cambio real — no comitear esos diffs. Issue: #97.
+- ~~`dist/` sigue trackeado en git~~ **Resuelto (issue #97)**: destrackeado con `git rm -r --cached dist/`. Sigue en `.gitignore`, ya no genera diffs en PRs nuevos.
 - **Corrimiento de zona horaria observado (~6h) en algunas fechas leídas de vuelta** desde MySQL — no confirmado a fondo, posible tema de timezone de sesión MySQL vs. UTC.
 
 ## Contexto del Roadmap
@@ -206,6 +206,6 @@ Este proyecto sigue un roadmap de 10 tickets (ver [docs/roadmap.md](docs/roadmap
 - Dockerfile ✓ (existe en la raíz del repo)
 - Persistencia real en MySQL para la mayoría de los módulos ✓ (ver "Capa de Base de Datos")
 - Exponer `fechas_corte_ahorro` por API ✓ (issue #91)
-- Pendiente: arreglar `npm run lint`
+- `npm run lint` funcional ✓ (issue #96)
 
 El equipo usa GitHub Projects con etiquetas: `integration`, `backend`, `ts`, `express`, `backlog`
