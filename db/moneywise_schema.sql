@@ -313,7 +313,7 @@ CREATE PROCEDURE sp_usuarios_registrar(
 )
 BEGIN
   DECLARE vCorreo VARCHAR(120);
-  DECLARE vScopes TEXT DEFAULT '["ingresos:leer","ingresos:escribir","egresos:leer","egresos:escribir","metas:leer","metas:escribir","inversiones:leer","inversiones:escribir","catalogos:leer","dashboard:leer"]';
+  DECLARE vScopes TEXT DEFAULT '["ingresos:leer","ingresos:escribir","egresos:leer","egresos:escribir","metas:leer","metas:escribir","inversiones:leer","inversiones:escribir","catalogos:leer","dashboard:leer","ahorro:leer","ahorro:escribir"]';
   DECLARE vUsuarioId INT;
 
   SET vCorreo = LOWER(TRIM(pCorreo));
